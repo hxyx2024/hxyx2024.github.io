@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>MAYIVIP · 规则统计</title>
+<title>VIP · 规则统计</title>
 <style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;padding:0;font-family:system-ui, sans-serif}
@@ -72,9 +72,29 @@ textarea{width:100%;height:140px;background:#222;color:#fff;border:1px solid #44
 .period-tabs{display:flex;gap:8px;margin:10px 0;flex-wrap:wrap}
 .period-tab{flex:1;padding:8px;border-radius:6px;background:#333;color:#fff;text-align:center;cursor:pointer;min-width:60px}
 .period-tab.active{background:#cccccc;color:#000;font-weight:bold}
+
+/* 授权弹窗样式 */
+.auth-mask{position:fixed;inset:0;background:#000d;z-index:9999;display:flex;align-items:center;justify-content:center;color:#fff;padding:15px}
+.auth-box{background:#1a1a1a;padding:25px;border-radius:12px;width:100%;max-width:380px;border:1px solid #444;text-align:center}
+.auth-code{color:#0f8;font-size:18px;font-weight:bold;margin:10px 0}
+.auth-input{width:100%;padding:10px;background:#222;border:1px solid #555;color:#fff;border-radius:6px;margin:12px 0;font-size:16px;text-align:center}
+.auth-btn{padding:10px 24px;background:#0077cc;color:#fff;border:none;border-radius:6px;font-weight:bold;cursor:pointer}
+.expire-tip{color:#f88;font-size:13px;margin-top:10px}
 </style>
 </head>
 <body>
+
+<!-- 统一授权弹窗 -->
+<div class="auth-mask" id="authMask">
+  <div class="auth-box">
+    <h3>🔐 时效设备授权</h3>
+    <p>你的设备串码：</p>
+    <div class="auth-code" id="devSerial"></div>
+    <input class="auth-input" id="activeCode" placeholder="请输入时效授权码">
+    <button class="auth-btn" onclick="checkActive()">立即激活</button>
+    <p class="expire-tip" id="expireTip"></p>
+  </div>
+</div>
 
 <div class="main-title">MAYIVIP · 区间规则统计</div>
 
@@ -144,20 +164,106 @@ textarea{width:100%;height:140px;background:#222;color:#fff;border:1px solid #44
   </div>
 </div>
 
-<div class="footer">© 2026 <a href="https://m.hxyx.cc.cd" target="_blank" rel="noopener noreferrer" style="
-text-decoration: none;
-color: inherit;
-">蚂蚁数据</a> · V6.1.2</div>
+<div class="footer">© 2026 蚂蚁授权版 ·  V-6.0.1</div>
 <div class="toast"></div>
 
 <script>
+// ===================== 统一授权模块（和生成器完全匹配）=====================
+const SECRET_KEY = "mayi";
+
+function getBrowserSerial(){
+  let s = "";
+  s += navigator.userAgent + "|" + navigator.platform + "|" + (navigator.hardwareConcurrency || "unknown") + "|" + screen.width + "x" + screen.height + "|" + new Date().getTimezoneOffset();
+  try {
+    const c = document.createElement("canvas");
+    const x = c.getContext("2d");
+    x.textBaseline = "top";
+    x.font = "16px Arial";
+    x.fillText("TIMEAUTH2026", 5, 5);
+    s += c.toDataURL().slice(0, 90);
+  } catch(e){}
+  let h = 0;
+  for(let i=0;i<s.length;i++){
+    h = ((h << 5) - h) + s.charCodeAt(i);
+    h |= 0;
+  }
+  return ("0000000" + Math.abs(h).toString(16)).slice(-8).toUpperCase();
+}
+
+function buildTimeAuth(serial, day){
+  let raw = serial + "|" + day + "|" + SECRET_KEY;
+  let h = 5381;
+  for(let i=0;i<raw.length;i++){
+    h = ((h << 5) + h) ^ raw.charCodeAt(i);
+  }
+  let hash = Math.abs(h).toString(16).toUpperCase();
+  return day + "-" + hash.slice(0, 14);
+}
+
+function parseAuthCode(code){
+  let arr = code.trim().split("-");
+  if(arr.length < 2) return 0;
+  let d = parseInt(arr[0]);
+  return [1,3,7,10,30].includes(d) ? d : 0;
+}
+
+let devSerial = getBrowserSerial();
+let authMask = document.getElementById("authMask");
+let devSerialDom = document.getElementById("devSerial");
+let expireTip = document.getElementById("expireTip");
+devSerialDom.innerText = devSerial;
+
+let localCode = localStorage.getItem("timeAuthCode") || "";
+let localEnd = parseInt(localStorage.getItem("authEndTime") || "0");
+let now = Date.now();
+
+function checkActive(){
+  let input = document.getElementById("activeCode").value.trim();
+  let day = parseAuthCode(input);
+  if(!day){
+    alert("授权码格式错误！");
+    return;
+  }
+  let correctPre = buildTimeAuth(devSerial, day);
+  if(input !== correctPre){
+    alert("授权码错误，不匹配当前设备/天数！");
+    return;
+  }
+  let ms = day * 24 * 60 * 60 * 1000;
+  let end = now + ms;
+  localStorage.setItem("timeAuthCode", input);
+  localStorage.setItem("authEndTime", end + "");
+  alert(`✅ 激活成功！授权${day}天`);
+  location.reload();
+}
+
+let isAuth = false;
+function initAuth(){
+  devSerialDom.innerText = devSerial;
+  if(localCode && localEnd > now){
+    authMask.style.display = "none";
+    let endDate = new Date(localEnd);
+    expireTip.innerText = `剩余授权至：${endDate.getFullYear()}-${(endDate.getMonth()+1).toString().padStart(2,'0')}-${endDate.getDate().toString().padStart(2,'0')}`;
+    isAuth = true;
+    return true;
+  } else {
+    localStorage.removeItem("timeAuthCode");
+    localStorage.removeItem("authEndTime");
+    authMask.style.display = "flex";
+    isAuth = false;
+    return false;
+  }
+}
+initAuth();
+
+// ===================== 原有业务逻辑（不变）=====================
 const dataInput = document.getElementById("rangeData");
 const modeDynamic = document.getElementById("modeDynamic");
 const modeFixed = document.getElementById("modeFixed");
 const btnRefresh = document.getElementById("btnRefresh");
 const btnClear = document.getElementById("btnClear");
 const periodTabs = document.querySelectorAll(".period-tab");
-const toast = document.getElementById("toast");
+const toast = document.querySelector(".toast");
 const recommendDetail = document.getElementById("recommendDetail");
 const totalLines = document.getElementById("totalLines");
 const validLines = document.getElementById("validLines");
@@ -424,7 +530,6 @@ function renderHotNumbers(raw){
   hotB.innerHTML=`<span class="hot-item">${toRange(hotBlockB)}</span>`;
 }
 
-// ✅ 你要的：双门槛推荐 + 符号不变
 function renderRecommend(g){
   if(!g||!g.list.length){
     recommendArea.innerHTML="暂无数据";
@@ -432,7 +537,6 @@ function renderRecommend(g){
     return;
   }
 
-  // 双锁：分数≥0.6 且 频次≥2
   let valid = g.list.filter(([k,s])=>{
     let cnt = g.count[k] || 0;
     return s >= 0.6 && cnt >= 2;
@@ -460,13 +564,15 @@ function renderRecommend(g){
 }
 
 function showToast(m){
-  toast.textContent=m;
+  toast.innerText=m;
   toast.style.display="block";
   setTimeout(()=>toast.style.display="none",1400);
 }
 
 let getRowHtml;
 function run(){
+  if(!isAuth) return; // 未授权不运行
+  
   const txt=dataInput.value.trim();
   const lines=txt?txt.split("\n").map(i=>i.trim()).filter(Boolean):[];
   totalLines.textContent=lines.length;
@@ -501,15 +607,14 @@ function run(){
     40:build(d40)
   };
 
-  // ✅ 跟随周期
   renderRecommend(DATA[currentPeriod]);
   
   renderColdPool(DATA[currentPeriod].coldA,DATA[currentPeriod].coldB);
 
   function lv(s,m){
-    if(s>=m*0.65)return'<span class="hot">🔴</span>';
-    if(s>=m*0.3)return'<span class="medium">🟡</span>';
-    return'<span class="cold">🟢</span>';
+    if(s>=m*0.65)return'<span class="hot">🔥热</span>';
+    if(s>=m*0.3)return'<span class="medium">📊中</span>';
+    return'<span class="cold">❄冷</span>';
   }
 
   getRowHtml = function(k,s,cnt,gData){
@@ -530,7 +635,7 @@ function run(){
         return la+" → "+lb === k;
       });
       if(target){
-        tag = `<span class="once-tag"> &nbsp; ∈ A${target.a} &nbsp; B${target.b}</span>`;
+        tag = `<span class="once-tag">@ A${target.a} B${target.b}</span>`;
       }
     }
 
@@ -568,7 +673,6 @@ function renderFullTable(){
   resultAll.innerHTML = html;
 }
 
-// ✅ 切换周期刷新推荐
 periodTabs.forEach(tab=>{
   tab.addEventListener('click',()=>{
     periodTabs.forEach(t=>t.classList.remove('active'));
