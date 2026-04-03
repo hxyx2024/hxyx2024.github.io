@@ -93,6 +93,19 @@
         button:active {
             opacity: 0.8;
         }
+        button.primary {
+            background: #252525;
+            color: #eee;
+            font-weight: normal;
+            outline: none !important;
+            box-shadow: none !important;
+        }
+        button.primary:hover,
+        button.primary:focus,
+        button.primary:active {
+            background: #252525 !important;
+            color: #eee !important;
+        }
 
         .result-section {
             margin-top: 6px;
@@ -111,10 +124,10 @@
             align-items: center;
         }
         .highlight {
-            color: #ffaa00;
+            color: #eee;
         }
-        .hot { color: #ff8c00; }
-        .cold { color: #5bc0de; }
+        .hot { color: #eee; }
+        .cold { color: #eee; }
 
         .base-row {
             display: flex;
@@ -131,6 +144,11 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            width: 100% !important;
+            white-space: normal !important;
+            word-break: break-all !important;
+            overflow-wrap: break-word !important;
+            border-left: 2px solid #007bff;
         }
         .zodiac-item {
             display: inline-block;
@@ -139,6 +157,7 @@
             background: #252525;
             border-radius: 4px;
             font-size: 12px;
+            color: #eee;
         }
         .copy-btn {
             padding: 3px 6px;
@@ -157,13 +176,13 @@
         }
 
         .compare-row {
-            background: #333;
-            border-left: 2px solid #ffaa00;
+            background: #252525;
+            border-left: 2px solid #007bff;
         }
         .final-row {
-            background: #2a3a2a;
-            border-left: 2px solid #4d7a43;
-            font-weight: bold;
+            background: #252525;
+            border-left: 2px solid #007bff;
+            font-weight: normal;
         }
 
         .rule-inputs {
@@ -207,7 +226,7 @@
             width: 28px;
             height: 28px;
             background: transparent;
-            color: #ff6b6b;
+            color: #eee;
             border: none;
             font-size: 16px;
         }
@@ -228,7 +247,7 @@
             position: relative;
         }
         .switch-control input:checked {
-            background: #ffaa00;
+            background: #007bff;
         }
         .switch-control input::after {
             content: '';
@@ -313,8 +332,8 @@
             border-radius: 4px;
         }
         .percent-title {
-            color: #ffaa00;
-            font-weight: bold;
+            color: #eee;
+            font-weight: normal;
             margin-bottom: 4px;
         }
         .ab-stat-line {
@@ -330,7 +349,7 @@
         .auth-modal {
             position: fixed; top:0; left:0; width:100%; height:100%;
             background: rgba(0,0,0,.95); z-index:9999;
-            display: none; align-items:center; justify-content:center;
+            display: flex; align-items:center; justify-content:center;
         }
         .auth-box {
             background: #1a1a1a;
@@ -344,7 +363,7 @@
             background: #252525;
             padding: 8px;
             border-radius: 6px;
-            color: #ffaa00;
+            color: #eee;
             margin: 10px 0;
             display: flex;
             justify-content: space-between;
@@ -365,8 +384,9 @@
             padding: 8px;
             border: none;
             border-radius: 6px;
-            background: #ffaa00;
-            color: #000;
+            background: #007bff;
+            color: #fff;
+            font-weight: normal;
         }
         .auth-tip {
             margin-top: 8px;
@@ -379,7 +399,7 @@
             border-radius: 4px;
             border: none;
             font-size: 12px;
-            background: #333;
+            background: #007bff;
             color: #fff;
         }
 
@@ -388,22 +408,21 @@
             overflow-wrap: break-word;
         }
 
-        /* AI 模块样式（独立不冲突） */
-        .ai-card{background:#1e1e1f;border-radius:10px;padding:12px;margin-bottom:10px;border:1px solid #333;overflow:hidden}
-        .ai-title{color:#ffaa00;font-weight:bold;margin:8px 0;font-size:15px}
-        .ai-hot-row{display:flex;justify-content:space-around;align-items:center;text-align:center;gap:10px;margin:6px 0}
-        .ai-hot-item{background:#ffaa00;color:#000;padding:6px 10px;border-radius:6px;font-size:14px;font-weight:bold;display:inline-block}
-        .ai-recommend-box{background:#2a2a2c;border-radius:8px;padding:10px;margin:8px 0;border-left:4px solid #ffaa00}
-        .ai-recommend-title{color:#ffaa00;font-size:14px;font-weight:bold;margin-bottom:6px}
-        .ai-recommend-item{background:#333;color:#fff;padding:6px 10px;border-radius:6px;display:inline-block;margin-right:6px;margin-bottom:6px;font-weight:bold;cursor:pointer}
-        .ai-btn-row{display:flex;gap:8px;margin-top:10px}
-        .ai-mode-btn,.ai-action-btn{flex:1;padding:10px;border-radius:8px;border:none;font-weight:bold;cursor:pointer;font-size:15px;background:#333;color:#fff}
-        .ai-mode-btn.active{background:#ffaa00;color:#000}
-        .ai-input-row{display:flex;justify-content:space-between;font-size:13px;color:#aaa;margin-top:8px}
-        .ai-toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#ffaa00;color:#000;padding:8px 16px;border-radius:6px;font-size:14px;display:none;z-index:99}
-        .ai-period-tabs{display:flex;gap:8px;margin:10px 0;flex-wrap:wrap}
-        .ai-period-tab{flex:1;padding:8px;border-radius:6px;background:#333;color:#fff;text-align:center;cursor:pointer;min-width:60px}
-        .ai-period-tab.active{background:#ffaa00;color:#000;font-weight:bold}
+        .ai-card{background:#1a2a3a;border-radius:6px;padding:6px;margin-bottom:6px;border:1px solid #007bff;width:auto;height:auto;box-sizing:border-box;}
+        .ai-title{color:#eee;margin:3px 0;font-size:12px}
+        .ai-row-2col{display:flex;gap:6px;margin:4px 0;align-items:flex-start}
+        .ai-col{flex:1;min-width:0}
+        .ai-hot-item{background:#007bff;color:#fff;padding:3px 5px;border-radius:3px;font-size:13px;display:inline-block;margin:2px}
+        .ai-recommend-box{margin:0;padding:0;border:none}
+        .ai-recommend-item{background:#007bff;color:#fff;padding:3px 5px;border-radius:3px;display:block;margin:3px 0;font-size:13px;cursor:pointer;width:100%}
+        .ai-btn-row-3{display:flex;gap:4px;margin:4px 0}
+        .ai-btn-row-3 button{
+          flex:1;padding:6px 2px;border-radius:5px;border:none;
+          font-size:12px;background:#007bff;color:#fff;min-height:28px;
+        }
+        .ai-btn-row-3 button.active{background:#0056b3}
+        .ai-input-row{display:flex;justify-content:space-between;font-size:10px;color:#aaa;margin:4px 0}
+        .ai-toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#007bff;color:#fff;padding:6px 12px;border-radius:4px;font-size:12px;display:none;z-index:99}
     </style>
 </head>
 <body>
@@ -422,7 +441,7 @@
         <button class="auth-btn" onclick="checkAuth()">确认验证</button>
         <div class="auth-tip" id="authTip"></div>
 
-        <div class="auth-footer">
+        <div class="auth-footer" style="margin-top:12px;font-size:12px;color:#888;line-height:1.4;">
             首次使用或授权已过期，请将【设备串码】发送给管理员获取授权码<br>
             官方授权通道：<a href="https://t.me/+RjaMJ26EAPw0ZTc1" target="_blank">蚂蚁频道</a>
         </div>
@@ -433,7 +452,6 @@
         <div class="tool-box">
             <h1>Ant Data AI Stats Tool</h1>
             
-            <!-- 主程序 G·A -->
             <div class="panel">
                 <div class="panel-title">
                     <span>G · A </span>
@@ -459,7 +477,6 @@
                 </div>
             </div>
 
-            <!-- 主程序 G·B -->
             <div class="panel">
                 <div class="panel-title">
                     <span>G · B </span>
@@ -485,10 +502,9 @@
                 </div>
             </div>
 
-            <!-- 官方规则 -->
             <div class="panel">
                 <div class="panel-title">
-                    <span style="color:#ffaa00">官方规则</span>
+                    <span>官方规则</span>
                     <label class="switch-control">
                         <input type="checkbox" id="rangeSwitch" onchange="toggleRangePanel()">
                     </label>
@@ -503,64 +519,51 @@
 6 6" oninput="autoSaveRange(); aiRun();"></textarea>
                     </div>
                     <div class="btn-group">
-                        <button onclick="generateRange()" style="background:#ffaa00;color:#000">✅ 生成区间</button>
-                        <button onclick="clearRange()" style="background:#333">🗑 清空</button>
+                        <button onclick="generateRange()" class="primary">✅ 生成区间</button>
+                        <button onclick="clearRange()">🗑 清空</button>
                     </div>
                     <div class="result-section" id="rangeResult" style="display:block; margin-top:8px;"></div>
                 </div>
             </div>
 
-            <!-- ====================== AI 智能统计模块（已移动到官方规则下方） ====================== -->
             <div class="panel">
                 <div class="panel-title">
-                    <span style="color:#ffaa00">AI智能推荐</span>
+                    <span>AI智能推荐</span>
                     <label class="switch-control">
                         <input type="checkbox" id="aiSwitch" onchange="toggleAIPanel()">
                     </label>
                 </div>
-                <div id="aiPanelWrap" style="display:none; margin-top:8px;">
+                <div id="aiPanelWrap" style="display:none; margin-top:6px;">
                     <div class="ai-card">
-                        <div class="ai-title">数据来源：官方规则</div>
-                        <div class="ai-btn-row">
-                            <button class="ai-mode-btn active" id="aiModeDynamic">动态区间</button>
-                            <button class="ai-mode-btn" id="aiModeFixed">固定区间</button>
-                        </div>
-                        <div class="ai-btn-row">
-                            <button class="ai-action-btn" id="aiBtnRefresh">更新</button>
-                            <button class="ai-action-btn" id="aiBtnCopy">复制</button>
+                        <div class="ai-title">数据来源：蚂蚁官方</div>
+                        <div class="ai-btn-row-3">
+                            <button class="active" id="aiModeDynamic">动态区间</button>
+                            <button id="aiModeFixed">固定区间</button>
+                            <button id="aiBtnRefresh">更新</button>
                         </div>
                         <div class="ai-input-row">
                             <span>总行数：<span id="aiTotalLines">0</span></span>
-                            <span>有效数据：<span id="aiValidLines">0</span></span>
+                            <span>有效：<span id="aiValidLines">0</span></span>
                         </div>
-                    </div>
 
-                    <div class="ai-card">
-                        <div class="ai-title">🔥 A B 列最热区间</div>
-                        <div class="ai-hot-row">
-                            <div id="aiHotA"></div>
-                            <div id="aiHotB"></div>
-                        </div>
-                    </div>
-
-                    <div class="ai-card">
-                        <div class="ai-title">🎯 本期规则推荐</div>
-                        <div class="ai-recommend-box">
-                            <div class="ai-recommend-title">高命中率推荐</div>
-                            <div id="aiRecommendArea"></div>
+                        <div class="ai-row-2col">
+                            <div class="ai-col">
+                                <div class="ai-title">🔥 A · B 推荐</div>
+                                <div id="aiHotA"></div>
+                                <div id="aiHotB"></div>
+                            </div>
+                            <div class="ai-col">
+                                <div id="aiRecommendArea"></div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-            <!-- ====================== AI 模块结束 ====================== -->
 
-            <!-- 自定义规则 -->
             <div class="panel">
                 <div class="panel-title">
-                    <span style="color:#4fc3f7">自定义规则</span>
-                    <span style="color:#4fc3f7"><a href="/vip.html" target="_blank" rel="noopener noreferrer" style="text-decoration: none; color: #ffffff;">
-MAYIVIP · 区间规则
-</a></span>
+                    <span>自定义规则</span>
+					<span><a href="https://mycm.cc.cd/vip.html" target="_blank" rel="noopener noreferrer" style="text-decoration: none; color: #1677ff;">MAYIVIP · 区间统计</a></span>
                     <label class="switch-control">
                         <input type="checkbox" id="matchSwitch" onchange="toggleMatchPanel()">
                     </label>
@@ -570,7 +573,7 @@ MAYIVIP · 区间规则
                     <div class="btn-group">
                         <button class="reset" onclick="resetRules()">🔄 restore</button>
                         <button class="clear-rules" onclick="clearAllRules()">🗑 A-B</button>
-                        <button class="add-custom" onclick="addCustomRule()">➕ ADD</button>
+                        <button class="add-custom primary" onclick="addCustomRule()">➕ ADD</button>
                     </div>
                     <div class="rule-inputs" id="defaultRuleInputs">
                         <div class="rule-item"><span class="rule-label">规则1：A</span><input type="text" class="rule-input" id="rule1a" oninput="onRuleChange()"></div>
@@ -592,28 +595,23 @@ MAYIVIP · 区间规则
                 <div class="result-section" id="compareResult"></div>
             </div>
 
-            <!-- 规则自动统计 -->
             <div class="panel">
                 <div class="panel-title">
-                    <span style="color:#ffaa00">🎯 当前规则统计</span>
+                    <span>🎯 当前规则明细</span>
                     <label class="switch-control">
                         <input type="checkbox" id="comboSwitch" onchange="toggleComboPanel()">
                     </label>
                 </div>
                 <div id="comboPanelWrap" style="display:none; margin-top:8px;">
-                    <div class="btn-group">
-                        <button onclick="buildBestCombo()" style="background:#252525; color:#eee">✅ 点我查看</button>
-                    </div>
                     <div class="combo-section" id="comboResult"></div>
                 </div>
             </div>
 
         </div>
-        <div class="footer">© 2026 蚂蚁数据 @mayi2036  Ai-6.2.8</div>
+        <div class="footer">© 2026 蚂蚁数据 · 版权所有 v6.5.8</div>
     </div>
 
 <script>
-// ====================== 主程序逻辑（完整保留） ======================
 const SECRET_SALT = "ANT2026_ZODIAC";
 const STORAGE_KEY = "ANT_AUTH";
 function getDeviceCode() {
@@ -750,7 +748,7 @@ const ui = {
     updateHitRate(hit, total) {
         const rate = total > 0 ? ((hit / total) * 100).toFixed(2) : "0.00";
         const el = document.getElementById('currentHitRate');
-        el.innerHTML = `中奖概率：${hit}/${total} = <span class="highlight">${rate}%</span>`;
+        el.innerHTML = `中奖概率：${hit}/${total} = ${rate}%`;
     }
 };
 const zodiacUI = {
@@ -816,6 +814,11 @@ function toggleComboPanel() {
     const wrap = document.getElementById('comboPanelWrap');
     const on = document.getElementById('comboSwitch').checked;
     wrap.style.display = on ? 'block' : 'none';
+    if (on) {
+        buildBestCombo();
+    } else {
+        document.getElementById('comboResult').innerHTML = '';
+    }
 }
 function toggleAIPanel() {
     const wrap = document.getElementById('aiPanelWrap');
@@ -861,10 +864,10 @@ function renderBase(num, total, unique, maxCount) {
     document.getElementById(`baseResult${num}`).innerHTML = `
         <div class="result-title">📊 盘口频次统计</div>
         <div class="base-row">
-            <div>总数：<span class="highlight">${total}</span></div>
-            <div>不重复：<span class="highlight">${unique}</span></div>
-            <div>最高：<span class="hot">${maxCount}次(L)</span></div>
-            <div>最低：<span class="cold">0次(N)</span></div>
+            <div>总数：${total}</div>
+            <div>不重复：${unique}</div>
+            <div>最高：${maxCount}次(L)</div>
+            <div>最低：0次(N)</div>
         </div>`;
 }
 function renderGroup(num, sortedCounts, groupMap, maxCount) {
@@ -887,7 +890,7 @@ function renderZodiac(num, zodiacCount) {
     if(!sorted.length)return;
     const max=sorted[0][1],min=sorted.at(-1)[1];
     let html=`<div class="result-title">🐉 生肖出现次数</div>`;
-    sorted.forEach(([z,count])=>{const cls=count===max?'hot':count===min?'cold':''; html+=`<div class="zodiac-item ${cls}" onclick="zodiacUI.showGroupZodiacNum(${num},'${z}')">${z} ${count}</div>`;});
+    sorted.forEach(([z,count])=>{html+=`<div class="zodiac-item" onclick="zodiacUI.showGroupZodiacNum(${num},'${z}')">${z} ${count}</div>`;});
     html+=`<div class="zodiac-show-num" id="zodiacShowNum${num}" style="display:none;"></div>`;
     document.getElementById(`zodiacResult${num}`).innerHTML=html;
 }
@@ -1142,13 +1145,13 @@ function generateRange() {
       const best = getBestRange(rights, need);
       const pct = ((best.hit / cnt) * 100).toFixed(1);
       const showText = `${leftGroups[i].label} → ${best.min}~${best.max}`;
-      details += `<div class="group-item">${showText} <span class="highlight">(${pct}%)</span>
+      details += `<div class="group-item">${showText} (${pct}%)
         <div style="text-align:right;"><button class="range-import-btn" onclick="importPairToRule('${leftGroups[i].label}','${best.min}~${best.max}')">✅ (A+B)</button></div></div>`;
       totalHit += best.hit; totalCnt += cnt;
     }
     const totalRate = ((totalHit / totalCnt) * 100).toFixed(2);
     html += `<div style="margin-bottom:10px;"><div class="result-title">${lv.name}</div>${details}
-      <div class="highlight" style="margin-top:6px;">整体命中率：${totalHit}/${totalCnt} = ${totalRate}%</div></div>`;
+      <div style="margin-top:6px;">整体命中率：${totalHit}/${totalCnt} = ${totalRate}%</div></div>`;
   }
   document.getElementById("rangeResult").innerHTML = html;
   compareAll();
@@ -1235,7 +1238,6 @@ function buildBestCombo() {
     document.getElementById('comboResult').innerHTML = html;
 }
 
-// ====================== AI 模块导入规则（只改这里） ======================
 function importAIRule(aStr, bStr) {
   addCustomRule();
   const last = state.customRules.length - 1;
@@ -1246,11 +1248,9 @@ function importAIRule(aStr, bStr) {
   aiShowToast("导入成功");
 }
 
-// ====================== AI 模块逻辑 ======================
 const aiModeDynamic = document.getElementById("aiModeDynamic");
 const aiModeFixed = document.getElementById("aiModeFixed");
 const aiBtnRefresh = document.getElementById("aiBtnRefresh");
-const aiBtnCopy = document.getElementById("aiBtnCopy");
 let aiCurrentMode = "dynamic";
 let aiDATA = {};
 
@@ -1397,33 +1397,23 @@ aiModeFixed.addEventListener('click', () => {
   aiModeDynamic.classList.remove("active");
   aiRun();
 });
-aiBtnCopy.addEventListener('click', async () => {
-  try {
-    await navigator.clipboard.writeText(document.getElementById("rangeData").value);
-    aiShowToast("复制成功");
-  } catch(e) {
-    aiShowToast("复制失败");
-  }
-});
 
-// 初始化
 window.onload=function(){
     const code=getDeviceCode();
     document.getElementById("deviceCode").textContent=code;
-    if(!checkAuthStatus()){
-        document.getElementById("authModal").style.display = "flex";
+    
+    if(checkAuthStatus()){
+      document.getElementById("authModal").style.display = "none";
     }
+
     storage.loadInput();
     storage.loadRange();
     bindPaste();
     clearAllRules();
     autoCalc(1);autoCalc(2);
-    
-    // AI 初始化
     aiRun();
 };
 
-// 日期插入
 function insertDateToTitle() {
   try {
     const date = new Date();
@@ -1441,11 +1431,6 @@ function insertDateToTitle() {
 window.addEventListener("load", function(){
   setTimeout(insertDateToTitle, 300);
 });
-const _compareAll = compareAll;
-compareAll = function(){
-  _compareAll.apply(this, arguments);
-  setTimeout(insertDateToTitle, 50);
-};
 </script>
 </body>
 </html>
