@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>MAYIVP · 规则统计</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0;font-family:system-ui, sans-serif}
+body{background:#121212;color:#e0e0e0;padding:10px;max-width:700px;margin:0 auto}
+.main-title{text-align:center;font-size:22px;font-weight:bold;color:#ffffff;margin:10px 0 16px}
+.card{background:#1e1a1a;border-radius:10px;padding:12px;margin-bottom:10px;border:1px solid #333}
+.title{color:#ffffff;font-weight:bold; margin:8px 0 16px;font-size:15px}
+.coldpool{color:#00aa55;font-size:13px;margin:6px 0;padding:0;background:transparent;border-radius:0}
+
+.hot-row{display:flex;justify-content:space-around;gap:10px;margin:6px 0}
+.hot-item{background:#ffffff;color:#000;padding:6px 10px;border-radius:6px;font-size:14px;font-weight:bold}
+
+.recommend-box{background:#2a2c2c;border-radius:8px;padding:12px;margin:8px 0;border-left:4px solid #ffffff}
+.recommend-title{color:#ffffff;font-size:14px;font-weight:bold;margin-bottom:8px}
+.recommend-item{background:#333;color:#fff;padding:6px 10px;border-radius:6px;display:inline-block;margin-right:6px;margin-bottom:6px;font-weight:bold}
+.recommend-detail{margin-top:8px;font-size:14px;color:#ccc;line-height:1.8;word-break:break-all}
+
+.btn-row{display:flex;gap:6px;margin-top:8px}
+.mode-btn,.action-btn{flex:1;padding:6px 8px;border-radius:6px;border:none;font-weight:bold;cursor:pointer;font-size:13px;background:#333;color:#fff}
+.mode-btn.active{background:#cccccc;color:#000}
+
+.check-btn-row{display:flex;gap:8px;margin:10px 0;flex-wrap:wrap}
+.check-action-btn{flex:1;padding:8px;border-radius:6px;background:#444;color:#fff;border:none;font-weight:bold;cursor:pointer;min-width:110px;font-size:13px}
+.check-action-btn:active{background:#666}
+
+textarea{width:100%;height:140px;background:#222;color:#fff;border:1px solid #444;border-radius:8px;padding:10px;font-family:Consolas,monospace;font-size:15px;resize:vertical}
+
+.table-box{
+  overflow-x:auto;
+  overflow-y:auto;
+  max-height:380px;
+  -webkit-tap-highlight-color:transparent;
+}
+.table-header,.table-row{
+  display:grid;
+  grid-template-columns:32px minmax(180px,1fr) 55px 75px 65px 100px;
+  padding:8px 6px;
+  font-size:14px;
+  align-items:center;
+  white-space:normal !important;
+  word-break:break-all;
+  gap:4px;
+}
+.table-header{
+  color:#ffffff;font-weight:bold;border-bottom:1px solid #444;
+  position:sticky;top:0;
+  background:#1e1a1a;
+  z-index:10;
+}
+.table-row{border-bottom:1px solid #2a2c2c}
+
+.hot{color:#ff4444;font-weight:bold}
+.medium{color:#ffffff;font-weight:bold}
+.cold{color:#888;font-weight:bold}
+.once-tag{
+  color:#ffaa00;
+  font-weight:bold;
+  background:#2b251a;
+  padding:2px 6px;
+  border-radius:4px;
+  margin-left:8px;
+  font-size:12px;
+  white-space:nowrap;
+  display:inline-flex;align-items:center;
+}
+
+.input-row{display:flex;justify-content:space-between;font-size:13px;color:#aaa;margin-top:8px}
+.footer{text-align:center;color:#777;margin:16px 0 10px;font-size:13px}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#ffffff;color:#000;padding:8px 16px;border-radius:6px;font-size:14px;display:none;z-index:99}
+.period-tabs{display:flex;gap:8px;margin:10px 0;flex-wrap:wrap}
+.period-tab{flex:1;padding:8px;border-radius:6px;background:#333;color:#fff;text-align:center;cursor:pointer;min-width:60px}
+.period-tab.active{background:#cccccc;color:#000;font-weight:bold}
+.row-check{width:18px;height:18px;cursor:pointer;margin:0 auto}
+</style>
+</head>
+<body>
+
+<div class="main-title">MAYIVP · 区间规则统计</div>
+
+<div class="card">
+  <textarea id="rangeData" placeholder="每行输入 A B 例如：1 5"></textarea>
+  <div class="btn-row">
+    <button class="mode-btn active" id="modeDynamic">动态区间</button>
+    <button class="mode-btn" id="modeFixed">固定区间</button>
+  </div>
+  <div class="btn-row">
+    <button class="action-btn" id="btnRefresh">更新</button>
+    <button class="action-btn" id="btnClear">清空数据</button>
+  </div>
+  <div class="input-row">
+    <span>总行数：<span id="totalLines">0</span></span>
+    <span>有效数据：<span id="validLines">0</span></span>
+  </div>
+  <div class="coldpool" id="coldPoolView">【超级冷池·近20期】A：暂无｜B：暂无</div>
+</div>
+
+<div class="card">
+  <div class="title">🔥 A B 列最热区间（全局）</div>
+  <div class="hot-row">
+    <div id="hotA"></div>
+    <div id="hotB"></div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="title">🎯 本期动态推荐组合</div>
+  <div class="recommend-box">
+    <div class="recommend-title">高命中率推荐（前3组）</div>
+    <div id="recommendArea"></div>
+    <div class="recommend-detail" id="recommendDetail"></div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="title">最近10期 · 区间推荐</div>
+  <div class="check-btn-row">
+    <button class="check-action-btn" id="checkAll10">全选/取消</button>
+    <button class="check-action-btn" id="copyChecked10">复制勾选</button>
+  </div>
+  <div class="table-box">
+    <div class="table-header"><div></div><div>组合（A未出现，B未出现）</div><div>分数</div><div>占比</div><div>频次</div><div>等级</div></div>
+    <div id="result10"></div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="title">最近20期 · 区间推荐</div>
+  <div class="check-btn-row">
+    <button class="check-action-btn" id="checkAll20">全选/取消</button>
+    <button class="check-action-btn" id="copyChecked20">复制勾选</button>
+  </div>
+  <div class="table-box">
+    <div class="table-header"><div></div><div>组合（A未出现，B未出现）</div><div>分数</div><div>占比</div><div>频次</div><div>等级</div></div>
+    <div id="result20"></div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="title">完整排名</div>
+  <div class="period-tabs">
+    <div class="period-tab" data-period="all">全量</div>
+    <div class="period-tab" data-period="7">7期</div>
+    <div class="period-tab" data-period="10">10期</div>
+    <div class="period-tab" data-period="15">15期</div>
+    <div class="period-tab active" data-period="20">20期</div>
+    <div class="period-tab" data-period="40">40期</div>
+  </div>
+  <div class="check-btn-row">
+    <button class="check-action-btn" id="checkAllCur">本期全选/取消</button>
+    <button class="check-action-btn" id="copyCheckedCur">复制本期勾选</button>
+  </div>
+  <div class="table-box">
+    <div class="table-header"><div></div><div>组合（A未出现，B未出现）</div><div>分数</div><div>占比</div><div>频次</div><div>等级</div></div>
+    <div id="resultAll"></div>
+  </div>
+</div>
+
+<div class="footer">© 2026 <a href="https://m.hxyx.cc.cd" target="_blank" rel="noopener noreferrer" style="text-decoration: none;color: inherit;">蚂蚁数据</a> · V6.2.0</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const dataInput = document.getElementById("rangeData");
+const modeDynamic = document.getElementById("modeDynamic");
+const modeFixed = document.getElementById("modeFixed");
+const btnRefresh = document.getElementById("btnRefresh");
+const btnClear = document.getElementById("btnClear");
+const periodTabs = document.querySelectorAll(".period-tab");
+const toast = document.getElementById("toast");
+const recommendDetail = document.getElementById("recommendDetail");
+const totalLines = document.getElementById("totalLines");
+const validLines = document.getElementById("validLines");
+const hotA = document.getElementById("hotA");
+const hotB = document.getElementById("hotB");
+const recommendArea = document.getElementById("recommendArea");
+const result10 = document.getElementById("result10");
+const result20 = document.getElementById("result20");
+const resultAll = document.getElementById("resultAll");
+const coldPoolView = document.getElementById("coldPoolView");
+
+const checkState = {
+  top10: {},
+  top20: {},
+  all: {},
+  7: {},
+  10: {},
+  15: {},
+  20: {},
+  40: {}
+};
+
+let currentMode = "dynamic";
+let currentPeriod = "20";
+let DATA = {};
+let RAW_DATA = [];
+
+const fixedRanges = [
+  {min:0,max:1,label:"0～1"},
+  {min:2,max:5,label:"2～5"},
+  {min:6,max:7,label:"6～7"},
+  {min:8,max:9,label:"8～9"}
+];
+
+function getPeriodName(p){
+  if(p === "all") return "全量";
+  return "近"+p+"期";
+}
+
+function getSeparateCold(ds){
+  let setA = new Set(), setB = new Set();
+  ds.forEach(o=>{
+    if(!isNaN(o.a)) setA.add(o.a);
+    if(!isNaN(o.b)) setB.add(o.b);
+  });
+  const allNum = [0,1,2,3,4,5,6,7,8,9];
+  let coldA = allNum.filter(x=>!setA.has(x));
+  let coldB = allNum.filter(x=>!setB.has(x));
+  return {coldA,coldB};
+}
+
+function getTopHotNums(arr) {
+  let freq = Array(10).fill(0);
+  arr.forEach(n => { if(!isNaN(n)&&n>=0&&n<=9) freq[n]++; });
+  let list = [];
+  for(let i=0;i<10;i++) if(freq[i]>0) list.push({v:i,cnt:freq[i]});
+  list.sort((a,b)=>b.cnt-a.cnt);
+  return {
+    top3: list.slice(0,3).map(x=>x.v),
+    fullFreq: freq
+  };
+}
+
+function buildConsecutiveBlock(rawArr, whiteSet){
+  if(!rawArr.length) return [2,3,4];
+  const { top3, fullFreq } = getTopHotNums(rawArr);
+  if(!top3.length) return [2,3,4];
+
+  let hotSet = new Set(top3.filter(x=>whiteSet.has(x)));
+  let neighborCandidates = new Set();
+
+  top3.forEach(x => {
+    let right = x + 1;
+    if(right <= 9 && whiteSet.has(right) && fullFreq[right] > 0){
+      neighborCandidates.add(right);
+    }
+  });
+
+  let neighborList = [...neighborCandidates]
+    .map(v => {return {v, cnt: fullFreq[v]||0};})
+    .sort((a,b)=>b.cnt - a.cnt);
+
+  neighborList.forEach(item => hotSet.add(item.v));
+
+  let allHot = [...hotSet].filter(n=>whiteSet.has(n)).sort((a,b)=>a-b);
+  if(!allHot.length) allHot = [2,3,4];
+
+  let blocks = [[allHot[0]]];
+  for(let i=1;i<allHot.length;i++){
+    let last = blocks[blocks.length-1];
+    if(allHot[i] === last[last.length-1]+1) last.push(allHot[i]);
+    else blocks.push([allHot[i]]);
+  }
+  blocks.sort((a,b)=>b.length-a.length);
+
+  let main = blocks[0] || allHot.slice(0,4);
+  const MAX_LEN = 4;
+  if(main.length > MAX_LEN){
+    let mid = Math.floor(main.length / 2);
+    main = main.slice(mid - 1, mid - 1 + MAX_LEN);
+  }
+  if(!main.length) main = [2,3,4];
+  return main;
+}
+
+function toRange(nums){
+  if(!nums || !nums.length) return "2～4";
+  let min = Math.min(...nums);
+  let max = Math.max(...nums);
+  return isNaN(min)||isNaN(max) ? "2～4" : (min===max ? `${min}` : `${min}～${max}`);
+}
+
+function buildDynamicRanges(arr, whiteSet){
+  let mainBlock = buildConsecutiveBlock(arr, whiteSet);
+  let all = [0,1,2,3,4,5,6,7,8,9];
+  let validAll = all.filter(x=>whiteSet.has(x));
+  let rest = validAll.filter(x=>!mainBlock.includes(x));
+  if(!rest.length) rest = validAll.slice(0,3);
+
+  let len = rest.length;
+  let p1 = Math.ceil(len/3);
+  let p2 = Math.ceil(len*2/3);
+  let seg1 = rest.slice(0,p1);
+  let seg2 = rest.slice(p1,p2);
+  let seg3 = rest.slice(p2);
+
+  return [
+    {label: toRange(mainBlock), min: Math.min(...mainBlock), max: Math.max(...mainBlock)},
+    {label: toRange(seg1), min: seg1.length ? Math.min(...seg1) : 2, max: seg1.length ? Math.max(...seg1) : 4},
+    {label: toRange(seg2), min: seg2.length ? Math.min(...seg2) : 2, max: seg2.length ? Math.max(...seg2) : 4},
+    {label: toRange(seg3), min: seg3.length ? Math.min(...seg3) : 2, max: seg3.length ? Math.max(...seg3) : 4}
+  ];
+}
+
+function getRangeFromLabel(label, ranges){
+  if (!label || label === "?") return {min:2,max:4};
+  for(let rg of ranges){
+    if(rg.label === label) return {min: rg.min, max: rg.max};
+  }
+  let parts = label.split("～");
+  if(parts.length === 2){
+    let min = parseInt(parts[0]);
+    let max = parseInt(parts[1]);
+    if(!isNaN(min) && !isNaN(max)) return {min,max};
+  }
+  let single = parseInt(label);
+  if(!isNaN(single)) return {min:single,max:single};
+  return {min:2,max:4};
+}
+
+function safeRangeMinMax(range){
+  if(!range) return {min:2,max:4};
+  let min = isNaN(range.min) ? 2 : range.min;
+  let max = isNaN(range.max) ? 4 : range.max;
+  return {min, max};
+}
+
+function getMissingA(rangeLabel, ranges){
+  let r = getRangeFromLabel(rangeLabel, ranges);
+  if(!r) return "-";
+  let {min, max} = safeRangeMinMax(r);
+  let count = {};
+  for(let n=min;n<=max;n++) count[n]=0;
+  RAW_DATA.forEach(o=>{ let v = o.a; if(v>=min && v<=max) count[v]++; });
+  let missing = Object.keys(count).filter(n=>count[n]===0).map(Number);
+  return missing.length>0 ? missing.join("、") : "-";
+}
+
+function getMissingB(rangeLabel, ranges){
+  let r = getRangeFromLabel(rangeLabel, ranges);
+  if(!r) return "-";
+  let {min, max} = safeRangeMinMax(r);
+  let count = {};
+  for(let n=min;n<=max;n++) count[n]=0;
+  RAW_DATA.forEach(o=>{ let v = o.b; if(v>=min && v<=max) count[v]++; });
+  let missing = Object.keys(count).filter(n=>count[n]===0).map(Number);
+  return missing.length>0 ? missing.join("、") : "-";
+}
+
+function getNumFreqInRange(rangeLabel, ranges, isB = true){
+  let r = getRangeFromLabel(rangeLabel, ranges);
+  if(!r) return {hot:"-",mid:"-",cold:"-"};
+  let {min, max} = safeRangeMinMax(r);
+  let count = {};
+  for(let n=min;n<=max;n++) count[n]=0;
+  RAW_DATA.forEach(o=>{
+    let v = isB ? o.b : o.a;
+    if(v >= min && v <= max) count[v]++;
+  });
+  let sorted=Object.entries(count).sort((a,b)=>b[1]-a[1]);
+  let hot = sorted[0]?sorted[0][0]:"-";
+  let mid = sorted[1]?sorted[1][0]:"-";
+  let zeroList = sorted.filter(x=>x[1]===0).map(x=>x[0]);
+  let coldStr=zeroList.length>0?zeroList.join("、"):"-";
+  return {hot,mid,cold:coldStr};
+}
+
+function getRangeLabel(v,ranges){
+  if(!ranges || ranges.length === 0) return "2～4";
+  for(let r of ranges){
+    if (v >= r.min && v <= r.max) return r.label;
+  }
+  return ranges[0]?.label || "2～4";
+}
+
+function build(ds){
+  if(!ds.length)return{list:[],total:0,max:0,count:{},ra:[],rb:[],coldA:[],coldB:[],slice:[]};
+  const separateCold = getSeparateCold(ds);
+  const listA = ds.map(o=>o.a);
+  const listB = ds.map(o=>o.b);
+  const allNumSet = new Set([0,1,2,3,4,5,6,7,8,9]);
+  const ra = currentMode==="dynamic"?buildDynamicRanges(listA, allNumSet):fixedRanges;
+  const rb = currentMode==="dynamic"?buildDynamicRanges(listB, allNumSet):fixedRanges;
+  
+  const seq = [];
+  const count={},score={};
+  ds.forEach((o,i)=>{
+    let la=getRangeLabel(o.a,ra);
+    let lb=getRangeLabel(o.b,rb);
+    let k=la+"→"+lb;
+    seq.push(k);
+    count[k]=(count[k]||0)+1;
+  });
+
+  const miss={};
+  for(let k in count){
+    let last = seq.lastIndexOf(k);
+    miss[k] = ds.length - 1 - last;
+  }
+
+  ds.forEach((o,i)=>{
+    let la=getRangeLabel(o.a,ra);
+    let lb=getRangeLabel(o.b,rb);
+    let k=la+"→"+lb;
+    if(i >= ds.length - 5) score[k] = (score[k]||0)+8;
+    else if(i >= ds.length -10) score[k] = (score[k]||0)+4;
+    else if(i >= ds.length -20) score[k] = (score[k]||0)+2;
+    else score[k] = (score[k]||0)+1;
+  });
+
+  for(let k in score){
+    score[k] += miss[k] * 0.3;
+    let recentCount = seq.slice(-3).filter(x=>x===k).length;
+    if(recentCount >= 1) score[k] *= 0.7;
+    if(recentCount >= 2) score[k] *= 0.6;
+    if(recentCount >= 3) score[k] *= 0.5;
+    if(miss[k] >= 15) score[k] *= 0.8;
+  }
+
+  const list=Object.entries(score).sort((a,b)=>b[1]-a[1]);
+  const total=list.length>0 ? list.reduce((s,v)=>s+v[1],0) : 0;
+  const max=list.length>0 ? list[0][1] : 0;
+  return {list,total,max,count,ra,rb,coldA:separateCold.coldA,coldB:separateCold.coldB,slice:ds};
+}
+
+function renderColdPool(coldA,coldB){
+  let name = getPeriodName(currentPeriod);
+  let aText = coldA.length ? coldA.join("、") : "暂无";
+  let bText = coldB.length ? coldB.join("、") : "暂无";
+  coldPoolView.innerText = `【超级冷池·${name}】A：${aText}｜B：${bText}`;
+}
+
+function renderHotNumbers(raw){
+  if(!raw.length){
+    hotA.innerHTML = `<span class="hot-item">-</span>`;
+    hotB.innerHTML = `<span class="hot-item">-</span>`;
+    return;
+  }
+  const listA = raw.map(o=>o.a);
+  const listB = raw.map(o=>o.b);
+  const fullAllSet = new Set([0,1,2,3,4,5,6,7,8,9]);
+  const hotBlockA = buildConsecutiveBlock(listA, fullAllSet);
+  const hotBlockB = buildConsecutiveBlock(listB, fullAllSet);
+  hotA.innerHTML=`<span class="hot-item">${toRange(hotBlockA)}</span>`;
+  hotB.innerHTML=`<span class="hot-item">${toRange(hotBlockB)}</span>`;
+}
+
+function renderRecommend(g){
+  if(!g||!g.list.length){
+    recommendArea.innerHTML="暂无数据";
+    recommendDetail.innerHTML="";
+    return;
+  }
+
+  let valid = g.list.filter(([k,s])=>{
+    let cnt = g.count[k] || 0;
+    return s >= 0.6 && cnt >= 2;
+  });
+
+  let top3 = valid.slice(0,3);
+  const ra = g.ra;
+  const rb = g.rb;
+  
+  recommendArea.innerHTML=top3.map(([k])=>{
+    let [aLb,bLb] = k.split("→");
+    let ma = getMissingA(aLb, ra);
+    let mb = getMissingB(bLb, rb);
+    return `<span class="recommend-item">${k} (A:${ma}，B:${mb})</span>`;
+  }).join("");
+
+  let detail = "";
+  top3.forEach(([k], idx)=>{
+    let [aLb,bLb] = k.split("→");
+    let infoA=getNumFreqInRange(aLb, ra, false);
+    let infoB=getNumFreqInRange(bLb, rb, true);
+    detail += `【${idx+1}】A: 🔴:${infoA.hot} 🟡:${infoA.mid} 🟢:${infoA.cold} | B: 🔴:${infoB.hot} 🟡:${infoB.mid} 🟢:${infoB.cold}\n`;
+  });
+  recommendDetail.innerText = detail.trim();
+}
+
+function showToast(m){
+  toast.textContent=m;
+  toast.style.display="block";
+  setTimeout(()=>toast.style.display="none",1400);
+}
+
+function getRowHtml(k,s,cnt,gData,scope){
+  if(!gData || !gData.ra || !gData.rb) return `<div class="table-row"><div></div><div>数据异常</div></div>`;
+  const ra = gData.ra;
+  const rb = gData.rb;
+  let parts = k.split("→");
+  if(parts.length < 2) return `<div class="table-row"><div></div><div>格式错误</div></div>`;
+  let [aLb,bLb] = parts;
+  let ma=getMissingA(aLb, ra);
+  let mb=getMissingB(bLb, rb);
+  let tag = "";
+  
+  if(cnt === 1){
+    let target = gData.slice.find(item=>{
+      let la = getRangeLabel(item.a, ra);
+      let lb = getRangeLabel(item.b, rb);
+      return la+"→"+lb === k;
+    });
+    if(target){
+      tag = `<span class="once-tag"> &nbsp; ∈ A${target.a} &nbsp; B${target.b}</span>`;
+    }
+  }
+
+  let maxScore = gData.max || 1;
+  let totalScore = gData.total || 1;
+  let level = s>=maxScore*0.65 ? '<span class="hot">🔴</span>' :
+             s>=maxScore*0.3 ? '<span class="medium">🟡</span>' :
+             '<span class="cold">🟢</span>';
+
+  let checked = checkState[scope]?.[k] || false;
+  return `
+  <div class="table-row" data-key="${k}" data-scope="${scope}">
+    <div><input type="checkbox" class="row-check" data-key="${k}" data-scope="${scope}" ${checked?"checked":""}></div>
+    <div>${k} (A:${ma}，B:${mb})${tag}</div>
+    <div>${s.toFixed(1)}</div>
+    <div>${((s/totalScore)*100).toFixed(1)}%</div>
+    <div>${cnt}</div>
+    <div>${level}</div>
+  </div>`;
+}
+
+function run(){
+  const txt=dataInput.value.trim();
+  const lines=txt?txt.split("\n").map(i=>i.trim()).filter(Boolean):[];
+  totalLines.textContent=lines.length;
+  const raw=[];
+  lines.forEach(l=>{
+    const p=l.split(/\s+/).map(Number);
+    if(!isNaN(p[0])&&!isNaN(p[1])&&p.length>=2) raw.push({a:p[0],b:p[1]});
+  });
+  RAW_DATA=raw;
+  validLines.textContent=raw.length;
+  if(!raw.length){
+    result10.innerHTML=result20.innerHTML=resultAll.innerHTML='<div class="table-row"><div></div><div>无数据</div></div>';
+    hotA.innerHTML=hotB.innerHTML="";
+    recommendArea.innerHTML="暂无数据";
+    recommendDetail.innerHTML="";
+    renderColdPool([],[]);
+    return;
+  }
+  renderHotNumbers(raw);
+  
+  const d40=raw.slice(-40);
+  const d20=raw.slice(-20);
+  const d10=raw.slice(-10);
+  const d15=raw.slice(-15);
+  const d7=raw.slice(-7);
+  DATA={
+    all:build(raw),
+    7:build(d7),
+    10:build(d10),
+    15:build(d15),
+    20:build(d20),
+    40:build(d40)
+  };
+
+  renderRecommend(DATA[currentPeriod]);
+  renderColdPool(DATA[currentPeriod].coldA,DATA[currentPeriod].coldB);
+
+  result10.innerHTML = DATA[10].list.slice(0,10).map(([k,s])=>
+    getRowHtml(k,s,DATA[10].count[k]||0,DATA[10],"top10")
+  ).join("");
+
+  result20.innerHTML = DATA[20].list.slice(0,20).map(([k,s])=>
+    getRowHtml(k,s,DATA[20].count[k]||0,DATA[20],"top20")
+  ).join("");
+
+  renderFullTable();
+  bindAllCheckEvents();
+}
+
+function renderFullTable(){
+  const g=DATA[currentPeriod];
+  renderColdPool(g.coldA,g.coldB);
+  if(!g || !g.list.length){
+    resultAll.innerHTML='<div class="table-row"><div></div><div>无数据</div></div>';
+    return;
+  }
+  resultAll.innerHTML = g.list.map(([k,s])=>
+    getRowHtml(k,s,g.count[k]||0,g,currentPeriod)
+  ).join("");
+  bindAllCheckEvents();
+}
+
+function bindAllCheckEvents(){
+  document.querySelectorAll(".row-check").forEach(cb=>{
+    cb.onchange = ()=>{
+      const k = cb.dataset.key;
+      const scope = cb.dataset.scope;
+      checkState[scope][k] = cb.checked;
+    };
+  });
+}
+
+document.getElementById("checkAll10").onclick = ()=>{
+  const g = DATA[10];
+  if(!g?.list.length) {showToast("无数据");return;}
+  const list = g.list.slice(0,10);
+  const allChecked = list.every(([k])=>checkState.top10[k]);
+  list.forEach(([k])=>{ checkState.top10[k] = !allChecked; });
+  run();
+  showToast(allChecked ? "取消10期全选" : "10期全选成功");
+};
+
+document.getElementById("copyChecked10").onclick = async ()=>{
+  const g = DATA[10];
+  if(!g?.list.length) {showToast("无数据");return;}
+  let txt = "";
+  g.list.slice(0,10).forEach(([k])=>{
+    if(checkState.top10[k]) txt += k + "\n";
+  });
+  if(!txt) {showToast("未勾选");return;}
+  try { await navigator.clipboard.writeText(txt.trim()); }
+  catch(e) {
+    const ta = document.createElement("textarea");
+    ta.value = txt.trim(); document.body.appendChild(ta);
+    ta.select(); document.execCommand("copy");
+    document.body.removeChild(ta);
+  }
+  showToast("复制10期勾选成功");
+};
+
+document.getElementById("checkAll20").onclick = ()=>{
+  const g = DATA[20];
+  if(!g?.list.length) {showToast("无数据");return;}
+  const list = g.list.slice(0,20);
+  const allChecked = list.every(([k])=>checkState.top20[k]);
+  list.forEach(([k])=>{ checkState.top20[k] = !allChecked; });
+  run();
+  showToast(allChecked ? "取消20期全选" : "20期全选成功");
+};
+
+document.getElementById("copyChecked20").onclick = async ()=>{
+  const g = DATA[20];
+  if(!g?.list.length) {showToast("无数据");return;}
+  let txt = "";
+  g.list.slice(0,20).forEach(([k])=>{
+    if(checkState.top20[k]) txt += k + "\n";
+  });
+  if(!txt) {showToast("未勾选");return;}
+  try { await navigator.clipboard.writeText(txt.trim()); }
+  catch(e) {
+    const ta = document.createElement("textarea");
+    ta.value = txt.trim(); document.body.appendChild(ta);
+    ta.select(); document.execCommand("copy");
+    document.body.removeChild(ta);
+  }
+  showToast("复制20期勾选成功");
+};
+
+document.getElementById("checkAllCur").onclick = ()=>{
+  const g = DATA[currentPeriod];
+  if(!g?.list.length) {showToast("无数据");return;}
+  const allChecked = g.list.every(([k])=>checkState[currentPeriod][k]);
+  g.list.forEach(([k])=>{ checkState[currentPeriod][k] = !allChecked; });
+  renderFullTable();
+  showToast(allChecked ? "取消本期全选" : "本期全选成功");
+};
+
+document.getElementById("copyCheckedCur").onclick = async ()=>{
+  const g = DATA[currentPeriod];
+  if(!g?.list.length) {showToast("无数据");return;}
+  let txt = "";
+  g.list.forEach(([k])=>{
+    if(checkState[currentPeriod][k]) txt += k + "\n";
+  });
+  if(!txt) {showToast("未勾选");return;}
+  try { await navigator.clipboard.writeText(txt.trim()); }
+  catch(e) {
+    const ta = document.createElement("textarea");
+    ta.value = txt.trim(); document.body.appendChild(ta);
+    ta.select(); document.execCommand("copy");
+    document.body.removeChild(ta);
+  }
+  showToast("复制本期勾选成功");
+};
+
+periodTabs.forEach(tab=>{
+  tab.addEventListener('click',()=>{
+    periodTabs.forEach(t=>t.classList.remove('active'));
+    tab.classList.add('active');
+    currentPeriod=tab.dataset.period;
+    renderRecommend(DATA[currentPeriod]);
+    renderFullTable();
+  });
+});
+
+btnRefresh.addEventListener('click',()=>{
+  localStorage.setItem("abData",dataInput.value);
+  run();
+  showToast("已更新");
+});
+
+dataInput.addEventListener('input',()=>{
+  localStorage.setItem("abData",dataInput.value);
+  run();
+});
+
+modeDynamic.addEventListener('click',()=>{
+  currentMode="dynamic";
+  modeDynamic.classList.add("active");
+  modeFixed.classList.remove("active");
+  run();
+});
+
+modeFixed.addEventListener('click',()=>{
+  currentMode="fixed";
+  modeFixed.classList.add("active");
+  modeDynamic.classList.remove("active");
+  run();
+});
+
+btnClear.addEventListener('click',()=>{
+  dataInput.value="";
+  localStorage.removeItem("abData");
+  run();
+});
+
+window.addEventListener('load',()=>{
+  dataInput.value=localStorage.getItem("abData")||"";
+  run();
+});
+</script>
+</body>
+</html>
