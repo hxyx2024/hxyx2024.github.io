@@ -484,8 +484,8 @@
         <div class="auth-tip" id="authTip"></div>
 
         <div class="auth-footer" style="margin-top:12px;font-size:12px;color:#888;line-height:1.4;">
-            首次使用或授权已过期，请将【设备串码】发送给管理员获取授权码<br>
-            官方授权通道：<a href="https://t.me/+RjaMJ26EAPw0ZTc1" target="_blank">蚂蚁频道</a>
+            首次使用或授权已过期，请将【设备串码】发送给 @mayiya_bot 获取授权码<br>
+            官方授权：<a href="https://t.me/mayiya_bot" target="_blank">蚂蚁机器人</a>
         </div>
     </div>
 </div>
@@ -503,15 +503,15 @@
                 </div>
                 <div id="group1Content">
                     <div class="input-box">
-                        <textarea id="numInput1" placeholder="G · A 数据粘贴到这里（ 电报 @mayi2036 ）" oninput="autoCalc(1)"></textarea>
+                        <textarea id="numInput1" placeholder="G · A 官方数据粘贴到这里（ 电报 @mayi2036 ）" oninput="autoCalc(1)"></textarea>
                         <div class="input-info" id="inputInfo1">已输入：0 个</div>
                     </div>
                     <div class="btn-group">
                         <button class="shuffle" onclick="shuffleNum(1)">🔀 shuffle</button>
-                        <button class="uniq" onclick="uniqueNum(1)">Del Dup</button>
-                        <button class="sort" onclick="sortNum(1)">Sort</button>
+                        <button class="uniq" onclick="uniqueNum(1)">🧹Del Dup</button>
+                        <button class="sort" onclick="sortNum(1)">📶Sort</button>
                         <button class="copy-input" onclick="copyInput(1)">📋 Copy</button>
-                        <button class="clear" onclick="clearAll(1)">Clear</button>
+                        <button class="clear" onclick="clearAll(1)">🗑️Clear</button>
                     </div>
                     <div class="result-section" id="baseResult1"></div>
                     <div class="result-section" id="groupResult1"></div>
@@ -528,15 +528,15 @@
                 </div>
                 <div id="group2Content">
                     <div class="input-box">
-                        <textarea id="numInput2" placeholder="G · B 数据粘贴到这里（ 电报 @mayi2036 ）" oninput="autoCalc(2)"></textarea>
+                        <textarea id="numInput2" placeholder="G · B 官方数据粘贴到这里（ 电报 @mayi2036 ）" oninput="autoCalc(2)"></textarea>
                         <div class="input-info" id="inputInfo2">已输入：0 个</div>
                     </div>
                     <div class="btn-group">
                         <button class="shuffle" onclick="shuffleNum(2)">🔀 shuffle</button>
-                        <button class="uniq" onclick="uniqueNum(2)">Del Dup</button>
-                        <button class="sort" onclick="sortNum(2)">Sort</button>
+                        <button class="uniq" onclick="uniqueNum(2)">🧹Del Dup</button>
+                        <button class="sort" onclick="sortNum(2)">📶Sort</button>
                         <button class="copy-input" onclick="copyInput(2)">📋 Copy</button>
-                        <button class="clear" onclick="clearAll(2)">Clear</button>
+                        <button class="clear" onclick="clearAll(2)">🗑Clear</button>
                     </div>
                     <div class="result-section" id="baseResult2"></div>
                     <div class="result-section" id="groupResult2"></div>
@@ -749,7 +749,7 @@ function checkAuth() {
         tip.textContent = "✅ 验证成功！";
         setTimeout(()=>document.getElementById("authModal").style.display="none",800);
     } else {
-        tip.textContent = "❌ 授权码无效或已过期";
+        tip.textContent = "❌ 授权码无效或已过期 联系 @mayiya_bot";
     }
 }
 const ZODIAC_LIST = ['马','蛇','龙','兔','虎','牛','鼠','猪','狗','鸡','猴','羊'];
@@ -941,7 +941,7 @@ function renderZodiac(num, zodiacCount) {
     const sorted=Object.entries(zodiacCount).sort((a,b)=>b[1]-a[1]);
     if(!sorted.length)return;
     const max=sorted[0][1],min=sorted.at(-1)[1];
-    let html=`<div class="result-title">𓃗 生肖出现次数</div>`;
+    let html=`<div class="result-title">𓃗 冷热门生肖</div>`;
     sorted.forEach(([z,count])=>{html+=`<div class="zodiac-item" onclick="zodiacUI.showGroupZodiacNum(${num},'${z}')">${z} ${count}</div>`;});
     html+=`<div class="zodiac-show-num" id="zodiacShowNum${num}" style="display:none;"></div>`;
     document.getElementById(`zodiacResult${num}`).innerHTML=html;
@@ -1063,7 +1063,7 @@ function compareAll(){
     });
     const final=utils.uniqueSort(results.flat());
     const totalStat=getTotalZodiacStat();
-    let totalHtml=`<div class="total-zodiac-title">📊 生肖出现总次数</div><div class="total-zodiac-list">`;
+    let totalHtml=`<div class="total-zodiac-title">📊 A ‧ B冷热门</div><div class="total-zodiac-list">`;
     totalStat.forEach(([z,n])=>{totalHtml+=`<span class="zodiac-item" onclick="zodiacUI.showTotalZodiacNum('${z}')">${z} ${n}</span>`;});
     totalHtml+=`</div><div class="zodiac-show-num" id="totalZodiacShowNum" style="display:none;margin-top:6px;"></div>`;
     let resHtml='';texts.forEach((text,i)=>{resHtml+=`<div class="group-item compare-row">【${text} · ${results[i].length}】：${utils.formatNumbers(results[i])}</div>`;});
