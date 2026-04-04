@@ -349,6 +349,7 @@
             position: fixed; top:0; left:0; width:100%; height:100%;
             background: rgba(0,0,0,.95); z-index:9999;
             display: flex; align-items:center; justify-content:center;
+            display: none; /* 修复：默认隐藏，杜绝闪烁 */
         }
         .auth-box {
             background: #1a1a1a;
@@ -483,9 +484,9 @@
         <button class="auth-btn" onclick="checkAuth()">确认验证</button>
         <div class="auth-tip" id="authTip"></div>
 
-        <div class="auth-footer" style="margin-top:12px;font-size:12px;color:#888;line-height:1.4;">
+        <div class="auth-footer" style="margin-top:12px;font-size:12px;color:888;line-height:1.4;">
             首次使用或授权已过期，请将【设备串码】发送给 @mayiya_bot 获取授权码<br>
-            官方授权：<a href="https://t.me/mayiya_bot" target="_blank">蚂蚁机器人</a>
+            官方授权：<a href="https://t.me/mayiya_bot" target="_blank">机器人</a>
         </div>
     </div>
 </div>
@@ -1427,7 +1428,7 @@ function aiBuild(ds){
   });
   for(let k in score){
     score[k] += miss[k] * 0.5;
-    if(seq.slice(-3).filter(x=>x===k).length >= 3) score[k] *= 0.9;
+    if(seq.slice(-3).filter(x=>x===k).length >= 5) score[k] *= 0.95;
   }
   const list=Object.entries(score).sort((a,b)=>b[1]-a[1]);
   const total=list.reduce((s,v)=>s+v[1],0);
@@ -1471,7 +1472,7 @@ function aiRun(){
     return;
   }
   aiRenderHotNumbers(raw);
-  const d20=raw.slice(-20);
+  const d20=raw.slice(-30);
   aiDATA={all:aiBuild(raw),20:aiBuild(d20)};
   aiRenderRecommend(aiDATA[20]);
 }
@@ -1496,8 +1497,9 @@ window.onload=function(){
     const code=getDeviceCode();
     document.getElementById("deviceCode").textContent=code;
     
-    if(checkAuthStatus()){
-      document.getElementById("authModal").style.display = "none";
+    // 修复：只有未授权才显示弹窗
+    if(!checkAuthStatus()){
+      document.getElementById("authModal").style.display = "flex";
     }
 
     storage.loadInput();
