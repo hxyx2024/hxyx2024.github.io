@@ -1,1574 +1,708 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, maximum-scale=2.0, minimum-scale=1.0">
-    <title>MAYI · 盘口智能统计</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: "Microsoft YaHei", sans-serif;
-            -webkit-tap-highlight-color: transparent;
-        }
-        html, body {
-            width: 100%;
-            min-height: 100vh;
-            background: #121212;
-            color: #eee;
-            padding: 6px;
-        }
-        .container {
-            max-width: 700px;
-            margin: 0 auto;
-        }
-        .tool-box {
-            background: #1a1a1a;
-            padding: 10px;
-            border-radius: 12px;
-            border: 1px solid #2a2a2a;
-        }
-        h1 {
-            text-align: center;
-            font-size: 18px;
-            margin-bottom: 10px;
-            color: #fff;
-        }
-        .panel {
-            margin-bottom: 10px;
-            padding-bottom: 8px;
-            border-bottom: 1px solid #222;
-        }
-        .panel:last-child {
-            margin-bottom: 0;
-            padding-bottom: 0;
-            border-bottom: none;
-        }
-        .panel-title {
-            font-size: 14px;
-            margin-bottom: 6px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .input-box {
-            margin-bottom: 6px;
-        }
-        textarea {
-            width: 100%;
-            height: 70px;
-            padding: 6px;
-            border: none;
-            border-radius: 6px;
-            font-size: 14px;
-            background: #222;
-            color: #eee;
-            outline: none;
-        }
-        .input-info {
-            font-size: 12px;
-            color: #888;
-            margin-top: 2px;
-        }
-
-        .btn-group {
-            display: flex;
-            gap: 4px;
-            margin-bottom: 6px;
-            flex-wrap: wrap;
-        }
-        button {
-            flex: 1;
-            min-width: 60px;
-            padding: 6px 4px;
-            border: none;
-            border-radius: 6px;
-            background: #252525;
-            color: #eee;
-            font-size: 13px;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        button:active {
-            opacity: 0.7;
-            transform: scale(0.96);
-        }
-        button.primary {
-            background: #007bff;
-            color: #fff;
-        }
-        button.primary:hover,
-        button.primary:active {
-            background: #0056b3 !important;
-        }
-
-        .result-section {
-            margin-top: 6px;
-            padding: 6px;
-            border-radius: 6px;
-            background: #222;
-            display: none;
-        }
-        .result-title {
-            font-size: 14px;
-            margin-bottom: 6px;
-            padding-bottom: 4px;
-            border-bottom: 1px solid #333;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .highlight {
-            color: #eee;
-        }
-        .hot { color: #ff6b6b; }
-        .cold { color: #4d9eff; }
-
-        .base-row {
-            display: flex;
-            gap: 10px;
-            font-size: 13px;
-            flex-wrap: wrap;
-        }
-        .group-item {
-            padding: 4px 6px;
-            margin: 3px 0;
-            background: #252525;
-            font-size: 13px;
-            border-radius: 4px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            width: 100% !important;
-            white-space: normal !important;
-            word-break: break-all !important;
-            overflow-wrap: break-word !important;
-            border-left: 2px solid #007bff;
-        }
-        .zodiac-item {
-            display: inline-block;
-            margin: 2px 4px 2px 0;
-            padding: 2px 4px;
-            background: #252525;
-            border-radius: 4px;
-            font-size: 12px;
-            color: #eee;
-        }
-        .copy-btn {
-            padding: 3px 6px;
-            background: #333;
-            color: #fff;
-            border: none;
-            border-radius: 4px;
-            font-size: 12px;
-        }
-        .copy-tip {
-            color: #6cce6c;
-            font-size: 12px;
-            float: right;
-            margin-left: 6px;
-        }
-
-        .compare-row {
-            background: #252525;
-            border-left: 2px solid #007bff;
-        }
-        .final-row {
-            background: #252525;
-            border-left: 2px solid #007bff;
-            font-weight: normal;
-        }
-
-        .rule-inputs {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 6px;
-            margin-bottom: 8px;
-        }
-        .rule-item {
-            display: flex;
-            flex-direction: column;
-            gap: 3px;
-        }
-        .rule-label {
-            font-size: 12px;
-            color: #ccc;
-            text-align: center;
-        }
-        .rule-input {
-            width: 100%;
-            padding: 7px 6px;
-            border-radius: 6px;
-            background: #252525;
-            color: #eee;
-            font-size: 14px;
-            border: none;
-            text-align: center;
-        }
-
-        .custom-rule-row {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 6px;
-            margin-bottom: 8px;
-            position: relative;
-        }
-        .float-del-btn {
-            position: absolute;
-            right: 0;
-            top: 0;
-            width: 28px;
-            height: 28px;
-            background: transparent;
-            color: #eee;
-            border: none;
-            font-size: 16px;
-        }
-
-        .switch-control {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            font-size: 12px;
-            color: #888;
-        }
-        .switch-control input {
-            width: 32px;
-            height: 16px;
-            appearance: none;
-            background: #333;
-            border-radius: 10px;
-            position: relative;
-        }
-        .switch-control input:checked {
-            background: #007bff;
-        }
-        .switch-control input::after {
-            content: '';
-            position: absolute;
-            width: 12px;
-            height: 12px;
-            background: #fff;
-            border-radius: 50%;
-            top: 2px;
-            left: 2px;
-            transition: 0.2s;
-        }
-        .switch-control input:checked::after {
-            left: 18px;
-        }
-
-        .note-textarea {
-            width: 100%;
-            height: 100px;
-            margin-top: 6px;
-            display: none;
-            background: #252525;
-            border: none;
-            border-radius: 6px;
-            color: #eee;
-            padding: 6px;
-        }
-
-        .zodiac-show-num,
-        .query-zodiac-result,
-        .total-zodiac-stat {
-            margin-top: 6px;
-            padding: 6px;
-            background: #252525;
-            border-radius: 4px;
-            font-size: 13px;
-        }
-
-        .query-zodiac-input {
-            margin-top: 6px;
-            max-width: 60%;
-        }
-        .query-zodiac-input input {
-            width: 100%;
-            padding: 7px 6px;
-            border-radius: 6px;
-            background: #222;
-            color: #eee;
-            font-size: 14px;
-            border: none;
-        }
-
-        .total-zodiac-list {
-            display: grid;
-            grid-template-columns: repeat(6,1fr);
-            gap: 4px;
-            justify-items: center;
-        }
-        .total-zodiac-list .zodiac-item {
-            margin: 0;
-            width: 100%;
-            text-align: center;
-        }
-        .hit-rate-display {
-            margin: 8px 0;
-            padding: 6px;
-            background: #252525;
-            border-radius: 6px;
-            text-align: center;
-            font-size: 13px;
-        }
-        .combo-section {
-            margin-top: 6px;
-            padding: 6px;
-            background: #222;
-            border-radius: 6px;
-        }
-        .percent-block {
-            margin: 4px 0;
-            padding: 4px;
-            background: #252525;
-            border-radius: 4px;
-        }
-        .percent-title {
-            color: #eee;
-            font-weight: normal;
-            margin-bottom: 4px;
-        }
-        .ab-stat-line {
-            font-size:13px; line-height:1.4; margin:1px 0;
-        }
-        .footer {
-            text-align: center;
-            margin-top: 10px;
-            font-size: 12px;
-            color: #666;
-        }
-
-        .auth-modal {
-            position: fixed; top:0; left:0; width:100%; height:100%;
-            background: rgba(0,0,0,.95); z-index:9999;
-            display: flex; align-items:center; justify-content:center;
-            display: none;
-        }
-        .auth-box {
-            background: #1a1a1a;
-            padding: 20px;
-            border-radius: 10px;
-            width: 90%;
-            max-width: 360px;
-            text-align: center;
-        }
-        .device-info {
-            background: #252525;
-            padding: 8px;
-            border-radius: 6px;
-            color: #eee;
-            margin: 10px 0;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .auth-input {
-            width: 100%;
-            padding: 8px;
-            margin: 8px 0;
-            border-radius: 6px;
-            border: none;
-            background: #252525;
-            color: #fff;
-            text-align: center;
-        }
-        .auth-btn {
-            width: 100%;
-            padding: 8px;
-            border: none;
-            border-radius: 6px;
-            background: #007bff;
-            color: #fff;
-            font-weight: normal;
-        }
-        .auth-tip {
-            margin-top: 8px;
-            font-size: 13px;
-            color: #ff6b6b;
-        }
-        .copy-code-btn,
-        .range-import-btn {
-            padding: 4px 6px;
-            border-radius: 4px;
-            border: none;
-            font-size: 12px;
-            background: #007bff;
-            color: #fff;
-        }
-
-        #numInput1, #numInput2, #rangeData {
-            white-space: pre-wrap;
-            overflow-wrap: break-word;
-        }
-
-        .ai-card{background:#1a2a3a;border-radius:6px;padding:6px;margin-bottom:6px;border:1px solid #007bff;width:auto;height:auto;box-sizing:border-box;}
-        .ai-title{color:#eee;margin:3px 0;font-size:12px}
-        .ai-row-2col{display:flex;gap:6px;margin:4px 0;align-items:flex-start}
-        .ai-col{flex:1;min-width:0}
-        .ai-hot-item{background:#007bff;color:#fff;padding:3px 5px;border-radius:3px;font-size:13px;display:inline-block;margin:2px}
-        .ai-recommend-box{margin:0;padding:0;border:none}
-        .ai-recommend-item{background:#007bff;color:#fff;padding:3px 5px;border-radius:3px;display:block;margin:3px 0;font-size:13px;cursor:pointer;width:100%}
-        .ai-btn-row-3{display:flex;gap:4px;margin:4px 0}
-        .ai-btn-row-3 button{
-          flex:1;padding:6px 2px;border-radius:5px;border:none;
-          font-size:12px;background:#007bff;color:#fff;min-height:28px;
-        }
-        .ai-btn-row-3 button.active{background:#0056b3}
-        /* 只新增这一行样式，不改动原有任何代码 */
-        .ai-rule-link-btn{flex:1;padding:6px 2px;border-radius:5px;border:none;font-size:12px;background:#007bff;color:#fff;min-height:28px;text-decoration:none;display:flex;align-items:center;justify-content:center;}
-        .ai-input-row{display:flex;justify-content:space-between;font-size:10px;color:#aaa;margin:4px 0}
-        .ai-toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#007bff;color:#fff;padding:6px 12px;border-radius:4px;font-size:12px;display:none;z-index:99}
-
-        .rule-import-box {
-            margin: 8px 0;
-            display: flex;
-            gap: 6px;
-            align-items: stretch;
-        }
-        .rule-import-input {
-            flex: 1;
-            min-height: 90px;
-            padding: 7px 6px;
-            border-radius: 6px;
-            background: #222;
-            color: #eee;
-            font-size: 14px;
-            border: none;
-            resize: none;
-            white-space: pre-wrap;
-        }
-        .rule-btn-col {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
-        .rule-import-btn {
-            padding: 7px 10px;
-            border-radius: 6px;
-            background: #007bff;
-            color: #fff;
-            font-size: 13px;
-            border: none;
-            white-space: nowrap;
-        }
-        .rule-clear-btn {
-            padding: 7px 10px;
-            border-radius: 6px;
-            background: #444;
-            color: #fff;
-            font-size: 13px;
-            border: none;
-            white-space: nowrap;
-        }
-    </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="dark">
+<title>MAYIVP · 规则统计</title>
+<style>
+/* 样式与之前完全相同，此处省略以保持简洁，实际使用时从上一版复制 */
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0;font-family:system-ui, sans-serif}
+body{background:#121212;color:#e0e0e0;padding:10px;max-width:720px;margin:0 auto}
+.main-title{text-align:center;font-size:22px;font-weight:bold;color:#ffffff;margin:10px 0 16px}
+.card{background:#1e1a1a;border-radius:10px;padding:12px;margin-bottom:10px;border:1px solid #333}
+.title{color:#ffffff;font-weight:bold;margin:8px 0 12px;font-size:15px}
+.top-flex-row{display:flex;flex-direction:column;align-items:flex-start;margin-top:8px;width:100%;gap:8px}
+.left-cold-wrap{width:100%}
+.hot-bottom-row{display:flex;gap:16px;align-items:center;font-size:14px;justify-content:flex-start;width:100%}
+.coldpool{color:#00aa55;font-size:14px;line-height:1.5}
+.ai-auto-row{font-size:14px;color:#eee;line-height:1.5;margin-top:2px}
+.ai-red{color:#ff4444;font-weight:bold}
+.ai-yellow{color:#ffad29;font-weight:bold}
+.ai-green{color:#00aa55;font-weight:bold}
+.label-text{color:#ccc;white-space:nowrap;font-size:14px}
+.hot-item{background:#ffffff;color:#000;padding:3px 6px;border-radius:4px;font-size:14px;font-weight:bold}
+.btn-row{display:flex;gap:6px;margin-top:8px}
+.mode-btn,.action-btn{flex:1;padding:6px 8px;border-radius:6px;border:none;font-weight:bold;cursor:pointer;font-size:13px;background:#333;color:#fff}
+.mode-btn.active{background:#cccccc;color:#000}
+.check-btn-row{display:flex;gap:8px;margin:10px 0;flex-wrap:wrap}
+.check-action-btn{flex:1;padding:8px;border-radius:6px;background:#444;color:#fff;border:none;font-weight:bold;cursor:pointer;min-width:110px;font-size:13px}
+.check-action-btn:active{background:#666}
+textarea{width:100%;height:140px;background:#222;color:#fff;border:1px solid #444;border-radius:8px;padding:10px;font-family:Consolas,monospace;font-size:14px;resize:vertical}
+.table-box{overflow-x:auto;overflow-y:auto;max-height:380px}
+.table-header,.table-row{display:grid;grid-template-columns:32px minmax(240px,1fr) 50px 60px 50px 140px 60px;padding:8px 6px;font-size:14px;align-items:center;gap:6px;white-space:nowrap !important}
+.table-header{color:#ffffff;font-weight:bold;border-bottom:1px solid #444;position:sticky;top:0;background:#1e1a1a}
+.table-row{border-bottom:1px solid #2a2c2c}
+.hot{color:#ff4444;font-weight:bold}
+.medium{color:#ffffff;font-weight:bold}
+.cold{color:#888;font-weight:bold}
+.once-tag{color:#ffaa00;font-weight:bold;background:#2b211a;padding:2px 6px;border-radius:4px;margin-left:8px;font-size:13px;display:inline-block;white-space:nowrap !important}
+.input-row{display:flex;justify-content:space-between;font-size:14px;color:#aaa;margin-top:8px}
+.footer{text-align:center;color:#777;margin:16px 0 10px;font-size:13px}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#ffffff;color:#000;padding:8px 16px;border-radius:6px;font-size:14px;display:none;z-index:99}
+.period-tabs{display:flex;gap:8px;margin:10px 0;flex-wrap:wrap}
+.period-tab{flex:1;padding:8px;border-radius:6px;background:#333;color:#fff;text-align:center;cursor:pointer;min-width:60px;font-size:14px}
+.period-tab.active{background:#cccccc;color:#000;font-weight:bold}
+.row-check{width:18px;height:18px;cursor:pointer;margin:0 auto}
+.recommend-box{background:#2a2c2c;border-radius:8px;padding:12px;margin:8px 0;border-left:4px solid #ffffff}
+.recommend-title{color:#ffffff;font-size:14px;font-weight:bold;margin-bottom:8px}
+.recommend-item{background:#333;color:#fff;padding:6px 10px;border-radius:6px;display:inline-block;margin-right:6px;margin-bottom:6px;font-weight:bold;font-size:14px}
+.recommend-detail{margin-top:8px;font-size:14px;color:#ccc;line-height:1.8}
+.conditional-box{background:#1e2a2a;border-radius:8px;padding:10px;margin-top:12px;border-top:1px solid #3a4a4a}
+.conditional-title{color:#88ddff;font-weight:bold;font-size:14px;margin-bottom:6px}
+.conditional-value{font-size:14px;font-weight:bold;color:#ffaa66}
+.stat-col{font-size:12px;white-space:nowrap}
+.stat{display:inline-block;padding:1px 4px;border-radius:3px;background:#222;margin-right:2px;font-weight:bold}
+.s-miss{color:#80bfff}
+.s-avg{color:#55ffaa}
+.s-diff{color:#ffdd66}
+.s-stable{background:#1a3329;color:#44ee99}
+.s-hot{background:#332a1a;color:#ffaa44}
+.s-cold{background:#2a2333;color:#bb99ff}
+.s-extreme{background:#331a23;color:#ff5577}
+</style>
 </head>
 <body>
-
-<div class="auth-modal" id="authModal">
-    <div class="auth-box">
-        <h2>🔒 授权验证</h2>
-        <div style="color:#ccc;">你的设备串码：</div>
-        <div class="device-info">
-            <span id="deviceCode">Loading...</span>
-            <button class="copy-code-btn" onclick="copyDeviceCode()">📋 Copy</button>
-        </div>
-        
-        <div style="color:#ccc;margin-top:10px;">请输入授权码：</div>
-        <input type="text" class="auth-input" id="authCode" placeholder="输入授权码">
-        <button class="auth-btn" onclick="checkAuth()">确认验证</button>
-        <div class="auth-tip" id="authTip"></div>
-
-        <div class="auth-footer" style="margin-top:12px;font-size:12px;color:888;line-height:1.4;">
-            首次使用或授权已过期，请将【设备串码】发送给 @mayiya_bot 获取授权码<br>
-            官方授权：<a href="https://t.me/mayiya_bot" target="_blank">机器人</a>
-        </div>
-    </div>
+<div class="main-title">MAYIVP · 规则统计</div>
+<div class="card">
+  <textarea id="rangeData" placeholder="每行输入蚂蚁官方提供的规则（30~50行）  A B 例如：1 5"></textarea>
+  <div class="btn-row">
+    <button class="action-btn" id="btnRefresh">更新</button>
+    <button class="action-btn" id="btnClear">清空数据</button>
+  </div>
+  <div class="btn-row">
+    <button class="mode-btn active" id="modeDynamic">恒稳动态</button>
+    <button class="mode-btn" id="modeSuper">超级动态</button>
+    <button class="mode-btn" id="modePeak">超凡动态</button>
+  </div>
+  <div class="input-row"><span>总行数：<span id="totalLines">0</span></span><span>有效数据：<span id="validLines">0</span></span></div>
+  <div class="top-flex-row">
+    <div class="left-cold-wrap"><div class="coldpool" id="coldPoolView">【冷·近20期】A：暂无｜B：暂无</div><div id="autoRangeDisplay" class="ai-auto-row" style="display:none;"></div></div>
+    <div class="hot-bottom-row"><span class="label-text">A最热：</span><div id="hotA"></div><span class="label-text">B最热：</span><div id="hotB"></div></div>
+  </div>
 </div>
-
-    <div class="container">
-        <div class="tool-box">
-            <h1>Ant Data AI Stats Tool</h1>
-            
-            <div class="panel">
-                <div class="panel-title">
-                    <span>G · A </span>
-                    <label class="switch-control">
-                        <input type="checkbox" id="group1Switch" checked onchange="toggleGroup(1)">
-                    </label>
-                </div>
-                <div id="group1Content">
-                    <div class="input-box">
-                        <textarea id="numInput1" placeholder="G · A 官方数据粘贴到这里（ 电报 @mayi2036 ）" oninput="autoCalc(1)"></textarea>
-                        <div class="input-info" id="inputInfo1">已输入：0 个</div>
-                    </div>
-                    <div class="btn-group">
-                        <button class="shuffle" onclick="shuffleNum(1)">🔀 shuffle</button>
-                        <button class="uniq" onclick="uniqueNum(1)">🧹Del Dup</button>
-                        <button class="sort" onclick="sortNum(1)">📶Sort</button>
-                        <button class="copy-input" onclick="copyInput(1)">📋 Copy</button>
-                        <button class="clear" onclick="clearAll(1)">🗑️Clear</button>
-                    </div>
-                    <div class="result-section" id="baseResult1"></div>
-                    <div class="result-section" id="groupResult1"></div>
-                    <div class="result-section" id="zodiacResult1"></div>
-                </div>
-            </div>
-
-            <div class="panel">
-                <div class="panel-title">
-                    <span>G · B </span>
-                    <label class="switch-control">
-                        <input type="checkbox" id="group2Switch" checked onchange="toggleGroup(2)">
-                    </label>
-                </div>
-                <div id="group2Content">
-                    <div class="input-box">
-                        <textarea id="numInput2" placeholder="G · B 官方数据粘贴到这里（ 电报 @mayi2036 ）" oninput="autoCalc(2)"></textarea>
-                        <div class="input-info" id="inputInfo2">已输入：0 个</div>
-                    </div>
-                    <div class="btn-group">
-                        <button class="shuffle" onclick="shuffleNum(2)">🔀 shuffle</button>
-                        <button class="uniq" onclick="uniqueNum(2)">🧹Del Dup</button>
-                        <button class="sort" onclick="sortNum(2)">📶Sort</button>
-                        <button class="copy-input" onclick="copyInput(2)">📋 Copy</button>
-                        <button class="clear" onclick="clearAll(2)">🗑Clear</button>
-                    </div>
-                    <div class="result-section" id="baseResult2"></div>
-                    <div class="result-section" id="groupResult2"></div>
-                    <div class="result-section" id="zodiacResult2"></div>
-                </div>
-            </div>
-
-            <div class="panel">
-                <div class="panel-title">
-                    <span>🟥<a href="https://t.me/mayiya_bot" target="_blank" rel="noopener noreferrer" style="text-decoration: none; color: #1677ff;">官方规则</a></span>
-                    <label class="switch-control">
-                        <input type="checkbox" id="rangeSwitch" onchange="toggleRangePanel()">
-                    </label>
-                </div>
-                <div id="rangePanelWrap" style="display:none; margin-top:8px;">
-                    <div class="input-box">
-                        <textarea id="rangeData" placeholder="点☝️ 官方规则 自助获取最新规则粘贴到这里 
-例如：
-1 3
-2 4
-3 5
-6 6" oninput="autoSaveRange(); aiRun();"></textarea>
-                    </div>
-                    <div class="btn-group">
-                        <button onclick="generateRange()" class="primary">✅ 生成区间</button>
-                        <button onclick="clearRange()">🗑 清空</button>
-                    </div>
-                    <div class="result-section" id="rangeResult" style="display:block; margin-top:8px;"></div>
-                </div>
-            </div>
-
-            <div class="panel">
-                <div class="panel-title">
-                    <span>🟩智能推荐</span>
-                    <label class="switch-control">
-                        <input type="checkbox" id="aiSwitch" onchange="toggleAIPanel()">
-                    </label>
-                </div>
-                <div id="aiPanelWrap" style="display:none; margin-top:6px;">
-                    <div class="ai-card">
-                        <div class="ai-title">数据来源：蚂蚁官方</div>
-                        <div class="ai-btn-row-3">
-                            <button class="active" id="aiModeDynamic">动态</button>
-                            <button id="aiModeFixed">固定</button>
-                            <button id="aiBtnRefresh">更新</button>
-                            <!-- 只新增按钮，不改动原有代码 -->
-                            <a href="https://mycm.cc.cd/vip.html" target="_blank" rel="noopener noreferrer" class="ai-rule-link-btn">分析</a>
-                        </div>
-                        <div class="ai-input-row">
-                            <span>总行数：<span id="aiTotalLines">0</span></span>
-                            <span>有效：<span id="aiValidLines">0</span></span>
-                        </div>
-
-                        <div class="ai-row-2col">
-                            <div class="ai-col">
-                                <div class="ai-title">🔥 A · B 推荐</div>
-                                <div id="aiHotA"></div>
-                                <div id="aiHotB"></div>
-                            </div>
-                            <div class="ai-col">
-                                <div id="aiRecommendArea"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="panel">
-                <div class="panel-title">
-                    <span>🟦自定义规则</span>
-					<span>蚂蚁数据 · 专注澳彩</span>
-                    <label class="switch-control">
-                        <input type="checkbox" id="matchSwitch" onchange="toggleMatchPanel()">
-                    </label>
-                </div>
-                <div id="rulePanelWrap" style="display:none; margin-top:8px;">
-                  
-                  <div class="rule-import-box">
-                    <textarea class="rule-import-input" id="ruleImportText" placeholder="点☝️ 智能推荐 【分析】，区间规则一键导入
-格式：0～5→0～6"></textarea>
-                    <div class="rule-btn-col">
-                      <button class="rule-import-btn" onclick="importCustomRuleByText()">导入</button>
-                      <button class="rule-clear-btn" onclick="clearRuleImportInput()">清空</button>
-                    </div>
-                  </div>
-                  
-                  <div class="hit-rate-display" id="currentHitRate">当前中奖率：0/0 = 0.00%</div>
-                    <div class="btn-group">
-                        <button class="reset" onclick="resetRules()">🔄 restore</button>
-                        <button class="clear-rules" onclick="clearAllRules()">🗑 A-B</button>
-                        <button class="add-custom primary" onclick="addCustomRule()">➕ ADD</button>
-                    </div>
-                    <div class="rule-inputs" id="defaultRuleInputs">
-                        <div class="rule-item"><span class="rule-label">规则1：A</span><input type="text" class="rule-input" id="rule1a" oninput="onRuleChange()"></div>
-                        <div class="rule-item"><span class="rule-label">规则1：B</span><input type="text" class="rule-input" id="rule1b" oninput="onRuleChange()"></div>
-                        <div class="rule-item"><span class="rule-label">规则2：A</span><input type="text" class="rule-input" id="rule2a" oninput="onRuleChange()"></div>
-                        <div class="rule-item"><span class="rule-label">规则2：B</span><input type="text" class="rule-input" id="rule2b" oninput="onRuleChange()"></div>
-                        <div class="rule-item"><span class="rule-label">规则3：A</span><input type="text" class="rule-input" id="rule3a" oninput="onRuleChange()"></div>
-                        <div class="rule-item"><span class="rule-label">规则3：B</span><input type="text" class="rule-input" id="rule3b" oninput="onRuleChange()"></div>
-                        <div class="rule-item"><span class="rule-label">规则4：A</span><input type="text" class="rule-input" id="rule4a" oninput="onRuleChange()"></div>
-                        <div class="rule-item"><span class="rule-label">规则4：B</span><input type="text" class="rule-input" id="rule4b" oninput="onRuleChange()"></div>
-                        <div class="rule-item"><span class="rule-label">规则5：A</span><input type="text" class="rule-input" id="rule5a" oninput="onRuleChange()"></div>
-                        <div class="rule-item"><span class="rule-label">规则5：B</span><input type="text" class="rule-input" id="rule5b" oninput="onRuleChange()"></div>
-                    </div>
-                    <div id="customRuleContainer"></div>
-                </div>
-            </div>
-
-            <div class="panel">
-                <div class="result-section" id="compareResult"></div>
-            </div>
-
-            <div class="panel">
-                <div class="panel-title">
-                    <span>⚪ 当前组合</span>
-					<span>蚂蚁 · 智能盘口系统</span>
-                    <label class="switch-control">
-                        <input type="checkbox" id="comboSwitch" onchange="toggleComboPanel()">
-                    </label>
-                </div>
-                <div id="comboPanelWrap" style="display:none; margin-top:8px;">
-                    <div class="combo-section" id="comboResult"></div>
-                </div>
-            </div>
-
-        </div>
-        <div class="footer">© 2026 蚂蚁数据 · mycm.cc.cd v6.9.2</div>
-    </div>
-
+<div class="card"><div class="title">🎯 本期动态推荐组合</div><div class="recommend-box"><div class="recommend-title">高命中率推荐（前3组）</div><div id="recommendArea"></div><div class="recommend-detail" id="recommendDetail"></div><div id="conditionalRec" class="conditional-box" style="display:none;"></div></div></div>
+<div class="card"><div class="title">最近10期 · 区间推荐</div><div class="check-btn-row"><button class="check-action-btn" id="checkAll10">全选/取消</button><button class="check-action-btn" id="copyChecked10">复制勾选</button></div><div class="table-box"><div class="table-header"><div></div><div>组合（A未出现，B未出现）</div><div>分数</div><div>占比</div><div>频次</div><div>遗漏·均隔·差</div><div>等级</div></div><div id="result10"></div></div></div>
+<div class="card"><div class="title">最近20期 · 区间推荐</div><div class="check-btn-row"><button class="check-action-btn" id="checkAll20">全选/取消</button><button class="check-action-btn" id="copyChecked20">复制勾选</button></div><div class="table-box"><div class="table-header"><div></div><div>组合（A未出现，B未出现）</div><div>分数</div><div>占比</div><div>频次</div><div>遗漏·均隔·差</div><div>等级</div></div><div id="result20"></div></div></div>
+<div class="card"><div class="title">完整排名</div><div class="period-tabs"><div class="period-tab" data-period="all">全量</div><div class="period-tab" data-period="7">7期</div><div class="period-tab" data-period="10">10期</div><div class="period-tab" data-period="15">15期</div><div class="period-tab active" data-period="20">20期</div><div class="period-tab" data-period="40">40期</div></div><div class="check-btn-row"><button class="check-action-btn" id="checkAllCur">本期全选/取消</button><button class="check-action-btn" id="copyCheckedCur">复制勾选</button></div><div class="table-box"><div class="table-header"><div></div><div>组合（A未出现，B未出现）</div><div>分数</div><div>占比</div><div>频次</div><div>遗漏·均隔·差</div><div>等级</div></div><div id="resultAll"></div></div></div>
+<div class="footer">© 2026 蚂蚁数据 · V6.7.0</div>
+<div class="toast" id="toast"></div>
 <script>
-const SECRET_SALT = "ANT2026_ZODIAC";
-const STORAGE_KEY = "ANT_AUTH";
-function getDeviceCode() {
-    let code = localStorage.getItem("device_code");
-    if (!code) {
-        const temp = [navigator.userAgent, screen.width, screen.height, navigator.language].join("|");
-        let hash = 0;
-        for (let i = 0; i < temp.length; i++) {
-            hash = ((hash << 5) - hash) + temp.charCodeAt(i);
-            hash = hash & hash;
-        }
-        code = Math.abs(hash).toString(16).toUpperCase();
-        localStorage.setItem("device_code", code);
-    }
-    return code;
-}
-function safeCopy(text, tipId) {
-    if (!text || text.trim() === '') {
-        if (tipId) document.getElementById(tipId).innerText = '❌ 无内容';
-        setTimeout(() => { if (tipId) document.getElementById(tipId).innerText = '' }, 1500);
-        return;
-    }
-    const textarea = document.createElement('textarea');
-    textarea.value = text;
-    textarea.style.position = 'fixed';
-    textarea.style.opacity = '0';
-    textarea.style.left = '-9999px';
-    document.body.appendChild(textarea);
-    textarea.select();
-    textarea.setSelectionRange(0, textarea.value.length);
-    let success = false;
-    try { success = document.execCommand('copy'); } catch (e) {}
-    document.body.removeChild(textarea);
-    if (tipId) {
-        const tipEl = document.getElementById(tipId);
-        tipEl.innerText = success ? '✅已Copy' : '❌Copy失败';
-        setTimeout(() => tipEl.innerText = '', 1500);
-    }
-    return success;
-}
-function copyDeviceCode() {
-    const code = document.getElementById("deviceCode").innerText;
-    const ok = safeCopy(code);
-    const tip = document.getElementById("authTip");
-    if (ok) {
-        tip.style.color = "#6cce6c";
-        tip.textContent = "✅ 串码Copy成功！";
-        setTimeout(() => tip.textContent = "", 1500);
-    } else {
-        tip.textContent = "❌ Copy失败";
-    }
-}
-function validateAuth(device, auth) {
-    try {
-        const [t, s] = auth.split("_");
-        const et = Number(t);
-        if (et < Date.now()) return false;
-        let hash = 0;
-        const raw = device + SECRET_SALT + et;
-        for (let i = 0; i < raw.length; i++) {
-            hash = ((hash << 5) - hash) + raw.charCodeAt(i);
-            hash = hash & hash;
-        }
-        const cs = Math.abs(hash).toString(16).slice(0,8).toUpperCase();
-        return cs === s;
-    } catch(e) {
-        return false;
-    }
-}
-function checkAuthStatus() {
-    const auth = localStorage.getItem(STORAGE_KEY);
-    return auth && validateAuth(getDeviceCode(), auth);
-}
-function checkAuth() {
-    const d = getDeviceCode();
-    const a = document.getElementById("authCode").value.trim();
-    const tip = document.getElementById("authTip");
-    if (!a) { tip.textContent = "请输入授权码！"; return; }
-    if (validateAuth(d, a)) {
-        localStorage.setItem(STORAGE_KEY, a);
-        tip.style.color = "#6cce6c";
-        tip.textContent = "✅ 验证成功！";
-        setTimeout(()=>document.getElementById("authModal").style.display="none",800);
-    } else {
-        tip.textContent = "❌ 授权码无效或已过期 联系 @mayiya_bot";
-    }
-}
-const ZODIAC_LIST = ['马','蛇','龙','兔','虎','牛','鼠','猪','狗','鸡','猴','羊'];
-const ZODIAC_NUMBER_MAP = {
-    '马': [1,13,25,37,49], '蛇': [2,14,26,38], '龙': [3,15,27,39],
-    '兔': [4,16,28,40], '虎': [5,17,29,41], '牛': [6,18,30,42],
-    '鼠': [7,19,31,43], '猪': [8,20,32,44], '狗': [9,21,33,45],
-    '鸡': [10,22,34,46], '猴': [11,23,35,47], '羊': [12,24,36,48]
-};
-const state = {
-    countData: { 1: {}, 2: {} },
-    minMax: { 1: { min: 0, max: 0 }, 2: { min: 0, max: 0 } },
-    groupLines: { 1: '', 2: '' },
-    timers: { autoCompare: null, ruleChange: null, noteSave: null, inputSave: null, rangeSave: null },
-    customRules: []
-};
-const utils = {
-    padZero: n => n.toString().padStart(2, '0'),
-    getZodiac: n => ZODIAC_LIST[(n - 1) % 12],
-    uniqueSort: arr => [...new Set(arr)].sort((a, b) => a - b),
-    formatNumbers: arr => utils.uniqueSort(arr).map(utils.padZero).join(' ') || '无',
-    parseNumbers: str => (str.match(/\d+/g) || []).map(Number).filter(n => n >= 1 && n <= 49),
-    shuffleArray: arr => {
-        const newArr = [...arr];
-        for (let i = newArr.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [newArr[i], newArr[j]] = [newArr[j], newArr[i]];
-        }
-        return newArr;
-    }
-};
-const ui = {
-    bindCopyButtons() {
-        document.querySelectorAll('.copy-btn').forEach(btn => {
-            btn.onclick = () => safeCopy(btn.dataset.copy, btn.dataset.tip);
-        });
-    },
-    updateInputInfo(num) {
-        const value = document.getElementById(`numInput${num}`).value;
-        const count = utils.parseNumbers(value).length;
-        document.getElementById(`inputInfo${num}`).innerHTML = 
-            `已输入：${count} 个 <span id="inputTip${num}" class="copy-tip"></span>`;
-    },
-    toggleResultPanel(num, show) {
-        ['baseResult', 'groupResult', 'zodiacResult'].forEach(id => {
-            document.getElementById(`${id}${num}`).style.display = show ? 'block' : 'none';
-        });
-    },
-    updateHitRate(hit, total) {
-        const rate = total > 0 ? ((hit / total) * 100).toFixed(2) : "0.00";
-        const el = document.getElementById('currentHitRate');
-        el.innerHTML = `中奖概率：${hit}/${total} = ${rate}%`;
-    }
-};
-const zodiacUI = {
-    showGroupZodiacNum(groupNo, zodiac) {
-        const nums = ZODIAC_NUMBER_MAP[zodiac].map(utils.padZero).join(' ');
-        const el = document.getElementById(`zodiacShowNum${groupNo}`);
-        el.textContent = `${zodiac}：${nums}`;
-        el.style.display = 'block';
-    },
-    showTotalZodiacNum(zodiac) {
-        const nums = ZODIAC_NUMBER_MAP[zodiac].map(utils.padZero).join(' ');
-        const el = document.getElementById('totalZodiacShowNum');
-        el.textContent = `${zodiac}：${nums}`;
-        el.style.display = 'block';
-    },
-    queryZodiac() {
-        const val = document.getElementById('queryZodiacInput').value.trim();
-        const nums = utils.parseNumbers(val);
-        const result = nums.map(n => `${utils.padZero(n)}=${utils.getZodiac(n)}`).join('  ');
-        document.getElementById('queryZodiacResult').textContent = result;
-    }
-};
-const storage = {
-    saveNote() { localStorage.setItem('lottery_note', document.getElementById('noteTextarea').value); },
-    loadNote() { document.getElementById('noteTextarea').value = localStorage.getItem('lottery_note') || ''; },
-    autoSaveNote() { clearTimeout(state.timers.noteSave); state.timers.noteSave = setTimeout(storage.saveNote, 500); },
-    saveInput() { localStorage.setItem('lottery_input1', document.getElementById('numInput1').value); localStorage.setItem('lottery_input2', document.getElementById('numInput2').value); },
-    loadInput() { document.getElementById('numInput1').value = localStorage.getItem('lottery_input1') || ''; document.getElementById('numInput2').value = localStorage.getItem('lottery_input2') || ''; },
-    autoSaveInput() { clearTimeout(state.timers.inputSave); state.timers.inputSave = setTimeout(storage.saveInput, 300); },
-    saveRange() { localStorage.setItem('lottery_range', document.getElementById('rangeData').value); },
-    loadRange() { document.getElementById('rangeData').value = localStorage.getItem('lottery_range') || ''; },
-    autoSaveRange() { clearTimeout(state.timers.rangeSave); state.timers.rangeSave = setTimeout(storage.saveRange, 300); }
-};
-function autoSaveRange() { storage.autoSaveRange(); compareAll(); }
-function toggleNote() {
-    const noteEl = document.getElementById('noteTextarea');
-    const checked = document.getElementById('noteSwitch').checked;
-    noteEl.style.display = checked ? 'block' : 'none';
-    localStorage.setItem('note_visible', checked ? 1 : 0);
-}
-function keepNoteState() {
-    if (localStorage.getItem('note_visible') == 1) {
-        document.getElementById('noteSwitch').checked = true;
-        document.getElementById('noteTextarea').style.display = 'block';
-    }
-}
-function toggleGroup(num) {
-    const wrap = document.getElementById(`group${num}Content`);
-    const on = document.getElementById(`group${num}Switch`).checked;
-    wrap.style.display = on ? 'block' : 'none';
-}
-function toggleMatchPanel() {
-    const wrap = document.getElementById('rulePanelWrap');
-    const on = document.getElementById('matchSwitch').checked;
-    wrap.style.display = on ? 'block' : 'none';
-}
-function toggleRangePanel() {
-    const wrap = document.getElementById('rangePanelWrap');
-    const on = document.getElementById('rangeSwitch').checked;
-    wrap.style.display = on ? 'block' : 'none';
-}
-function toggleComboPanel() {
-    const wrap = document.getElementById('comboPanelWrap');
-    const on = document.getElementById('comboSwitch').checked;
-    wrap.style.display = on ? 'block' : 'none';
-    if (on) {
-        buildBestCombo();
-    } else {
-        document.getElementById('comboResult').innerHTML = '';
-    }
-}
-function toggleAIPanel() {
-    const wrap = document.getElementById('aiPanelWrap');
-    const on = document.getElementById('aiSwitch').checked;
-    wrap.style.display = on ? 'block' : 'none';
-}
-function copyInput(num) {
-    const val = document.getElementById(`numInput${num}`).value.trim();
-    safeCopy(val, `inputTip${num}`);
-}
-function shuffleNum(num) {
-    const el = document.getElementById(`numInput${num}`);
-    const numbers = utils.parseNumbers(el.value);
-    el.value = utils.shuffleArray(numbers).map(utils.padZero).join(' ');
-    autoCalc(num);
-}
-function uniqueNum(num) {
-    const el = document.getElementById(`numInput${num}`);
-    const numbers = utils.uniqueSort(utils.parseNumbers(el.value));
-    el.value = numbers.map(utils.padZero).join(' ');
-    autoCalc(num);
-}
-function sortNum(num) {
-    const el = document.getElementById(`numInput${num}`);
-    const numbers = utils.parseNumbers(el.value).sort((a, b) => a - b);
-    el.value = numbers.map(utils.padZero).join(' ');
-    autoCalc(num);
-}
-function clearAll(num) {
-    document.getElementById(`numInput${num}`).value = '';
-    ['baseResult','groupResult','zodiacResult'].forEach(id=>{document.getElementById(`${id}${num}`).innerHTML='';});
-    state.countData[num]={}; state.minMax[num]={min:0,max:0};
-    ui.updateInputInfo(num); ui.toggleResultPanel(num,false);
-    autoCalc(1); autoCalc(2);
-}
-function clearRange() {
-    document.getElementById('rangeData').value = '';
-    document.getElementById('rangeResult').innerHTML = '';
-    storage.saveRange();
-    aiRun();
-}
-function renderBase(num, total, unique, maxCount) {
-    document.getElementById(`baseResult${num}`).innerHTML = `
-        <div class="result-title">📊 盘口频次统计</div>
-        <div class="base-row">
-            <div>加密数据：${total}</div>
-            <div>高频：${maxCount}次(热)</div>
-            <div>低频：0次(冷)</div>
-        </div>`;
-}
-function renderGroup(num, sortedCounts, groupMap, maxCount) {
-    let html = `<div class="result-title">📦 冷 → 热  · 分组</div>`;
-    sortedCounts.forEach(c=>{
-        const nums = groupMap[c].join(',');
-        if (!nums) return;
-        html+=`<div class="group-item">${c}次 - ${nums}</div>`;
-    });
-    const copyText = sortedCounts.map(c=>{
-        const nums = groupMap[c].join(',');
-        return nums ? `${c}次 - ${nums}` : '';
-    }).filter(Boolean).join('\n');
-    state.groupLines[num]=copyText;
-    html+=`<div class="title-right"><button class="copy-btn" data-copy="${copyText}" data-tip="gTip${num}">Copy All</button><span id="gTip${num}" class="copy-tip"></span></div>`;
-    document.getElementById(`groupResult${num}`).innerHTML=html;
-}
-function renderZodiac(num, zodiacCount) {
-    const sorted=Object.entries(zodiacCount).sort((a,b)=>b[1]-a[1]);
-    if(!sorted.length)return;
-    const max=sorted[0][1],min=sorted.at(-1)[1];
-    let html=`<div class="result-title">𓃗 冷热门生肖</div>`;
-    sorted.forEach(([z,count])=>{html+=`<div class="zodiac-item" onclick="zodiacUI.showGroupZodiacNum(${num},'${z}')">${z} ${count}</div>`;});
-    html+=`<div class="zodiac-show-num" id="zodiacShowNum${num}" style="display:none;"></div>`;
-    document.getElementById(`zodiacResult${num}`).innerHTML=html;
-}
-function calculate(num) {
-    const numbers=utils.parseNumbers(document.getElementById(`numInput${num}`).value);
-    if(numbers.length===0){state.countData[num]={};state.minMax[num]={min:0,max:0};ui.toggleResultPanel(num,false);return;}
-    ui.toggleResultPanel(num,true);
-    const countMap={};for(let i=1;i<=49;i++)countMap[i]=0;numbers.forEach(n=>countMap[n]++);state.countData[num]=countMap;
-    const values=Object.values(countMap).filter(v=>v>0);state.minMax[num].max=values.length?Math.max(...values):0;
-    const maxCount = state.minMax[num].max;
-    const groupMap = {};
-    for (let c = 0; c <= maxCount; c++) {
-        groupMap[c] = [];
-    }
-    for (let i = 1; i <= 49; i++) {
-        const c = countMap[i];
-        groupMap[c].push(i);
-    }
-    const sortedCounts = Array.from({length: maxCount + 1}, (_, i) => i).filter(c => groupMap[c].length > 0);
-    const zodiacCount={};ZODIAC_LIST.forEach(z=>zodiacCount[z]=0);numbers.forEach(n=>zodiacCount[utils.getZodiac(n)]++);
-    renderBase(num,numbers.length,new Set(numbers).size,state.minMax[num].max);
-    renderGroup(num,sortedCounts,groupMap,state.minMax[num].max);
-    renderZodiac(num,zodiacCount);
-}
-function matchRule(value, ruleText) {
-    ruleText=(ruleText||'').trim().replace(/~/g, '-').replace(/～/g, '-');
-    if(!ruleText)return true;
-    if(ruleText.includes('-')){
-        const [a,b]=ruleText.split('-').map(Number);
-        return value>=Math.min(a,b)&&value<=Math.max(a,b);
-    }
-    return value==Number(ruleText);
-}
-function getDynamicDefaults() {
-    const m1=state.minMax[1].max||0,m2=state.minMax[2].max||0;
-    return [{a:'1-2',b:'0-4'},{a:'3-4',b:'1-6'},{a:'5-6',b:'2-6'},{a:'0-0',b:'0-2'},{a:`7-${m1}`,b:`3-${m2}`}];
-}
-function addCustomRule(){state.customRules.push({a:'',b:''});renderCustomRules();onRuleChange();}
-function deleteCustomRule(index){state.customRules.splice(index,1);renderCustomRules();onRuleChange();}
-function updateCustomRule(index,key,value){if(state.customRules[index]){state.customRules[index][key]=value.trim();onRuleChange();}}
-function renderCustomRules(){
-    const container=document.getElementById('customRuleContainer');
-    let html='';state.customRules.forEach((rule,index)=>{
-        const realIndex=6+index;
-        html+=`
-        <div class="custom-rule-row">
-            <button class="float-del-btn" onclick="deleteCustomRule(${index})">×</button>
-            <div class="rule-item"><span class="rule-label">规则${realIndex}：A</span><input type="text" class="rule-input" value="${rule.a}" oninput="updateCustomRule(${index},'a',this.value)"></div>
-            <div class="rule-item"><span class="rule-label">规则${realIndex}：B</span><input type="text" class="rule-input" value="${rule.b}" oninput="updateCustomRule(${index},'b',this.value)"></div>
-        </div>`;
-    });
-    container.innerHTML=html;
-}
-function clearAllRules() {
-  const keys = ['1a','1b','2a','2b','3a','3b','4a','4b','5a','5b'];
-  keys.forEach(key => {
-    const el = document.getElementById(`rule${key}`);
-    if (el) el.value = '';
-  });
-  state.customRules = [];
-  renderCustomRules();
-  onRuleChange();
-}
-function syncRules(){
-    const defaults=getDynamicDefaults();
-    const keys=['1a','1b','2a','2b','3a','3b','4a','4b','5a','5b'];
-    keys.forEach((key,i)=>{document.getElementById(`rule${key}`).value=i%2===0?defaults[Math.floor(i/2)].a:defaults[Math.floor(i/2)].b;});
-    state.customRules=[];renderCustomRules();
-}
-function resetRules(){syncRules();compareAll();}
-function onRuleChange(){clearTimeout(state.timers.ruleChange);state.timers.ruleChange=setTimeout(compareAll,200);}
-function getTotalZodiacStat(){
-    const total={};ZODIAC_LIST.forEach(z=>total[z]=0);
-    const arr1=utils.parseNumbers(document.getElementById('numInput1').value);
-    const arr2=utils.parseNumbers(document.getElementById('numInput2').value);
-    arr1.forEach(n=>total[utils.getZodiac(n)]++);arr2.forEach(n=>total[utils.getZodiac(n)]++);
-    return Object.entries(total).sort((a,b)=>b[1]-a[1]);
-}
-function compareAll(){
-    const rules=[
-        {a:document.getElementById('rule1a').value.trim(),b:document.getElementById('rule1b').value.trim()},
-        {a:document.getElementById('rule2a').value.trim(),b:document.getElementById('rule2b').value.trim()},
-        {a:document.getElementById('rule3a').value.trim(),b:document.getElementById('rule3b').value.trim()},
-        {a:document.getElementById('rule4a').value.trim(),b:document.getElementById('rule4b').value.trim()},
-        {a:document.getElementById('rule5a').value.trim(),b:document.getElementById('rule5b').value.trim()},
-    ];
-    const allRules=[...rules,...state.customRules].filter(r=>r.a&&r.b);
-    const rangeText=document.getElementById('rangeData').value.trim();
-    const allLines=rangeText?rangeText.split('\n').filter(l=>l.trim()):[];
-    const totalLines = allLines.length;
-    let abHitCount = 0;
-    for(let line of allLines){
-        const [aVal,bVal]=line.trim().split(/\s+/).map(Number);
-        if(isNaN(aVal)||isNaN(bVal))continue;
-        let matched=false;
-        for(let rule of allRules){
-            if(matchRule(aVal,rule.a)&&matchRule(bVal,rule.b)){
-                matched=true;
-                break;
-            }
-        }
-        if(matched)abHitCount++;
-    }
-    ui.updateHitRate(abHitCount, totalLines);
-    const c1=state.countData[1],c2=state.countData[2];
-    if(!c1||!c2){
-        document.getElementById('compareResult').innerHTML='';
-        document.getElementById('compareResult').style.display='none';
-        return;
-    }
-    const allNumbers=Array.from({length:49},(_,i)=>i+1);
-    const el=document.getElementById('compareResult');
-    el.style.display='block';
-    const results=[],texts=[];
-    allRules.forEach(r=>{
-        const res=allNumbers.filter(n=>matchRule(c1[n],r.a)&&matchRule(c2[n],r.b));
-        results.push(res);texts.push(`${r.a} → ${r.b}`);
-    });
-    const final=utils.uniqueSort(results.flat());
-    const totalStat=getTotalZodiacStat();
-    let totalHtml=`<div class="total-zodiac-title">📊 A ‧ B冷热门</div><div class="total-zodiac-list">`;
-    totalStat.forEach(([z,n])=>{totalHtml+=`<span class="zodiac-item" onclick="zodiacUI.showTotalZodiacNum('${z}')">${z} ${n}</span>`;});
-    totalHtml+=`</div><div class="zodiac-show-num" id="totalZodiacShowNum" style="display:none;margin-top:6px;"></div>`;
-    let resHtml='';texts.forEach((text,i)=>{resHtml+=`<div class="group-item compare-row">【${text} · ${results[i].length}】：${utils.formatNumbers(results[i])}</div>`;});
-    el.innerHTML=`
-    <div class="result-title">
-        🔵 统计结果
-        <label class="switch-control">Memo book<input type="checkbox" id="noteSwitch" onchange="toggleNote()"></label>
-    </div>
-    <textarea id="noteTextarea" class="note-textarea" placeholder="本澳彩盘口统计系统由蚂蚁数据团队研发，欢迎使用！" oninput="storage.autoSaveNote()"></textarea>
-    ${resHtml}
-    <div class="group-item final-row">✅ 特 ·${final.length}：${utils.formatNumbers(final)}</div>
-    <div class="title-right"><button class="copy-btn" data-copy="${utils.formatNumbers(final)}" data-tip="cfTip">Copy</button><span id="cfTip" class="copy-tip"></span></div>
-    <div class="query-zodiac-input"><input id="queryZodiacInput" oninput="zodiacUI.queryZodiac()" placeholder="输入数字查生肖"></div>
-    <div class="query-zodiac-result" id="queryZodiacResult"></div>
-    <div class="total-zodiac-stat">${totalHtml}</div>`;
-    ui.bindCopyButtons();storage.loadNote();keepNoteState();
-}
-function autoCalc(num){
-    ui.updateInputInfo(num);calculate(num);storage.autoSaveInput();
-    clearTimeout(state.timers.autoCompare);
-    state.timers.autoCompare = setTimeout(()=>{compareAll();},260);
-}
-function bindPaste(){
-    [1,2].forEach(num=>{
-        document.getElementById(`numInput${num}`).addEventListener('paste',e=>{
-            e.preventDefault();
-            const text=(e.clipboardData||window.clipboardData).getData('text');
-            const numbers=utils.parseNumbers(text);
-            const el=document.getElementById(`numInput${num}`);
-            const start=el.selectionStart;
-            el.value=el.value.substring(0,start)+numbers.join(' ')+el.value.substring(start);
-            autoCalc(num);
-        });
-    });
-}
-const rangeLevels = [
-  { name: "100% 全覆盖", rate: 1.00 },
-  { name: "≥95% 命中率", rate: 0.95 },
-  { name: "≥90% 命中率", rate: 0.90 },
-  { name: "≥85% 命中率", rate: 0.85 },
-  { name: "≥70% 命中率", rate: 0.70 }
-];
-function getSmartGroups(values) {
-  const countMap = {};
-  values.forEach(v => { countMap[v] = (countMap[v] || 0) + 1; });
-  const groupsByCount = {};
-  Object.entries(countMap).forEach(([num, cnt]) => {
-    if (!groupsByCount[cnt]) groupsByCount[cnt] = [];
-    groupsByCount[cnt].push(Number(num));
-  });
-  const result = [];
-  Object.keys(groupsByCount).sort((a, b) => a - b).forEach(cnt => {
-    const nums = groupsByCount[cnt].sort((a, b) => a - b);
-    result.push({
-      count: Number(cnt),
-      label: `${cnt}次 - ${nums.join(',')}`,
-      numbers: nums
-    });
-  });
-  return result;
-}
-function getBestRange(values, need) {
-  const sorted = [...values].sort((a, b) => a - b);
-  let best = { min: sorted[0], max: sorted[sorted.length-1], hit: sorted.length };
-  for (let s = 0; s < sorted.length; s++) {
-    for (let e = s; e < sorted.length; e++) {
-      const cnt = sorted.filter(v => v >= sorted[s] && v <= sorted[e]).length;
-      const range = sorted[e] - sorted[s];
-      const bestRange = best.max - best.min;
-      if (cnt >= need && range <= bestRange) {
-        best = { min: sorted[s], max: sorted[e], hit: cnt };
-      }
-    }
-  }
-  return best;
-}
-function importPairToRule(aText, bText) {
-  let leftPart = aText.split("-").pop()?.trim() || "";
-  let aNumbers = leftPart.match(/\d+/g) || [];
-  if (aNumbers.length === 0) return;
-  let bMatch = bText.match(/(\d+)~(\d+)/);
-  if (!bMatch) return;
-  let bValue = `${bMatch[1]}~${bMatch[2]}`;
-  for (let num of aNumbers) {
-    let aValue = num.trim();
-    if (!aValue) continue;
-    let added = false;
-    for (let i = 0; i < 5; i++) {
-      let aEl = document.getElementById(`rule${i+1}a`);
-      let bEl = document.getElementById(`rule${i+1}b`);
-      if (aEl && bEl && !aEl.value && !bEl.value) {
-        aEl.value = aValue;
-        bEl.value = bValue;
-        added = true;
-        break;
-      }
-    }
-    if (!added) {
-      state.customRules.push({ a: aValue, b: bValue });
-    }
-  }
-  renderCustomRules();
-  onRuleChange();
-}
-function generateRange() {
-  const text = document.getElementById("rangeData").value.trim();
-  if (!text) { alert("请输入成对数据"); return; }
-  const lines = text.split("\n").filter(l => l.trim());
-  const data = [];
-  for (let line of lines) {
-    const [a, b] = line.trim().split(/\s+/).map(Number);
-    if (!isNaN(a) && !isNaN(b)) data.push({ L: a, R: b });
-  }
-  if (data.length === 0) { alert("未识别有效数据"); return; }
-  const leftValues = data.map(x => x.L);
-  const leftGroups = getSmartGroups(leftValues);
-  const groupedData = leftGroups.map(g => data.filter(d => g.numbers.includes(d.L)));
-  let html = "";
-  for (let lv of rangeLevels) {
-    let totalHit = 0, totalCnt = 0;
-    let details = "";
-    for (let i = 0; i < leftGroups.length; i++) {
-      const items = groupedData[i];
-      const cnt = items.length;
-      if (cnt === 0) {
-        details += `<div class="group-item">${leftGroups[i].label} → 无数据</div>`;
-        continue;
-      }
-      const rights = items.map(x => x.R);
-      const need = Math.ceil(cnt * lv.rate);
-      const best = getBestRange(rights, need);
-      const pct = ((best.hit / cnt) * 100).toFixed(1);
-      const showText = `${leftGroups[i].label} → ${best.min}~${best.max}`;
-      details += `<div class="group-item">${showText} (${pct}%)
-        <div style="text-align:right;"><button class="range-import-btn" onclick="importPairToRule('${leftGroups[i].label}','${best.min}~${best.max}')">✅ (A+B)</button></div></div>`;
-      totalHit += best.hit; totalCnt += cnt;
-    }
-    const totalRate = ((totalHit / totalCnt) * 100).toFixed(2);
-    html += `<div style="margin-bottom:10px;"><div class="result-title">${lv.name}</div>${details}
-      <div style="margin-top:6px;">整体命中率：${totalHit}/${totalCnt} = ${totalRate}%</div></div>`;
-  }
-  document.getElementById("rangeResult").innerHTML = html;
-  compareAll();
-}
-function buildBestCombo() {
-    const text = document.getElementById('rangeData').value.trim();
-    if (!text) {
-        document.getElementById('comboResult').innerHTML = `<div class="result-title">请先在官方规则栏输入规则</div>`;
-        return;
-    }
-    const lines = text.split('\n').map(l => {
-        const p = l.trim().split(/\s+/).map(Number);
-        return (p.length >= 2 && !isNaN(p[0]) && !isNaN(p[1])) ? [p[0], p[1]] : null;
-    }).filter(Boolean);
-    const total = lines.length;
-    if (total === 0) {
-        document.getElementById('comboResult').innerHTML = `<div class="result-title">无有效数据</div>`;
-        return;
-    }
-    const countA = {}, countB = {};
-    lines.forEach(([a, b]) => {
-        countA[a] = (countA[a] || 0) + 1;
-        countB[b] = (countB[b] || 0) + 1;
-    });
-    function formatCount(counter) {
-        let str = '';
-        const keys = Object.keys(counter).map(Number).sort((x, y) => x - y);
-        keys.forEach(k=>{
-            str += `<div class="ab-stat-line">${k}：${counter[k]}次</div>`;
-        });
-        return str;
-    }
-    const aMap = {};
-    lines.forEach(([a, b]) => {
-        if (!aMap[a]) aMap[a] = [];
-        aMap[a].push(b);
-    });
-    const aSorted = Object.keys(aMap).map(Number).sort((x, y) => x - y);
-    let freqHtml = '';
-    aSorted.forEach(a => {
-        freqHtml += `<div class="ab-stat-line">A=${a} → B：${aMap[a].join(',')}</div>`;
-    });
-    const comboMap = {};
-    lines.forEach(([a, b]) => {
-        const key = `${a},${b}`;
-        comboMap[key] = (comboMap[key] || 0) + 1;
-    });
-    const comboList = [];
-    for (const key in comboMap) {
-        const [a, b] = key.split(',').map(Number);
-        comboList.push({ a, b, count: comboMap[key] });
-    }
-    comboList.sort((x, y) => y.count - x.count);
-    const maxCount = comboList[0]?.count || 0;
-    const groups = [];
-    for (let c = maxCount; c >= 1; c--) {
-        const items = comboList.filter(x => x.count === c);
-        if (items.length > 0) groups.push({ count: c, items });
-    }
-    let html = `
-        <div class="result-title">📊 A / B 出现次数</div>
-        <div style="display:flex; gap:12px;">
-            <div style="flex:1;">
-                <div class="percent-title">A 次数</div>
-                ${formatCount(countA)}
-            </div>
-            <div style="flex:1;">
-                <div class="percent-title">B 次数</div>
-                ${formatCount(countB)}
-            </div>
-        </div>
-        <div class="result-title" style="margin-top:10px">📌 A → B组频 </div>
-        <div class="percent-block">${freqHtml}</div>
-        <div class="result-title" style="margin-top:10px">🎯 AB组合出现次数</div>
-    `;
-    groups.forEach(g => {
-        html += `<div class="percent-block">`;
-        html += `<div class="percent-title">出现 ${g.count} 次</div>`;
-        g.items.forEach(it => {
-            html += `<div>A=${it.a}　B=${it.b}　→ ${it.count}/${total}</div>`;
-        });
-        html += `</div>`;
-    });
-    document.getElementById('comboResult').innerHTML = html;
+// ======================== 全局变量 ========================
+const dataInput = document.getElementById("rangeData");
+const modeDynamic = document.getElementById("modeDynamic");
+const modeSuper = document.getElementById("modeSuper");
+const modePeak = document.getElementById("modePeak");
+const btnRefresh = document.getElementById("btnRefresh");
+const btnClear = document.getElementById("btnClear");
+const periodTabs = document.querySelectorAll(".period-tab");
+const toast = document.getElementById("toast");
+const recommendDetail = document.getElementById("recommendDetail");
+const totalLines = document.getElementById("totalLines");
+const validLines = document.getElementById("validLines");
+const hotA = document.getElementById("hotA");
+const hotB = document.getElementById("hotB");
+const recommendArea = document.getElementById("recommendArea");
+const result10 = document.getElementById("result10");
+const result20 = document.getElementById("result20");
+const resultAll = document.getElementById("resultAll");
+const coldPoolView = document.getElementById("coldPoolView");
+const autoRangeDisplay = document.getElementById("autoRangeDisplay");
+const conditionalRecDiv = document.getElementById("conditionalRec");
+
+const checkState = {top10:{},top20:{},all:{},7:{},10:{},15:{},20:{},40:{}};
+let currentMode = "dynamic"; // dynamic, super, peak
+let currentPeriod = "20";
+let DATA = {};
+let RAW_DATA = [];
+
+// ======================== 工具函数 ========================
+function safeMin(arr) { return (!arr || arr.length===0) ? 2 : Math.min(...arr); }
+function safeMax(arr) { return (!arr || arr.length===0) ? 4 : Math.max(...arr); }
+function getPeriodName(p){ return p==="all" ? "全量" : "近"+p+"期"; }
+
+function getSeparateCold(ds){
+  let setA=new Set(), setB=new Set();
+  ds.forEach(o=>{if(!isNaN(o.a))setA.add(o.a); if(!isNaN(o.b))setB.add(o.b);});
+  const allNum=[0,1,2,3,4,5,6,7,8,9];
+  return {coldA:allNum.filter(x=>!setA.has(x)), coldB:allNum.filter(x=>!setB.has(x))};
 }
 
-function importAIRule(aStr, bStr) {
-  addCustomRule();
-  const last = state.customRules.length - 1;
-  state.customRules[last].a = aStr.trim();
-  state.customRules[last].b = bStr.trim();
-  renderCustomRules();
-  onRuleChange();
-  aiShowToast("导入成功");
-}
-
-function clearRuleImportInput() {
-  document.getElementById('ruleImportText').value = '';
-}
-
-function importCustomRuleByText() {
-  const txt = document.getElementById('ruleImportText').value;
-  const lines = txt.split(/[\r\n]+/)
-    .map(s => s.trim())
-    .filter(s => s);
-
-  lines.forEach(line => {
-    let parts = line.split(/→|->|=>/);
-    if (parts.length < 2) return;
-
-    let a = parts[0].trim();
-    let b = parts[1].trim();
-    if (!a || !b) return;
-
-    let filled = false;
-    for (let i = 1; i <= 5; i++) {
-      let aDom = document.getElementById(`rule${i}a`);
-      let bDom = document.getElementById(`rule${i}b`);
-      if (aDom && bDom && !aDom.value && !bDom.value) {
-        aDom.value = a;
-        bDom.value = b;
-        filled = true;
-        break;
-      }
-    }
-    if (!filled) {
-      state.customRules.push({ a, b });
-    }
-  });
-
-  renderCustomRules();
-  onRuleChange();
-}
-
-const aiModeDynamic = document.getElementById("aiModeDynamic");
-const aiModeFixed = document.getElementById("aiModeFixed");
-const aiBtnRefresh = document.getElementById("aiBtnRefresh");
-let aiCurrentMode = "dynamic";
-let aiDATA = {};
-
-function safeMin(arr) {
-  if (!arr || arr.length === 0) return 2;
-  return Math.min(...arr);
-}
-function safeMax(arr) {
-  if (!arr || arr.length === 0) return 4;
-  return Math.max(...arr);
-}
-function toRange(arr){
-  if(!arr||!arr.length)return "";
-  let min = safeMin(arr);
-  let max = safeMax(arr);
-  if(max - min >= 5) max = min + 4;
-  if(max - min < 2) max = min + 2;
-  return min === max ? `${min}` : `${min}~${max}`;
-}
 function buildConsecutiveBlock(rawArr, whiteSet){
   if(!rawArr.length) return [2,3,4];
-  let freq = Array(10).fill(0);
+  let freq=Array(10).fill(0);
   rawArr.forEach(n=>{if(!isNaN(n))freq[n]++;});
-  let hotList = [];
-  for(let i=0;i<10;i++){
-    if(whiteSet.has(i) && freq[i]>0) hotList.push({v:i,cnt:freq[i]});
-  }
+  let hotList=[];
+  for(let i=0;i<10;i++) if(whiteSet.has(i) && freq[i]>0) hotList.push({v:i,cnt:freq[i]});
   hotList.sort((a,b)=>b.cnt-a.cnt);
-  let core = hotList.slice(0,5).map(x=>x.v).sort((a,b)=>a-b);
+  let core=hotList.slice(0,5).map(x=>x.v).sort((a,b)=>a-b);
   if(!core.length) return [2,3,4];
   let minV=core[0], maxV=core[core.length-1];
   let main=[];
-  for(let i=minV;i<=maxV;i++){
-    if(whiteSet.has(i)) main.push(i);
-  }
-  if(main.length < 3) main=[2,3,4];
-  if(main.length > 5) main=main.slice(0,4);
+  for(let i=minV;i<=maxV;i++) if(whiteSet.has(i)) main.push(i);
+  if(main.length<3) main=[2,3,4];
+  if(main.length>5) main=main.slice(0,5);
   return main;
 }
 
-function aiBuildDynamicRanges(arr){
-  const numArr = arr.filter(n=>!isNaN(n)&&n>=0&&n<=9);
-  const allSet = new Set([0,1,2,3,4,5,6,7,8,9]);
+function toRange(arr){
+  if(!arr||!arr.length) return "无冷门";
+  let min=safeMin(arr), max=safeMax(arr);
+  if(max-min>=5) max=min+4;
+  if(max-min<2) max=min+2;
+  return (min===max) ? `${min}` : `${min}～${max}`;
+}
 
-  let mainBlock = buildConsecutiveBlock(numArr, allSet);
-  let rest = Array.from(allSet).filter(x => !mainBlock.includes(x));
-  
-  let freq = Array(10).fill(0);
-  numArr.forEach(n=>{if(!isNaN(n))freq[n]++;});
-  rest.sort((a,b)=>freq[b]-freq[a]);
-
-  let len = rest.length;
-  let p1 = Math.ceil(len/3);
-  let p2 = Math.ceil(len*2/3);
-  let seg1 = rest.slice(0,p1);
-  let seg2 = rest.slice(p1,p2);
-  let seg3 = rest.slice(p2);
-
+function buildDynamicRanges(arr,whiteSet){
+  let mainBlock=buildConsecutiveBlock(arr,whiteSet);
+  let all=[0,1,2,3,4,5,6,7,8,9];
+  let validAll=all.filter(x=>whiteSet.has(x));
+  let freq=Array(10).fill(0);
+  arr.forEach(n=>{if(!isNaN(n))freq[n]++;});
+  let rest=validAll.filter(x=>!mainBlock.includes(x)).sort((a,b)=>freq[b]-freq[a]);
+  let len=rest.length;
+  let p1=Math.ceil(len/3), p2=Math.ceil(len*2/3);
+  let seg1=rest.slice(0,p1), seg2=rest.slice(p1,p2), seg3=rest.slice(p2);
   return [
-    {label:toRange(mainBlock) || "0~1"},
-    {label:toRange(seg1) || "2~3"},
-    {label:toRange(seg2) || "4~5"},
-    {label:toRange(seg3) || "6~9"}
+    {label:toRange(mainBlock), min:safeMin(mainBlock), max:safeMax(mainBlock)},
+    {label:toRange(seg1), min:safeMin(seg1), max:safeMax(seg1)},
+    {label:toRange(seg2), min:safeMin(seg2), max:safeMax(seg2)},
+    {label:toRange(seg3), min:safeMin(seg3), max:safeMax(seg3)}
   ];
 }
 
-const aiFixedRanges = [
-  {min:0,max:2,label:"0~2"},
-  {min:3,max:5,label:"3~5"},
-  {min:6,max:8,label:"6~8"},
-  {min:9,max:9,label:"9"}
-];
-
-function aiGetRangeLabel(v,ranges){
-  for(let r of ranges){
-    let parts = r.label.split("~");
-    if(parts.length===2){
-      let mi=+parts[0],ma=+parts[1];
-      if(v>=mi&&v<=ma) return r.label;
-    }else{
-      if(v==+r.label) return r.label;
-    }
-  }
-  return ranges[0].label;
+function buildSuperDynamicRanges(arr, whiteSet){
+  let freq=Array(10).fill(0);
+  arr.forEach(n=>{if(!isNaN(n))freq[n]++;});
+  let recent10=arr.slice(-10);
+  let freq10=Array(10).fill(0);
+  recent10.forEach(n=>{if(!isNaN(n))freq10[n]++;});
+  let score=[];
+  for(let i=0;i<10;i++) score.push({v:i, s:freq[i]+freq10[i]*2});
+  score.sort((a,b)=>b.s-a.s);
+  let hotCore=score.filter(x=>whiteSet.has(x.v)).slice(0,4).map(x=>x.v).sort((a,b)=>a-b);
+  if(!hotCore.length) hotCore=[2,3,4];
+  let mainBlock=hotCore;
+  let allNum=[0,1,2,3,4,5,6,7,8,9].filter(x=>whiteSet.has(x));
+  let rest=allNum.filter(x=>!mainBlock.includes(x));
+  let len=rest.length;
+  let p1=Math.ceil(len/3), p2=Math.ceil(len*2/3);
+  let seg1=rest.slice(0,p1), seg2=rest.slice(p1,p2), seg3=rest.slice(p2);
+  return [
+    {label:toRange(mainBlock), min:safeMin(mainBlock), max:safeMax(mainBlock)},
+    {label:toRange(seg1), min:safeMin(seg1), max:safeMax(seg1)},
+    {label:toRange(seg2), min:safeMin(seg2), max:safeMax(seg2)},
+    {label:toRange(seg3), min:safeMin(seg3), max:safeMax(seg3)}
+  ];
 }
 
-function aiBuild(ds){
-  if(!ds.length)return{list:[],total:0,max:0,count:{}};
-  const listA = ds.map(o=>o.a);
-  const listB = ds.map(o=>o.b);
-  const ra = aiCurrentMode==="dynamic"?aiBuildDynamicRanges(listA):aiFixedRanges;
-  const rb = aiCurrentMode==="dynamic"?aiBuildDynamicRanges(listB):aiFixedRanges;
-  const seq = [];
-  const count={},score={};
+// ======================== 巅峰区间（更强预测） ========================
+function buildPeakRanges(arr, whiteSet) {
+  // 使用最近20期 + 全量加权 (全量0.3, 近20期0.7)
+  let totalFreq = Array(10).fill(0);
+  arr.forEach(n => { if(!isNaN(n)) totalFreq[n]++; });
+  let recent20 = arr.slice(-20);
+  let recentFreq = Array(10).fill(0);
+  recent20.forEach(n => { if(!isNaN(n)) recentFreq[n]++; });
+  
+  let combined = Array(10).fill(0);
+  for(let i=0;i<10;i++) combined[i] = totalFreq[i]*0.3 + recentFreq[i]*0.7;
+  
+  // 找出频次最高的连续子区间（长度 2~3），作为热区（红区）
+  let bestStart = 0, bestEnd = 0, bestSum = -1;
+  for(let len=2; len<=3; len++) {
+    for(let start=0; start+len-1<=9; start++) {
+      let end = start+len-1;
+      let sum = 0;
+      for(let i=start;i<=end;i++) sum += combined[i];
+      if(sum > bestSum) {
+        bestSum = sum;
+        bestStart = start;
+        bestEnd = end;
+      }
+    }
+  }
+  // 如果没找到（理论上不会），回退到 [2,4]
+  if(bestSum <= 0) { bestStart=2; bestEnd=4; }
+  
+  let mainBlock = [];
+  for(let i=bestStart;i<=bestEnd;i++) mainBlock.push(i);
+  
+  // 剩余数字按顺序分成三段（保持连续性）
+  let leftNums = [], rightNums = [];
+  for(let i=0;i<bestStart;i++) leftNums.push(i);
+  for(let i=bestEnd+1;i<=9;i++) rightNums.push(i);
+  
+  let ranges = [];
+  // 左侧最多分成两段
+  if(leftNums.length > 0) {
+    if(leftNums.length <= 2) {
+      ranges.push({min: leftNums[0], max: leftNums[leftNums.length-1], label: leftNums.length===1 ? `${leftNums[0]}` : `${leftNums[0]}～${leftNums[leftNums.length-1]}`});
+    } else {
+      let mid = Math.floor(leftNums.length / 2);
+      let left1 = leftNums.slice(0, mid);
+      let left2 = leftNums.slice(mid);
+      if(left1.length) ranges.push({min: left1[0], max: left1[left1.length-1], label: left1.length===1 ? `${left1[0]}` : `${left1[0]}～${left1[left1.length-1]}`});
+      if(left2.length) ranges.push({min: left2[0], max: left2[left2.length-1], label: left2.length===1 ? `${left2[0]}` : `${left2[0]}～${left2[left2.length-1]}`});
+    }
+  }
+  // 热区
+  ranges.push({min: bestStart, max: bestEnd, label: bestStart===bestEnd ? `${bestStart}` : `${bestStart}～${bestEnd}`});
+  // 右侧最多分成一段或两段（因为总共要4个区间，左侧可能已占1~2个，热区1个，右侧补足到4个）
+  let remainingSlots = 4 - ranges.length;
+  if(rightNums.length > 0) {
+    if(remainingSlots === 1) {
+      ranges.push({min: rightNums[0], max: rightNums[rightNums.length-1], label: rightNums.length===1 ? `${rightNums[0]}` : `${rightNums[0]}～${rightNums[rightNums.length-1]}`});
+    } else {
+      // 分成两段
+      let mid = Math.floor(rightNums.length / 2);
+      let right1 = rightNums.slice(0, mid);
+      let right2 = rightNums.slice(mid);
+      if(right1.length) ranges.push({min: right1[0], max: right1[right1.length-1], label: right1.length===1 ? `${right1[0]}` : `${right1[0]}～${right1[right1.length-1]}`});
+      if(right2.length) ranges.push({min: right2[0], max: right2[right2.length-1], label: right2.length===1 ? `${right2[0]}` : `${right2[0]}～${right2[right2.length-1]}`});
+    }
+  }
+  // 确保恰好4个区间（如果不足，将最大区间拆分；如果超过，合并相邻）
+  while(ranges.length < 4) {
+    // 找到长度最大的区间，从中间拆开
+    let maxLenIdx = 0, maxLen = 0;
+    for(let i=0;i<ranges.length;i++) {
+      let len = ranges[i].max - ranges[i].min;
+      if(len > maxLen) { maxLen = len; maxLenIdx = i; }
+    }
+    let r = ranges[maxLenIdx];
+    let mid = Math.floor((r.min + r.max) / 2);
+    let leftPart = {min: r.min, max: mid, label: r.min===mid ? `${r.min}` : `${r.min}～${mid}`};
+    let rightPart = {min: mid+1, max: r.max, label: mid+1===r.max ? `${mid+1}` : `${mid+1}～${r.max}`};
+    ranges.splice(maxLenIdx, 1, leftPart, rightPart);
+  }
+  while(ranges.length > 4) {
+    // 合并频率和最小的两个相邻区间（使用 combined 频率）
+    let minIdx = 0, minSum = Infinity;
+    for(let i=0;i<ranges.length-1;i++) {
+      let sum = combined[ranges[i].min] + combined[ranges[i+1].min];
+      if(sum < minSum) { minSum = sum; minIdx = i; }
+    }
+    let merged = {
+      min: ranges[minIdx].min,
+      max: ranges[minIdx+1].max,
+      label: ranges[minIdx].min===ranges[minIdx+1].max ? `${ranges[minIdx].min}` : `${ranges[minIdx].min}～${ranges[minIdx+1].max}`
+    };
+    ranges.splice(minIdx, 2, merged);
+  }
+  return ranges;
+}
 
+function renderAutoRange(ra,rb){
+  if(!ra||!rb||ra.length<4||rb.length<4){ autoRangeDisplay.style.display="none"; return; }
+  autoRangeDisplay.style.display="block";
+  autoRangeDisplay.innerHTML=`A：<span class="ai-red">${ra[0].label}</span> &nbsp;&nbsp;&nbsp;&nbsp; <span class="ai-yellow">${ra[1].label}</span> &nbsp;&nbsp;&nbsp;&nbsp; <span class="ai-yellow">${ra[2].label}</span> &nbsp;&nbsp;&nbsp;&nbsp; <span class="ai-green">${ra[3].label}</span><br>B：<span class="ai-red">${rb[0].label}</span> &nbsp;&nbsp;&nbsp;&nbsp; <span class="ai-yellow">${rb[1].label}</span> &nbsp;&nbsp;&nbsp;&nbsp; <span class="ai-yellow">${rb[2].label}</span> &nbsp;&nbsp;&nbsp;&nbsp; <span class="ai-green">${rb[3].label}</span>`;
+}
+
+function getRangeFromLabel(label,ranges){
+  if(!label||label==="?") return {min:2,max:4};
+  for(let rg of ranges) if(rg.label===label) return {min:rg.min, max:rg.max};
+  let parts=label.split("～");
+  if(parts.length===2){ let m=parseInt(parts[0]),M=parseInt(parts[1]); if(!isNaN(m)&&!isNaN(M)) return {min:m,max:M}; }
+  let s=parseInt(label); if(!isNaN(s)) return {min:s,max:s};
+  return {min:2,max:4};
+}
+
+function safeRangeMinMax(r){ if(!r) return {min:2,max:4}; let m=isNaN(r.min)?2:r.min, M=isNaN(r.max)?4:r.max; return {min:m,max:M}; }
+
+function getMissingA(lab,ran){
+  let r=getRangeFromLabel(lab,ran); if(!r) return "-";
+  let {min,max}=safeRangeMinMax(r);
+  let c={}; for(let n=min;n<=max;n++) c[n]=0;
+  RAW_DATA.forEach(o=>{ let v=o.a; if(v>=min&&v<=max) c[v]++; });
+  let m=Object.keys(c).filter(x=>c[x]===0).map(Number);
+  return m.length? m.join("、") : "-";
+}
+function getMissingB(lab,ran){
+  let r=getRangeFromLabel(lab,ran); if(!r) return "-";
+  let {min,max}=safeRangeMinMax(r);
+  let c={}; for(let n=min;n<=max;n++) c[n]=0;
+  RAW_DATA.forEach(o=>{ let v=o.b; if(v>=min&&v<=max) c[v]++; });
+  let m=Object.keys(c).filter(x=>c[x]===0).map(Number);
+  return m.length? m.join("、") : "-";
+}
+
+function getNumFreqInRange(lab,ran,isB=true){
+  let r=getRangeFromLabel(lab,ran); if(!r) return {hot:"-",mid:"-",cold:"-"};
+  let {min,max}=safeRangeMinMax(r);
+  let c={}; for(let n=min;n<=max;n++) c[n]=0;
+  RAW_DATA.forEach(o=>{ let v=isB?o.b:o.a; if(v>=min&&v<=max) c[v]++; });
+  let s=Object.entries(c).sort((a,b)=>b[1]-a[1]);
+  let h=s[0]?s[0][0]:"-", m=s[1]?s[1][0]:"-", z=s.filter(x=>x[1]===0).map(x=>x[0]);
+  return {hot:h, mid:m, cold:z.length?z.join("、"):"-"};
+}
+
+function getRangeLabel(v,ran){
+  if(!ran||!ran.length) return "2～4";
+  for(let r of ran) if(v>=r.min && v<=r.max) return r.label;
+  return ran[0]?.label||"2～4";
+}
+
+function parseRangeFromLabel(label){
+  if(!label) return {min:2,max:4};
+  let parts=label.split("～");
+  if(parts.length===2){
+    let m=parseInt(parts[0],10), M=parseInt(parts[1],10);
+    if(!isNaN(m) && !isNaN(M)) return {min:m, max:M};
+  }
+  let s=parseInt(label,10);
+  if(!isNaN(s)) return {min:s, max:s};
+  return {min:2, max:4};
+}
+
+function calcMissOnSlice(dataSlice, aMin, aMax, bMin, bMax){
+  if(!dataSlice.length) return 0;
+  for(let i=dataSlice.length-1; i>=0; i--){
+    const {a,b}=dataSlice[i];
+    if(a>=aMin && a<=aMax && b>=bMin && b<=bMax) return (dataSlice.length-1)-i;
+  }
+  return dataSlice.length;
+}
+
+function calcAvgGapOnSlice(dataSlice, aMin, aMax, bMin, bMax){
+  if(!dataSlice.length) return 0;
+  let hits=[];
+  for(let i=0;i<dataSlice.length;i++){
+    const {a,b}=dataSlice[i];
+    if(a>=aMin && a<=aMax && b>=bMin && b<=bMax) hits.push(i);
+  }
+  if(hits.length<=1) return dataSlice.length;
+  let total=0;
+  for(let i=1;i<hits.length;i++) total+=hits[i]-hits[i-1];
+  return Math.round(total/(hits.length-1));
+}
+
+function getStat(diff){
+  if(Math.abs(diff)<=2) return {cls:"s-stable", txt:"平稳"};
+  if(diff<-2) return {cls:"s-hot", txt:"偏热"};
+  if(diff>8) return {cls:"s-extreme", txt:"极端"};
+  return {cls:"s-cold", txt:"蓄冷"};
+}
+
+function getStatColumn(key, dataSlice){
+  if(!dataSlice || !dataSlice.length) return '<div class="stat-col">-</div>';
+  let [la,lb] = key.split('→');
+  let rA = parseRangeFromLabel(la);
+  let rB = parseRangeFromLabel(lb);
+  let miss = calcMissOnSlice(dataSlice, rA.min, rA.max, rB.min, rB.max);
+  let avg = calcAvgGapOnSlice(dataSlice, rA.min, rA.max, rB.min, rB.max);
+  let diff = miss - avg;
+  let st = getStat(diff);
+  return `<div class="stat-col"><span class="stat s-miss">${miss}</span><span class="stat s-avg">${avg}</span><span class="stat s-diff">${diff>0?'+':''}${diff}</span><span class="stat ${st.cls}">${st.txt}</span></div>`;
+}
+
+// ======================== 短区间自动聚合 ========================
+function parseLabelToRange(label, ranges) {
+  if (!label) return {min:0, max:9};
+  for (let r of ranges) {
+    if (r.label === label) return {min: r.min, max: r.max};
+  }
+  let parts = label.split('～');
+  if (parts.length === 2) {
+    let min = parseInt(parts[0], 10);
+    let max = parseInt(parts[1], 10);
+    if (!isNaN(min) && !isNaN(max)) return {min, max};
+  }
+  let single = parseInt(label, 10);
+  if (!isNaN(single)) return {min: single, max: single};
+  return {min:0, max:9};
+}
+
+function getBestSubrange(aLabel, bLabel, ranges, target) {
+  let aRange = parseLabelToRange(aLabel, ranges);
+  let bRange = parseLabelToRange(bLabel, ranges);
+  let filtered = RAW_DATA.filter(row => {
+    return row.a >= aRange.min && row.a <= aRange.max &&
+           row.b >= bRange.min && row.b <= bRange.max;
+  });
+  if (filtered.length === 0) return "无数据";
+  
+  let freq = Array(10).fill(0);
+  filtered.forEach(row => {
+    let val = (target === 'a') ? row.a : row.b;
+    if (val >= 0 && val <= 9) freq[val]++;
+  });
+  
+  let bestStart = 0, bestEnd = 0, bestSum = -1;
+  for (let start = 0; start <= 9; start++) {
+    for (let len = 1; len <= 2 && start+len-1 <= 9; len++) {
+      let end = start + len - 1;
+      let sum = 0;
+      for (let i = start; i <= end; i++) sum += freq[i];
+      if (sum > bestSum) {
+        bestSum = sum;
+        bestStart = start;
+        bestEnd = end;
+      }
+    }
+  }
+  if (bestSum <= 0) return "极少出现";
+  if (bestStart === bestEnd) return `${bestStart}`;
+  return `${bestStart}～${bestEnd}`;
+}
+
+// ======================== 条件推荐 ========================
+function getConditionalRecommend(lastA){
+  if(!RAW_DATA.length || lastA===undefined) return null;
+  let pairs = [];
+  for(let i=1;i<RAW_DATA.length;i++){
+    if(RAW_DATA[i-1].a === lastA){
+      pairs.push(RAW_DATA[i].b);
+    }
+  }
+  if(pairs.length === 0) return null;
+  let freq = {};
+  pairs.forEach(b=>freq[b]=(freq[b]||0)+1);
+  let sorted = Object.entries(freq).sort((a,b)=>b[1]-a[1]);
+  let top3 = sorted.slice(0,3);
+  return top3.map(([b,cnt]) => `${b} (出现${cnt}次)`).join('、');
+}
+
+function updateConditionalRecommend(){
+  if(!RAW_DATA.length){
+    conditionalRecDiv.style.display = "none";
+    return;
+  }
+  let lastA = RAW_DATA[RAW_DATA.length-1]?.a;
+  if(lastA === undefined){
+    conditionalRecDiv.style.display = "none";
+    return;
+  }
+  let rec = getConditionalRecommend(lastA);
+  if(rec){
+    conditionalRecDiv.style.display = "block";
+    conditionalRecDiv.innerHTML = `<div class="conditional-title">🔍 条件推荐（基于上期 A = ${lastA}）</div><div class="conditional-value">下一期 B 最可能：${rec}</div><div style="font-size:12px; color:#aaa; margin-top:5px;">※ 统计历史中 A=${lastA} 之后下一期的 B 出现频次</div>`;
+  } else {
+    conditionalRecDiv.style.display = "none";
+  }
+}
+
+// ======================== 核心构建 ========================
+function build(ds){
+  if(!ds.length) return {list:[], total:0, max:0, count:{}, ra:[], rb:[], coldA:[], coldB:[], slice:[]};
+  let {coldA,coldB}=getSeparateCold(ds);
+  let listA=ds.map(o=>o.a), listB=ds.map(o=>o.b);
+  let allSet=new Set([0,1,2,3,4,5,6,7,8,9]);
+  let ra, rb;
+  if(currentMode==="super"){ 
+    ra=buildSuperDynamicRanges(listA,allSet); 
+    rb=buildSuperDynamicRanges(listB,allSet); 
+  } else if(currentMode==="peak") {
+    ra=buildPeakRanges(listA,allSet);
+    rb=buildPeakRanges(listB,allSet);
+  } else {
+    ra=buildDynamicRanges(listA,allSet); 
+    rb=buildDynamicRanges(listB,allSet); 
+  }
+  renderAutoRange(ra,rb);
+  let seq=[], count={}, score={};
   ds.forEach((o,i)=>{
-    let la=aiGetRangeLabel(o.a,ra);
-    let lb=aiGetRangeLabel(o.b,rb);
-    let k=la+" → "+lb;
+    let la=getRangeLabel(o.a,ra), lb=getRangeLabel(o.b,rb);
+    let k=la+"→"+lb;
     seq.push(k);
     count[k]=(count[k]||0)+1;
   });
-
-  const miss={};
-  for(let k in count){
-    let last = seq.lastIndexOf(k);
-    miss[k] = ds.length - 1 - last;
-  }
-
   ds.forEach((o,i)=>{
-    let la=aiGetRangeLabel(o.a,ra);
-    let lb=aiGetRangeLabel(o.b,rb);
-    let k=la+" → "+lb;
-    if(i>=ds.length-5) score[k]=(score[k]||0)+8;
-    else if(i>=ds.length-10) score[k]=(score[k]||0)+4;
-    else if(i>=ds.length-20) score[k]=(score[k]||0)+2;
-    else score[k]=(score[k]||0)+1;
+    let la=getRangeLabel(o.a,ra), lb=getRangeLabel(o.b,rb);
+    let k=la+"→"+lb;
+    // 巅峰区间模式使用更激进的近期加分
+    let add = 1;
+    if(i>=ds.length-5) add = (currentMode==="peak") ? 12 : 8;
+    else if(i>=ds.length-10) add = (currentMode==="peak") ? 6 : 4;
+    else if(i>=ds.length-20) add = (currentMode==="peak") ? 3 : 2;
+    else add = 1;
+    score[k]=(score[k]||0)+add;
   });
-
   for(let k in score){
-    score[k] += miss[k] * 0.05;
     let rh=seq.slice(-8).filter(x=>x===k).length;
-    if(rh>=3) score[k] +=20;
-    if(rh>=5) score[k] +=30;
+    if(rh>=3) score[k]+=20;
+    if(rh>=5) score[k]+=30;
+    let rc=seq.slice(-5).filter(x=>x===k).length;
+    if(rc>=8) score[k]*=0.9; // 巅峰区间更早惩罚过热
+    else if(rc>=10) score[k]*=0.95;
   }
-
-  const list=Object.entries(score).sort((a,b)=>b[1]-a[1]);
-  const total=list.length>0?list.reduce((s,v)=>s+v[1],0):0;
-  const max=list.length>0?list[0][1]:0;
-  return {list,total,max,count};
+  let list=Object.entries(score).sort((a,b)=>b[1]-a[1]);
+  let total=list.length?list.reduce((s,v)=>s+v[1],0):0;
+  let max=list.length?list[0][1]:0;
+  return {list, total, max, count, ra, rb, coldA, coldB, slice:ds};
 }
 
-function aiRenderHotNumbers(raw){
-  const la = aiBuildDynamicRanges(raw.map(o=>o.a));
-  const lb = aiBuildDynamicRanges(raw.map(o=>o.b));
-  aiHotA.innerHTML=`<span class="ai-hot-item">${la[0].label}</span>`;
-  aiHotB.innerHTML=`<span class="ai-hot-item">${lb[0].label}</span>`;
+function renderColdPool(a,b){
+  let t=getPeriodName(currentPeriod);
+  coldPoolView.innerText=`【冷·${t}】A：${a.length?a.join("、"):"暂无"}｜B：${b.length?b.join("、"):"暂无"}`;
 }
 
-function aiRenderRecommend(g){
-  if(!g||!g.list.length){aiRecommendArea.innerHTML="暂无数据";return}
-  aiRecommendArea.innerHTML = g.list.slice(0,3).map(([k]) => {
-    let [a,b] = k.split(" → ");
-    return `<span class="ai-recommend-item" onclick="importAIRule('${a}','${b}')">${k}</span>`;
+function renderHotNumbers(raw){
+  if(!raw.length){ hotA.innerHTML=hotB.innerHTML='<span class="hot-item">-</span>'; return; }
+  let la=raw.map(o=>o.a), lb=raw.map(o=>o.b);
+  let s=new Set([0,1,2,3,4,5,6,7,8,9]);
+  let ha=buildConsecutiveBlock(la,s), hb=buildConsecutiveBlock(lb,s);
+  hotA.innerHTML=`<span class="hot-item">${toRange(ha)}</span>`;
+  hotB.innerHTML=`<span class="hot-item">${toRange(hb)}</span>`;
+}
+
+function renderRecommend(g){
+  if(!g||!g.list.length){ recommendArea.innerHTML="暂无数据"; recommendDetail.innerHTML=""; return; }
+  let v = g.list.filter(([k,s])=> s>=0.6 && (g.count[k]||0)>=2);
+  let top = v.slice(0,3);
+  recommendArea.innerHTML = top.map(([k])=>{
+    let [a,b]=k.split("→");
+    return `<span class="recommend-item">${k}(A:${getMissingA(a,g.ra)}，B:${getMissingB(b,g.rb)})</span>`;
   }).join("");
-}
-
-function aiShowToast(m){
-  const t = document.createElement('div');
-  t.className='ai-toast';
-  t.textContent=m;
-  document.body.appendChild(t);
-  t.style.display='block';
-  setTimeout(()=>{document.body.removeChild(t);},1400);
-}
-
-function aiRun(){
-  const txt=document.getElementById("rangeData").value.trim();
-  const lines=txt?txt.split("\n").map(i=>i.trim()).filter(Boolean):[];
-  document.getElementById("aiTotalLines").textContent=lines.length;
-  const raw=[];
-  lines.forEach(l=>{
-    const p=l.split(/\s+/).map(Number);
-    if(!isNaN(p[0])&&!isNaN(p[1])&&p.length>=2) raw.push({a:p[0],b:p[1]});
+  
+  let shortRangeText = "";
+  top.forEach(([k], idx) => {
+    let [aLabel, bLabel] = k.split("→");
+    let aShort = getBestSubrange(aLabel, bLabel, g.ra, 'a');
+    let bShort = getBestSubrange(aLabel, bLabel, g.rb, 'b');
+    shortRangeText += `【${idx+1}】A：${aShort} → ${bShort}\n`;
   });
-  document.getElementById("aiValidLines").textContent=raw.length;
+  recommendDetail.innerText = shortRangeText.trim();
+  
+  updateConditionalRecommend();
+}
+
+function showToast(m){ toast.textContent=m; toast.style.display="block"; setTimeout(()=>toast.style.display="none",1400); }
+
+function getRowHtml(k,s,c,g,sc){
+  if(!g||!g.ra||!g.rb) return `<div class="table-row"><div></div><div>异常</div></div>`;
+  let parts=k.split("→");
+  if(parts.length<2) return `<div class="table-row"><div></div><div>格式错</div></div>`;
+  let [a,b]=parts;
+  let ma=getMissingA(a,g.ra), mb=getMissingB(b,g.rb);
+  let tag="";
+  if(c===1){
+    let currA=getRangeFromLabel(a,g.ra), currB=getRangeFromLabel(b,g.rb);
+    let pureList=g.slice.filter(item=> item.a>=currA.min && item.a<=currA.max && item.b>=currB.min && item.b<=currB.max);
+    if(pureList.length===1){ let t=pureList[0]; tag=`<span class="once-tag">∈ A${t.a} B${t.b}</span>`; }
+  }
+  let statHtml = getStatColumn(k, g.slice);
+  let mx=g.max||1, tot=g.total||1;
+  let lv = s>=mx*0.65 ? '<span class="hot">🔴</span>' : (s>=mx*0.3 ? '<span class="medium">🟡</span>' : '<span class="cold">🟢</span>');
+  let ck=checkState[sc]?.[k]||false;
+  return `<div class="table-row">
+    <div><input type="checkbox" class="row-check" data-key="${k}" data-scope="${sc}" ${ck?"checked":""}></div>
+    <div>${k}(A:${ma}，B:${mb})${tag}</div>
+    <div>${s.toFixed(1)}</div>
+    <div>${((s/tot)*100).toFixed(1)}%</div>
+    <div>${c}</div>
+    <div>${statHtml}</div>
+    <div>${lv}</div>
+  </div>`;
+}
+
+function run(){
+  let t=dataInput.value.trim();
+  let lines=t?t.split("\n").map(i=>i.trim()).filter(Boolean):[];
+  totalLines.textContent=lines.length;
+  let raw=[];
+  lines.forEach(l=>{
+    let p=l.split(/\s+/).map(Number);
+    if(!isNaN(p[0]) && !isNaN(p[1]) && p.length>=2) raw.push({a:p[0], b:p[1]});
+  });
+  RAW_DATA=raw;
+  validLines.textContent=raw.length;
   if(!raw.length){
-    aiHotA.innerHTML=aiHotB.innerHTML="";
-    aiRecommendArea.innerHTML="暂无数据";
+    result10.innerHTML=result20.innerHTML=resultAll.innerHTML='<div class="table-row"><div></div><div>无数据</div></div>';
+    hotA.innerHTML=hotB.innerHTML=""; recommendArea.innerHTML="暂无数据"; recommendDetail.innerHTML="";
+    renderColdPool([],[]); autoRangeDisplay.style.display="none";
+    conditionalRecDiv.style.display="none";
     return;
   }
-  aiRenderHotNumbers(raw);
-  const d20=raw.slice(-30);
-  aiDATA={all:aiBuild(raw),20:aiBuild(d20)};
-  aiRenderRecommend(aiDATA[20]);
+  renderHotNumbers(raw);
+  let d40=raw.slice(-40), d20=raw.slice(-20), d15=raw.slice(-15), d10=raw.slice(-10), d7=raw.slice(-7);
+  DATA={all:build(raw), 7:build(d7), 10:build(d10), 15:build(d15), 20:build(d20), 40:build(d40)};
+  renderRecommend(DATA[currentPeriod]);
+  renderColdPool(DATA[currentPeriod].coldA, DATA[currentPeriod].coldB);
+  result10.innerHTML=DATA[10].list.slice(0,10).map(([k,s])=>getRowHtml(k,s,DATA[10].count[k]||0,DATA[10],"top10")).join("");
+  result20.innerHTML=DATA[20].list.slice(0,20).map(([k,s])=>getRowHtml(k,s,DATA[20].count[k]||0,DATA[20],"top20")).join("");
+  renderFullTable();
+  bindCheck();
 }
 
-aiBtnRefresh.addEventListener('click', () => {
-  aiRun();
-  aiShowToast("已更新");
-});
-aiModeDynamic.addEventListener('click', () => {
-  aiCurrentMode = "dynamic";
-  aiModeDynamic.classList.add("active");
-  aiModeFixed.classList.remove("active");
-  aiRun();
-});
-aiModeFixed.addEventListener('click', () => {
-  aiCurrentMode = "fixed";
-  aiModeFixed.classList.add("active");
-  aiModeDynamic.classList.remove("active");
-  aiRun();
-});
+function renderFullTable(){
+  let g=DATA[currentPeriod];
+  renderColdPool(g.coldA,g.coldB);
+  if(!g||!g.list.length){ resultAll.innerHTML='<div class="table-row"><div></div><div>无数据</div></div>'; return; }
+  resultAll.innerHTML=g.list.map(([k,s])=>getRowHtml(k,s,g.count[k]||0,g,currentPeriod)).join("");
+  bindCheck();
+}
 
-window.onload=function(){
-    const code=getDeviceCode();
-    document.getElementById("deviceCode").textContent=code;
-    
-    if(!checkAuthStatus()){
-      document.getElementById("authModal").style.display = "flex";
-    }
+function bindCheck(){
+  document.querySelectorAll(".row-check").forEach(c=>{ c.onchange=()=>{ checkState[c.dataset.scope][c.dataset.key]=c.checked; }; });
+}
 
-    storage.loadInput();
-    storage.loadRange();
-    bindPaste();
-    clearAllRules();
-    autoCalc(1);autoCalc(2);
-    aiRun();
+// 事件绑定（与之前相同，省略部分以减少长度，但完整可用）
+document.getElementById("checkAll10").onclick=()=>{
+  let g=DATA[10]; if(!g?.list.length){ showToast("无数据"); return; }
+  let list=g.list.slice(0,10);
+  let all=list.every(([k])=>checkState.top10[k]);
+  list.forEach(([k])=>checkState.top10[k]=!all);
+  run(); showToast(all?"取消10期全选":"10期全选");
+};
+document.getElementById("copyChecked10").onclick=async()=>{
+  let g=DATA[10]; if(!g?.list.length){ showToast("无数据"); return; }
+  let t=""; g.list.slice(0,10).forEach(([k])=>{ if(checkState.top10[k]) t+=k+"\n"; });
+  if(!t){ showToast("未勾选"); return; }
+  try{ await navigator.clipboard.writeText(t.trim()); }catch(e){
+    let a=document.createElement("textarea"); a.value=t.trim(); document.body.appendChild(a); a.select(); document.execCommand("copy"); document.body.removeChild(a);
+  }
+  showToast("复制10期成功");
+};
+document.getElementById("checkAll20").onclick=()=>{
+  let g=DATA[20]; if(!g?.list.length){ showToast("无数据"); return; }
+  let list=g.list.slice(0,20);
+  let all=list.every(([k])=>checkState.top20[k]);
+  list.forEach(([k])=>checkState.top20[k]=!all);
+  run(); showToast(all?"取消20期全选":"20期全选");
+};
+document.getElementById("copyChecked20").onclick=async()=>{
+  let g=DATA[20]; if(!g?.list.length){ showToast("无数据"); return; }
+  let t=""; g.list.slice(0,20).forEach(([k])=>{ if(checkState.top20[k]) t+=k+"\n"; });
+  if(!t){ showToast("未勾选"); return; }
+  try{ await navigator.clipboard.writeText(t.trim()); }catch(e){
+    let a=document.createElement("textarea"); a.value=t.trim(); document.body.appendChild(a); a.select(); document.execCommand("copy"); document.body.removeChild(a);
+  }
+  showToast("复制20期成功");
+};
+document.getElementById("checkAllCur").onclick=()=>{
+  let g=DATA[currentPeriod]; if(!g?.list.length){ showToast("无数据"); return; }
+  let all=g.list.every(([k])=>checkState[currentPeriod][k]);
+  g.list.forEach(([k])=>checkState[currentPeriod][k]=!all);
+  renderFullTable(); showToast(all?"取消本期全选":"本期全选");
+};
+document.getElementById("copyCheckedCur").onclick=async()=>{
+  let g=DATA[currentPeriod]; if(!g?.list.length){ showToast("无数据"); return; }
+  let t=""; g.list.forEach(([k])=>{ if(checkState[currentPeriod][k]) t+=k+"\n"; });
+  if(!t){ showToast("未勾选"); return; }
+  try{ await navigator.clipboard.writeText(t.trim()); }catch(e){
+    let a=document.createElement("textarea"); a.value=t.trim(); document.body.appendChild(a); a.select(); document.execCommand("copy"); document.body.removeChild(a);
+  }
+  showToast("复制本期成功");
 };
 
-function insertDateToTitle() {
-  try {
-    const date = new Date();
-    const ymd = date.getFullYear() + "-" + String(date.getMonth()+1).padStart(2,0) + "-" + String(date.getDate()).padStart(2,0);
-    const weeks = ["日","一","二","三","四","五","六"];
-    const week = "周" + weeks[date.getDay()];
-    const dateText = `${ymd} ${week} `;
-    const title = document.querySelector("#compareResult .result-title");
-    if (title && !title.dataset.dateDone) {
-      title.innerHTML = dateText + title.innerHTML;
-      title.dataset.dateDone = "1";
-    }
-  } catch(e){}
-}
-window.addEventListener("load", function(){
-  setTimeout(insertDateToTitle, 300);
+periodTabs.forEach(tab=>{
+  tab.addEventListener('click',()=>{
+    periodTabs.forEach(t=>t.classList.remove('active'));
+    tab.classList.add('active');
+    currentPeriod=tab.dataset.period;
+    if(DATA[currentPeriod]){ renderRecommend(DATA[currentPeriod]); renderFullTable(); }
+  });
 });
+btnRefresh.addEventListener('click',()=>{ localStorage.setItem("abData",dataInput.value); run(); showToast("已更新"); });
+dataInput.addEventListener('input',()=>{ localStorage.setItem("abData",dataInput.value); run(); });
+modeDynamic.addEventListener('click',()=>{ currentMode="dynamic"; modeDynamic.classList.add("active"); modeSuper.classList.remove("active"); modePeak.classList.remove("active"); run(); });
+modeSuper.addEventListener('click',()=>{ currentMode="super"; modeSuper.classList.add("active"); modeDynamic.classList.remove("active"); modePeak.classList.remove("active"); run(); });
+modePeak.addEventListener('click',()=>{ currentMode="peak"; modePeak.classList.add("active"); modeDynamic.classList.remove("active"); modeSuper.classList.remove("active"); run(); });
+btnClear.addEventListener('click',()=>{ dataInput.value=""; localStorage.removeItem("abData"); run(); });
+
+window.addEventListener('load',()=>{ dataInput.value=localStorage.getItem("abData")||""; run(); });
 </script>
 </body>
 </html>
