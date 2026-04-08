@@ -505,8 +505,7 @@
                         <div class="input-info" id="inputInfo1">已输入：0 个</div>
                     </div>
                     <div class="btn-group">
-                        <!-- 新增导入TXT按钮 -->
-                        <button class="import-txt" onclick="importTxtToAB()">📂 TXT</button>
+                        <button class="import-txt" onclick="importTxtToAB()">📄 导入</button>
                         <button class="shuffle" onclick="shuffleNum(1)">🔀 shuffle</button>
                         <button class="uniq" onclick="uniqueNum(1)">🧹Del Dup</button>
                         <button class="sort" onclick="sortNum(1)">📶Sort</button>
@@ -614,10 +613,12 @@
                 <div id="rulePanelWrap" style="display:none; margin-top:8px;">
                   
                   <div class="rule-import-box">
+                    <!-- 左侧文本域：增加 oninput 自动保存 -->
                     <textarea class="rule-import-input" id="ruleImportText" placeholder="点☝️ 智能推荐 【分析】，区间规则一键导入
-格式：0～5→0～6"></textarea>
+格式：0～5→0～6" oninput="autoSaveRuleImportText()"></textarea>
                     <div class="rule-btn-col">
-                      <button class="rule-import-btn" onclick="importCustomRuleByText()">导入</button>
+                      <button class="rule-import-btn" onclick="importCustomRuleByText()">解析</button>
+                      <button class="rule-txt-btn" onclick="importRuleFromTxt()">导入</button>
                       <button class="rule-clear-btn" onclick="clearRuleImportInput()">清空</button>
                     </div>
                   </div>
@@ -662,11 +663,13 @@
             </div>
 
         </div>
-        <div class="footer">© 2026 蚂蚁数据 · mycm.cc.cd v6.9.3</div>
+        <div class="footer">© 2026 蚂蚁数据 · mycm.cc.cd v6.9.5</div>
     </div>
 
-<!-- 新增隐藏的文件选择器 -->
+<!-- 隐藏的文件选择器：用于 G·A/G·B 导入 -->
 <input type="file" id="importFileInput" accept=".txt" style="display:none" onchange="handleFileSelect(event)">
+<!-- 隐藏的文件选择器：用于自定义规则导入 -->
+<input type="file" id="importRuleFileInput" accept=".txt" style="display:none" onchange="handleRuleFileSelect(event)">
 
 <script>
 const SECRET_SALT = "ANT2026_ZODIAC";
@@ -767,7 +770,7 @@ const state = {
     countData: { 1: {}, 2: {} },
     minMax: { 1: { min: 0, max: 0 }, 2: { min: 0, max: 0 } },
     groupLines: { 1: '', 2: '' },
-    timers: { autoCompare: null, ruleChange: null, noteSave: null, inputSave: null, rangeSave: null },
+    timers: { autoCompare: null, ruleChange: null, noteSave: null, inputSave: null, rangeSave: null, ruleImportSave: null },
     customRules: []
 };
 const utils = {
@@ -837,8 +840,17 @@ const storage = {
     autoSaveInput() { clearTimeout(state.timers.inputSave); state.timers.inputSave = setTimeout(storage.saveInput, 300); },
     saveRange() { localStorage.setItem('lottery_range', document.getElementById('rangeData').value); },
     loadRange() { document.getElementById('rangeData').value = localStorage.getItem('lottery_range') || ''; },
-    autoSaveRange() { clearTimeout(state.timers.rangeSave); state.timers.rangeSave = setTimeout(storage.saveRange, 300); }
+    autoSaveRange() { clearTimeout(state.timers.rangeSave); state.timers.rangeSave = setTimeout(storage.saveRange, 300); },
+    // 新增：规则导入文本框的自动保存
+    saveRuleImportText() { localStorage.setItem('rule_import_text', document.getElementById('ruleImportText').value); },
+    loadRuleImportText() { 
+        const saved = localStorage.getItem('rule_import_text');
+        if (saved !== null) document.getElementById('ruleImportText').value = saved;
+    },
+    autoSaveRuleImportText() { clearTimeout(state.timers.ruleImportSave); state.timers.ruleImportSave = setTimeout(storage.saveRuleImportText, 300); },
+    clearRuleImportText() { localStorage.removeItem('rule_import_text'); }
 };
+function autoSaveRuleImportText() { storage.autoSaveRuleImportText(); }
 function autoSaveRange() { storage.autoSaveRange(); compareAll(); }
 function toggleNote() {
     const noteEl = document.getElementById('noteTextarea');
@@ -1306,6 +1318,7 @@ function importAIRule(aStr, bStr) {
 
 function clearRuleImportInput() {
   document.getElementById('ruleImportText').value = '';
+  storage.clearRuleImportText();  // 清空存储
 }
 
 function importCustomRuleByText() {
@@ -1542,21 +1555,17 @@ aiModeFixed.addEventListener('click', () => {
   aiRun();
 });
 
-// ================= 新增：导入TXT文件到G·A和G·B =================
+// ================= 导入TXT到G·A和G·B =================
 function importTxtToAB() {
-    // 触发隐藏的文件选择器
     document.getElementById('importFileInput').click();
 }
-
 function handleFileSelect(event) {
     const file = event.target.files[0];
     if (!file) return;
-    
     const reader = new FileReader();
     reader.onload = function(e) {
         const content = e.target.result;
-        // 按分隔符 ........ 分割（至少6个点，兼容换行）
-        const separator = /\.{6,}/;  // 匹配6个及以上连续点号
+        const separator = /\.{6,}/;
         let parts = content.split(separator);
         if (parts.length < 2) {
             alert("文件格式错误：未找到分隔符 '........'，请确保上半部分为G·A数据，下半部分为G·B数据，中间用........隔开。");
@@ -1564,34 +1573,43 @@ function handleFileSelect(event) {
         }
         let gaRaw = parts[0].trim();
         let gbRaw = parts[1].trim();
-        
-        // 如果分割后多于2部分，将后面的部分合并到GB（忽略多余分隔符）
         if (parts.length > 2) {
             gbRaw = parts.slice(1).join(' ').trim();
         }
-        
-        // 可选：从文本中提取数字（保留原始格式，不清除其他字符）
-        // 但为了不破坏原有数据解析，直接设置到textarea，autoCalc会提取数字
         document.getElementById('numInput1').value = gaRaw;
         document.getElementById('numInput2').value = gbRaw;
-        
-        // 触发统计更新
         autoCalc(1);
         autoCalc(2);
-        
-        // 保存到本地存储
         storage.saveInput();
-        
-        alert("导入成功！G·A 和 G·B 数据已更新。");
+        alert("蚂蚁数据：导入成功！G·A 和 G·B 数据已更新。");
     };
     reader.onerror = function() {
         alert("读取文件失败，请重试。");
     };
     reader.readAsText(file, "UTF-8");
-    // 清空input value，以便再次选择同一文件仍能触发
     event.target.value = '';
 }
-// ============================================================
+
+// ================= 导入TXT到规则导入文本框（无成功提示，且会自动保存） =================
+function importRuleFromTxt() {
+    document.getElementById('importRuleFileInput').click();
+}
+function handleRuleFileSelect(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const content = e.target.result;
+        document.getElementById('ruleImportText').value = content;
+        storage.saveRuleImportText();  // 保存到本地存储
+    };
+    reader.onerror = function() {
+        alert("读取文件失败，请重试。");
+    };
+    reader.readAsText(file, "UTF-8");
+    event.target.value = '';
+}
+// ====================================================
 
 window.onload=function(){
     const code=getDeviceCode();
@@ -1603,6 +1621,7 @@ window.onload=function(){
 
     storage.loadInput();
     storage.loadRange();
+    storage.loadRuleImportText();  // 加载规则导入文本框的内容
     bindPaste();
     clearAllRules();
     autoCalc(1);autoCalc(2);
