@@ -418,7 +418,6 @@
           font-size:12px;background:#007bff;color:#fff;min-height:28px;
         }
         .ai-btn-row-3 button.active{background:#0056b3}
-        /* 只新增这一行样式，不改动原有任何代码 */
         .ai-rule-link-btn{flex:1;padding:6px 2px;border-radius:5px;border:none;font-size:12px;background:#007bff;color:#fff;min-height:28px;text-decoration:none;display:flex;align-items:center;justify-content:center;}
         .ai-input-row{display:flex;justify-content:space-between;font-size:10px;color:#aaa;margin:4px 0}
         .ai-toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#007bff;color:#fff;padding:6px 12px;border-radius:4px;font-size:12px;display:none;z-index:99}
@@ -506,6 +505,8 @@
                         <div class="input-info" id="inputInfo1">已输入：0 个</div>
                     </div>
                     <div class="btn-group">
+                        <!-- 新增导入TXT按钮 -->
+                        <button class="import-txt" onclick="importTxtToAB()">📂 TXT</button>
                         <button class="shuffle" onclick="shuffleNum(1)">🔀 shuffle</button>
                         <button class="uniq" onclick="uniqueNum(1)">🧹Del Dup</button>
                         <button class="sort" onclick="sortNum(1)">📶Sort</button>
@@ -581,7 +582,6 @@
                             <button class="active" id="aiModeDynamic">动态</button>
                             <button id="aiModeFixed">固定</button>
                             <button id="aiBtnRefresh">更新</button>
-                            <!-- 只新增按钮，不改动原有代码 -->
                             <a href="https://mycm.cc.cd/vip.html" target="_blank" rel="noopener noreferrer" class="ai-rule-link-btn">分析</a>
                         </div>
                         <div class="ai-input-row">
@@ -662,8 +662,11 @@
             </div>
 
         </div>
-        <div class="footer">© 2026 蚂蚁数据 · mycm.cc.cd v6.9.2</div>
+        <div class="footer">© 2026 蚂蚁数据 · mycm.cc.cd v6.9.3</div>
     </div>
+
+<!-- 新增隐藏的文件选择器 -->
+<input type="file" id="importFileInput" accept=".txt" style="display:none" onchange="handleFileSelect(event)">
 
 <script>
 const SECRET_SALT = "ANT2026_ZODIAC";
@@ -1477,11 +1480,14 @@ function aiBuild(ds){
 function aiRenderHotNumbers(raw){
   const la = aiBuildDynamicRanges(raw.map(o=>o.a));
   const lb = aiBuildDynamicRanges(raw.map(o=>o.b));
+  const aiHotA = document.getElementById("aiHotA");
+  const aiHotB = document.getElementById("aiHotB");
   aiHotA.innerHTML=`<span class="ai-hot-item">${la[0].label}</span>`;
   aiHotB.innerHTML=`<span class="ai-hot-item">${lb[0].label}</span>`;
 }
 
 function aiRenderRecommend(g){
+  const aiRecommendArea = document.getElementById("aiRecommendArea");
   if(!g||!g.list.length){aiRecommendArea.innerHTML="暂无数据";return}
   aiRecommendArea.innerHTML = g.list.slice(0,3).map(([k]) => {
     let [a,b] = k.split(" → ");
@@ -1509,8 +1515,8 @@ function aiRun(){
   });
   document.getElementById("aiValidLines").textContent=raw.length;
   if(!raw.length){
-    aiHotA.innerHTML=aiHotB.innerHTML="";
-    aiRecommendArea.innerHTML="暂无数据";
+    document.getElementById("aiHotA").innerHTML=document.getElementById("aiHotB").innerHTML="";
+    document.getElementById("aiRecommendArea").innerHTML="暂无数据";
     return;
   }
   aiRenderHotNumbers(raw);
@@ -1535,6 +1541,57 @@ aiModeFixed.addEventListener('click', () => {
   aiModeDynamic.classList.remove("active");
   aiRun();
 });
+
+// ================= 新增：导入TXT文件到G·A和G·B =================
+function importTxtToAB() {
+    // 触发隐藏的文件选择器
+    document.getElementById('importFileInput').click();
+}
+
+function handleFileSelect(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const content = e.target.result;
+        // 按分隔符 ........ 分割（至少6个点，兼容换行）
+        const separator = /\.{6,}/;  // 匹配6个及以上连续点号
+        let parts = content.split(separator);
+        if (parts.length < 2) {
+            alert("文件格式错误：未找到分隔符 '........'，请确保上半部分为G·A数据，下半部分为G·B数据，中间用........隔开。");
+            return;
+        }
+        let gaRaw = parts[0].trim();
+        let gbRaw = parts[1].trim();
+        
+        // 如果分割后多于2部分，将后面的部分合并到GB（忽略多余分隔符）
+        if (parts.length > 2) {
+            gbRaw = parts.slice(1).join(' ').trim();
+        }
+        
+        // 可选：从文本中提取数字（保留原始格式，不清除其他字符）
+        // 但为了不破坏原有数据解析，直接设置到textarea，autoCalc会提取数字
+        document.getElementById('numInput1').value = gaRaw;
+        document.getElementById('numInput2').value = gbRaw;
+        
+        // 触发统计更新
+        autoCalc(1);
+        autoCalc(2);
+        
+        // 保存到本地存储
+        storage.saveInput();
+        
+        alert("导入成功！G·A 和 G·B 数据已更新。");
+    };
+    reader.onerror = function() {
+        alert("读取文件失败，请重试。");
+    };
+    reader.readAsText(file, "UTF-8");
+    // 清空input value，以便再次选择同一文件仍能触发
+    event.target.value = '';
+}
+// ============================================================
 
 window.onload=function(){
     const code=getDeviceCode();
