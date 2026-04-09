@@ -2,14 +2,14 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, maximum-scale=2.0, minimum-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, maximum-scale=2.0, minimum-scale=1.0, viewport-fit=cover">
     <title>MAYI · 盘口智能统计</title>
     <style>
+        /* ========== 全局样式 ========== */
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: "Microsoft YaHei", sans-serif;
             -webkit-tap-highlight-color: transparent;
         }
         html, body {
@@ -22,22 +22,23 @@
         .container {
             max-width: 700px;
             margin: 0 auto;
+            overflow-x: hidden;
         }
         .tool-box {
             background: #1a1a1a;
-            padding: 10px;
-            border-radius: 12px;
+            padding: 12px 10px;
+            border-radius: 16px;
             border: 1px solid #2a2a2a;
         }
         h1 {
             text-align: center;
-            font-size: 18px;
-            margin-bottom: 10px;
+            font-size: 20px;
+            margin-bottom: 12px;
             color: #fff;
         }
         .panel {
-            margin-bottom: 10px;
-            padding-bottom: 8px;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
             border-bottom: 1px solid #222;
         }
         .panel:last-child {
@@ -46,52 +47,90 @@
             border-bottom: none;
         }
         .panel-title {
-            font-size: 14px;
-            margin-bottom: 6px;
+            font-size: 15px;
+            margin-bottom: 8px;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
         }
-
+        .panel-title-left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .sub-group {
+            background: #1e1e1e;
+            border-radius: 12px;
+            padding: 10px;
+            margin-bottom: 12px;
+            border-left: 3px solid #007bff;
+        }
+        .sub-group:last-child {
+            margin-bottom: 0;
+        }
+        .sub-title {
+            font-size: 15px;
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: #fff;
+        }
         .input-box {
-            margin-bottom: 6px;
+            margin-bottom: 8px;
         }
         textarea {
             width: 100%;
             height: 70px;
-            padding: 6px;
+            padding: 8px;
             border: none;
-            border-radius: 6px;
+            border-radius: 8px;
             font-size: 14px;
             background: #222;
             color: #eee;
             outline: none;
+            resize: vertical;
+            max-height: 120px;
         }
         .input-info {
             font-size: 12px;
             color: #888;
-            margin-top: 2px;
+            margin-top: 4px;
         }
-
         .btn-group {
             display: flex;
-            gap: 4px;
-            margin-bottom: 6px;
+            gap: 6px;
+            margin-bottom: 10px;
             flex-wrap: wrap;
         }
-        button {
+        button, .btn-link {
             flex: 1;
             min-width: 60px;
-            padding: 6px 4px;
+            padding: 10px 4px;
             border: none;
-            border-radius: 6px;
+            border-radius: 8px;
             background: #252525;
             color: #eee;
             font-size: 13px;
             cursor: pointer;
             transition: all 0.2s;
+            text-align: center;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 44px;
+            line-height: 1.2;
         }
-        button:active {
+        .btn-link {
+            background: #252525;
+            color: #eee;
+        }
+        .btn-link:hover {
+            background: #3a3a3a;
+        }
+        button:active, .btn-link:active {
             opacity: 0.7;
             transform: scale(0.96);
         }
@@ -99,78 +138,59 @@
             background: #007bff;
             color: #fff;
         }
-        button.primary:hover,
-        button.primary:active {
-            background: #0056b3 !important;
-        }
-
         .result-section {
-            margin-top: 6px;
-            padding: 6px;
-            border-radius: 6px;
+            margin-top: 8px;
+            padding: 8px;
+            border-radius: 12px;
             background: #222;
-            display: none;
         }
         .result-title {
             font-size: 14px;
-            margin-bottom: 6px;
+            margin-bottom: 8px;
             padding-bottom: 4px;
             border-bottom: 1px solid #333;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            flex-wrap: wrap;
+            gap: 6px;
         }
-        .highlight {
-            color: #eee;
-        }
-        .hot { color: #ff6b6b; }
-        .cold { color: #4d9eff; }
-
         .base-row {
             display: flex;
-            gap: 10px;
+            gap: 12px;
             font-size: 13px;
             flex-wrap: wrap;
         }
         .group-item {
-            padding: 4px 6px;
-            margin: 3px 0;
+            padding: 8px 10px;
+            margin: 4px 0;
             background: #252525;
             font-size: 13px;
-            border-radius: 4px;
+            border-radius: 6px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            width: 100% !important;
-            white-space: normal !important;
-            word-break: break-all !important;
-            overflow-wrap: break-word !important;
+            width: 100%;
+            word-break: break-word;
+            overflow-wrap: break-word;
             border-left: 2px solid #007bff;
-        }
-        .zodiac-item {
-            display: inline-block;
-            margin: 2px 4px 2px 0;
-            padding: 2px 4px;
-            background: #252525;
-            border-radius: 4px;
-            font-size: 12px;
-            color: #eee;
+            flex-wrap: wrap;
+            gap: 8px;
         }
         .copy-btn {
-            padding: 3px 6px;
+            padding: 4px 8px;
             background: #333;
             color: #fff;
             border: none;
-            border-radius: 4px;
+            border-radius: 6px;
             font-size: 12px;
+            cursor: pointer;
         }
         .copy-tip {
             color: #6cce6c;
             font-size: 12px;
-            float: right;
             margin-left: 6px;
         }
-
         .compare-row {
             background: #252525;
             border-left: 2px solid #007bff;
@@ -178,55 +198,86 @@
         .final-row {
             background: #252525;
             border-left: 2px solid #007bff;
-            font-weight: normal;
         }
-
-        .rule-inputs {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 6px;
-            margin-bottom: 8px;
-        }
-        .rule-item {
+        .rule-row {
             display: flex;
-            flex-direction: column;
-            gap: 3px;
-        }
-        .rule-label {
-            font-size: 12px;
-            color: #ccc;
-            text-align: center;
-        }
-        .rule-input {
-            width: 100%;
-            padding: 7px 6px;
-            border-radius: 6px;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 10px;
             background: #252525;
+            padding: 6px 10px;
+            border-radius: 10px;
+            position: relative;
+            flex-wrap: wrap;
+        }
+        .rule-row .rule-index {
+            width: 36px;
+            text-align: center;
+            font-weight: bold;
+            color: #007bff;
+            font-size: 14px;
+        }
+        .rule-row input {
+            flex: 1;
+            background: #1e1e1e;
+            border: 1px solid #3a3a3a;
+            border-radius: 8px;
+            padding: 10px 6px;
             color: #eee;
             font-size: 14px;
-            border: none;
             text-align: center;
+            min-width: 80px;
         }
-
         .custom-rule-row {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 6px;
-            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 10px;
+            background: #252525;
+            padding: 6px 10px;
+            border-radius: 10px;
             position: relative;
+            flex-wrap: wrap;
         }
-        .float-del-btn {
-            position: absolute;
-            right: 0;
-            top: 0;
-            width: 28px;
-            height: 28px;
-            background: transparent;
+        .custom-rule-row .rule-index {
+            width: 36px;
+            text-align: center;
+            font-weight: bold;
+            color: #007bff;
+            font-size: 14px;
+        }
+        .custom-rule-row input {
+            flex: 1;
+            background: #1e1e1e;
+            border: 1px solid #3a3a3a;
+            border-radius: 8px;
+            padding: 10px 6px;
             color: #eee;
-            border: none;
-            font-size: 16px;
+            font-size: 14px;
+            text-align: center;
+            min-width: 80px;
         }
-
+        /* 删除按钮：纯文本 X，无背景无边框 */
+        .del-rule-btn {
+            position: absolute;
+            right: 0px;
+            top: -8px;
+            background: transparent;
+            border: none;
+            color: #aaa;
+            font-size: 12px;
+            cursor: pointer;
+            padding: 0;
+            line-height: 1;
+            font-weight: bold;
+            z-index: 5;
+        }
+        .del-rule-btn:hover {
+            color: #ff4444;
+        }
+        .rule-inputs-container {
+            margin-top: 12px;
+        }
         .switch-control {
             display: flex;
             align-items: center;
@@ -235,11 +286,11 @@
             color: #888;
         }
         .switch-control input {
-            width: 32px;
-            height: 16px;
+            width: 36px;
+            height: 20px;
             appearance: none;
             background: #333;
-            border-radius: 10px;
+            border-radius: 20px;
             position: relative;
         }
         .switch-control input:checked {
@@ -248,8 +299,8 @@
         .switch-control input::after {
             content: '';
             position: absolute;
-            width: 12px;
-            height: 12px;
+            width: 16px;
+            height: 16px;
             background: #fff;
             border-radius: 50%;
             top: 2px;
@@ -259,118 +310,113 @@
         .switch-control input:checked::after {
             left: 18px;
         }
-
         .note-textarea {
             width: 100%;
             height: 100px;
-            margin-top: 6px;
+            margin-top: 8px;
             display: none;
             background: #252525;
             border: none;
-            border-radius: 6px;
+            border-radius: 8px;
             color: #eee;
-            padding: 6px;
+            padding: 8px;
+            resize: vertical;
+            max-height: 150px;
         }
-
-        .zodiac-show-num,
-        .query-zodiac-result,
-        .total-zodiac-stat {
-            margin-top: 6px;
-            padding: 6px;
-            background: #252525;
-            border-radius: 4px;
-            font-size: 13px;
-        }
-
         .query-zodiac-input {
-            margin-top: 6px;
-            max-width: 60%;
+            margin-top: 8px;
+            max-width: 70%;
         }
         .query-zodiac-input input {
             width: 100%;
-            padding: 7px 6px;
-            border-radius: 6px;
+            padding: 8px 6px;
+            border-radius: 8px;
             background: #222;
             color: #eee;
             font-size: 14px;
             border: none;
         }
-
-        .total-zodiac-list {
-            display: grid;
-            grid-template-columns: repeat(6,1fr);
-            gap: 4px;
-            justify-items: center;
-        }
-        .total-zodiac-list .zodiac-item {
-            margin: 0;
-            width: 100%;
-            text-align: center;
-        }
-        .hit-rate-display {
-            margin: 8px 0;
-            padding: 6px;
+        .query-zodiac-result {
+            margin-top: 8px;
+            padding: 8px;
             background: #252525;
-            border-radius: 6px;
-            text-align: center;
+            border-radius: 8px;
+            font-size: 13px;
+            word-break: break-word;
+        }
+        .total-zodiac-stat {
+            margin-top: 8px;
+            padding: 8px;
+            background: #252525;
+            border-radius: 8px;
             font-size: 13px;
         }
-        .combo-section {
+        .total-zodiac-list {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 6px;
+            justify-items: center;
             margin-top: 6px;
-            padding: 6px;
-            background: #222;
-            border-radius: 6px;
         }
-        .percent-block {
-            margin: 4px 0;
-            padding: 4px;
+        .total-zodiac-list .zodiac-item {
+            display: inline-block;
+            margin: 2px;
+            padding: 4px 6px;
             background: #252525;
-            border-radius: 4px;
-        }
-        .percent-title {
+            border-radius: 6px;
+            font-size: 12px;
             color: #eee;
-            font-weight: normal;
-            margin-bottom: 4px;
+            cursor: pointer;
+            white-space: nowrap;
         }
-        .ab-stat-line {
-            font-size:13px; line-height:1.4; margin:1px 0;
+        .hit-rate-display {
+            margin: 10px 0;
+            padding: 8px;
+            background: #252525;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 14px;
         }
         .footer {
             text-align: center;
-            margin-top: 10px;
-            font-size: 12px;
+            margin-top: 16px;
+            font-size: 11px;
             color: #666;
         }
-
+        /* 授权弹窗样式修复 */
         .auth-modal {
             position: fixed; top:0; left:0; width:100%; height:100%;
-            background: rgba(0,0,0,.95); z-index:9999;
-            display: flex; align-items:center; justify-content:center;
+            background: rgba(0,0,0,0.95);
+            z-index:9999;
+            display: flex;
+            align-items:center;
+            justify-content:center;
             display: none;
         }
         .auth-box {
             background: #1a1a1a;
             padding: 20px;
-            border-radius: 10px;
+            border-radius: 16px;
             width: 90%;
             max-width: 360px;
             text-align: center;
+            border: 1px solid #2a2a2a;
         }
         .device-info {
             background: #252525;
-            padding: 8px;
-            border-radius: 6px;
+            padding: 10px;
+            border-radius: 8px;
             color: #eee;
-            margin: 10px 0;
+            margin: 12px 0;
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
         .auth-input {
             width: 100%;
-            padding: 8px;
-            margin: 8px 0;
-            border-radius: 6px;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 8px;
             border: none;
             background: #252525;
             color: #fff;
@@ -378,352 +424,264 @@
         }
         .auth-btn {
             width: 100%;
-            padding: 8px;
+            padding: 10px;
             border: none;
-            border-radius: 6px;
+            border-radius: 8px;
             background: #007bff;
             color: #fff;
-            font-weight: normal;
         }
-        .auth-tip {
-            margin-top: 8px;
-            font-size: 13px;
-            color: #ff6b6b;
-        }
-        .copy-code-btn,
-        .range-import-btn {
-            padding: 4px 6px;
-            border-radius: 4px;
+        .copy-code-btn, .range-import-btn {
+            padding: 4px 8px;
+            border-radius: 6px;
             border: none;
             font-size: 12px;
             background: #007bff;
             color: #fff;
         }
-
-        #numInput1, #numInput2, #rangeData {
-            white-space: pre-wrap;
-            overflow-wrap: break-word;
-        }
-
-        .ai-card{background:#1a2a3a;border-radius:6px;padding:6px;margin-bottom:6px;border:1px solid #007bff;width:auto;height:auto;box-sizing:border-box;}
-        .ai-title{color:#eee;margin:3px 0;font-size:12px}
-        .ai-row-2col{display:flex;gap:6px;margin:4px 0;align-items:flex-start}
-        .ai-col{flex:1;min-width:0}
-        .ai-hot-item{background:#007bff;color:#fff;padding:3px 5px;border-radius:3px;font-size:13px;display:inline-block;margin:2px}
-        .ai-recommend-box{margin:0;padding:0;border:none}
-        .ai-recommend-item{background:#007bff;color:#fff;padding:3px 5px;border-radius:3px;display:block;margin:3px 0;font-size:13px;cursor:pointer;width:100%}
-        .ai-btn-row-3{display:flex;gap:4px;margin:4px 0}
-        .ai-btn-row-3 button{
-          flex:1;padding:6px 2px;border-radius:5px;border:none;
-          font-size:12px;background:#007bff;color:#fff;min-height:28px;
-        }
-        .ai-btn-row-3 button.active{background:#0056b3}
-        .ai-rule-link-btn{flex:1;padding:6px 2px;border-radius:5px;border:none;font-size:12px;background:#007bff;color:#fff;min-height:28px;text-decoration:none;display:flex;align-items:center;justify-content:center;}
-        .ai-input-row{display:flex;justify-content:space-between;font-size:10px;color:#aaa;margin:4px 0}
-        .ai-toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#007bff;color:#fff;padding:6px 12px;border-radius:4px;font-size:12px;display:none;z-index:99}
-
+        /* 导入框布局：左侧文本域与右侧三按钮等高 */
         .rule-import-box {
-            margin: 8px 0;
+            margin: 10px 0;
             display: flex;
-            gap: 6px;
+            gap: 8px;
             align-items: stretch;
         }
         .rule-import-input {
             flex: 1;
-            min-height: 90px;
-            padding: 7px 6px;
-            border-radius: 6px;
+            min-height: 132px;
+            height: auto;
+            padding: 8px;
+            border-radius: 8px;
             background: #222;
             color: #eee;
             font-size: 14px;
             border: none;
-            resize: none;
+            resize: vertical;
+            max-height: 150px;
             white-space: pre-wrap;
         }
         .rule-btn-col {
             display: flex;
             flex-direction: column;
-            gap: 6px;
+            gap: 8px;
+            justify-content: space-between;
         }
-        .rule-import-btn {
-            padding: 7px 10px;
-            border-radius: 6px;
+        .rule-btn-col button {
+            flex: 1;
+            white-space: nowrap;
+            min-height: 0;
+        }
+        .link-btn {
             background: #007bff;
             color: #fff;
+            padding: 6px 10px;
+            border-radius: 8px;
+            text-decoration: none;
             font-size: 13px;
-            border: none;
-            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex: 1;
+            min-width: 60px;
         }
-        .rule-clear-btn {
-            padding: 7px 10px;
-            border-radius: 6px;
-            background: #444;
-            color: #fff;
-            font-size: 13px;
-            border: none;
-            white-space: nowrap;
+        .stat-content {
+            transition: all 0.2s;
+        }
+        /* 响应式调整 */
+        @media (max-width: 600px) {
+            body { padding: 4px; }
+            .tool-box { padding: 8px; }
+            .sub-group { padding: 8px; }
+            .rule-row, .custom-rule-row { gap: 6px; padding: 4px 8px; }
+            .rule-row input, .custom-rule-row input { padding: 8px 4px; font-size: 13px; min-width: 70px; }
+            .rule-row .rule-index, .custom-rule-row .rule-index { width: 30px; font-size: 13px; }
+            button, .btn-link { padding: 8px 2px; font-size: 12px; min-height: 40px; }
+            .del-rule-btn { font-size: 10px; right: 0px; top: -6px; }
+            .total-zodiac-list { grid-template-columns: repeat(4, 1fr); gap: 4px; }
+            .total-zodiac-list .zodiac-item { white-space: normal; font-size: 11px; padding: 4px 4px; }
+            .group-item { font-size: 12px; padding: 6px 8px; flex-direction: column; align-items: flex-start; }
+            .group-item .copy-btn { align-self: flex-end; }
+            .query-zodiac-input { max-width: 100%; }
+            .rule-import-input { min-height: 120px; }
+        }
+        @media (max-width: 480px) {
+            .btn-group { gap: 4px; }
+            button, .btn-link { min-width: 50px; font-size: 11px; padding: 6px 2px; }
+            .total-zodiac-list { grid-template-columns: repeat(3, 1fr); }
+            .rule-row, .custom-rule-row { flex-wrap: wrap; justify-content: space-between; }
+            .rule-row .rule-index, .custom-rule-row .rule-index { width: 100%; text-align: left; margin-bottom: 4px; }
+            .rule-row input, .custom-rule-row input { flex: 1 1 40%; }
+            .del-rule-btn { font-size: 9px; right: 0px; top: -4px; }
+            .rule-import-input { min-height: 108px; }
         }
     </style>
 </head>
 <body>
-
 <div class="auth-modal" id="authModal">
     <div class="auth-box">
         <h2>🔒 授权验证</h2>
         <div style="color:#ccc;">你的设备串码：</div>
-        <div class="device-info">
-            <span id="deviceCode">Loading...</span>
-            <button class="copy-code-btn" onclick="copyDeviceCode()">📋 Copy</button>
-        </div>
-        
+        <div class="device-info"><span id="deviceCode">Loading...</span><button class="copy-code-btn" onclick="copyDeviceCode()">📋 Copy</button></div>
         <div style="color:#ccc;margin-top:10px;">请输入授权码：</div>
         <input type="text" class="auth-input" id="authCode" placeholder="输入授权码">
         <button class="auth-btn" onclick="checkAuth()">确认验证</button>
         <div class="auth-tip" id="authTip"></div>
-
-        <div class="auth-footer" style="margin-top:12px;font-size:12px;color:888;line-height:1.4;">
+        <div class="auth-footer" style="margin-top:12px;font-size:12px;color:#888;line-height:1.4;">
             首次使用或授权已过期，请将【设备串码】发送给 @mayiya_bot 获取授权码<br>
             官方授权：<a href="https://t.me/mayiya_bot" target="_blank">机器人</a>
         </div>
     </div>
 </div>
 
-    <div class="container">
-        <div class="tool-box">
-            <h1>Ant Data AI Stats Tool</h1>
-            
-            <div class="panel">
-                <div class="panel-title">
-                    <span>G · A </span>
-                    <label class="switch-control">
-                        <input type="checkbox" id="group1Switch" checked onchange="toggleGroup(1)">
-                    </label>
-                </div>
-                <div id="group1Content">
-                    <div class="input-box">
-                        <textarea id="numInput1" placeholder="G · A 官方数据粘贴到这里（ 电报 @mayi2036 ）" oninput="autoCalc(1)"></textarea>
-                        <div class="input-info" id="inputInfo1">已输入：0 个</div>
-                    </div>
-                    <div class="btn-group">
-                        <button class="import-txt" onclick="importTxtToAB()">📄 导入</button>
-                        <button class="shuffle" onclick="shuffleNum(1)">🔀 shuffle</button>
-                        <button class="uniq" onclick="uniqueNum(1)">🧹Del Dup</button>
-                        <button class="sort" onclick="sortNum(1)">📶Sort</button>
-                        <button class="copy-input" onclick="copyInput(1)">📋 Copy</button>
-                        <button class="clear" onclick="clearAll(1)">🗑️Clear</button>
-                    </div>
+<div class="container">
+    <div class="tool-box">
+        <h1>Ant Data AI Stats Tool</h1>
+        <!-- G·A / G·B 面板 -->
+        <div class="panel">
+            <div class="panel-title">
+                <div class="panel-title-left"><span>盘口数据区</span></div>
+                <label class="switch-control"><input type="checkbox" id="globalStatSwitch" onchange="toggleGlobalStat()"></label>
+            </div>
+            <div id="group1Content">
+                <div class="sub-group">
+                    <div class="sub-title">G · A</div>
+                    <div class="input-box"><textarea id="numInput1" placeholder="G · A 数据一键导入" oninput="autoCalc(1)"></textarea><div class="input-info" id="inputInfo1">已输入：0 个</div></div>
                     <div class="result-section" id="baseResult1"></div>
                     <div class="result-section" id="groupResult1"></div>
-                    <div class="result-section" id="zodiacResult1"></div>
                 </div>
-            </div>
-
-            <div class="panel">
-                <div class="panel-title">
-                    <span>G · B </span>
-                    <label class="switch-control">
-                        <input type="checkbox" id="group2Switch" checked onchange="toggleGroup(2)">
-                    </label>
-                </div>
-                <div id="group2Content">
-                    <div class="input-box">
-                        <textarea id="numInput2" placeholder="G · B 官方数据粘贴到这里（ 电报 @mayi2036 ）" oninput="autoCalc(2)"></textarea>
-                        <div class="input-info" id="inputInfo2">已输入：0 个</div>
-                    </div>
+                <div class="sub-group">
+                    <div class="sub-title">G · B</div>
+                    <div class="input-box"><textarea id="numInput2" placeholder="G · B 数据一键导入" oninput="autoCalc(2)"></textarea><div class="input-info" id="inputInfo2">已输入：0 个</div></div>
                     <div class="btn-group">
-                        <button class="shuffle" onclick="shuffleNum(2)">🔀 shuffle</button>
-                        <button class="uniq" onclick="uniqueNum(2)">🧹Del Dup</button>
-                        <button class="sort" onclick="sortNum(2)">📶Sort</button>
-                        <button class="copy-input" onclick="copyInput(2)">📋 Copy</button>
-                        <button class="clear" onclick="clearAll(2)">🗑Clear</button>
+                        <button onclick="shuffleBoth()">🔀 shuffle</button>
+                        <button onclick="sortBoth()">📶Sort</button>
+                        <button onclick="copyBothData()">📋 Copy</button>
+                        <button onclick="clearBoth()">🗑Clear</button>
+                        <button onclick="importTxtToBoth()">📄 TXT</button>
                     </div>
                     <div class="result-section" id="baseResult2"></div>
                     <div class="result-section" id="groupResult2"></div>
-                    <div class="result-section" id="zodiacResult2"></div>
                 </div>
             </div>
-
-            <div class="panel">
-                <div class="panel-title">
-                    <span>🟥<a href="https://t.me/mayiya_bot" target="_blank" rel="noopener noreferrer" style="text-decoration: none; color: #1677ff;">官方规则</a></span>
-                    <label class="switch-control">
-                        <input type="checkbox" id="rangeSwitch" onchange="toggleRangePanel()">
-                    </label>
-                </div>
-                <div id="rangePanelWrap" style="display:none; margin-top:8px;">
-                    <div class="input-box">
-                        <textarea id="rangeData" placeholder="点☝️ 官方规则 自助获取最新规则粘贴到这里 
-例如：
-1 3
-2 4
-3 5
-6 6" oninput="autoSaveRange(); aiRun();"></textarea>
-                    </div>
-                    <div class="btn-group">
-                        <button onclick="generateRange()" class="primary">✅ 生成区间</button>
-                        <button onclick="clearRange()">🗑 清空</button>
-                    </div>
-                    <div class="result-section" id="rangeResult" style="display:block; margin-top:8px;"></div>
+        </div>
+        <!-- 官方规则一键导入 -->
+        <div class="panel">
+            <div class="panel-title">
+                <div class="panel-title-left"><span>🟥 默认规则</span></div>
+                <label class="switch-control"><input type="checkbox" id="rangeSwitch" onchange="toggleRangePanel()"></label>
+            </div>
+            <div id="rangePanelWrap" style="display:none; margin-top:8px;">
+                <div class="input-box"><textarea id="rangeData" placeholder="输入多行规则，每行格式：A→B 或 A B&#10;支持区间符号 - ~ ～ －" oninput="autoSaveRange()"></textarea></div>
+                <div class="btn-group">
+                    <button onclick="importRulesFromRange()" class="primary">📥 导入</button>
+                    <a href="https://mycm.cc.cd/" target="_blank" rel="noopener noreferrer" class="link-btn">🌐 官网</a>
+                    <a href="https://t.me/mayiya_bot" target="_blank" rel="noopener noreferrer" class="link-btn">📣 自助</a>
+                    <button onclick="clearRange()">🗑 清空</button>
                 </div>
             </div>
-
-            <div class="panel">
-                <div class="panel-title">
-                    <span>🟩智能推荐</span>
-                    <label class="switch-control">
-                        <input type="checkbox" id="aiSwitch" onchange="toggleAIPanel()">
-                    </label>
-                </div>
-                <div id="aiPanelWrap" style="display:none; margin-top:6px;">
-                    <div class="ai-card">
-                        <div class="ai-title">数据来源：蚂蚁官方</div>
-                        <div class="ai-btn-row-3">
-                            <button class="active" id="aiModeDynamic">动态</button>
-                            <button id="aiModeFixed">固定</button>
-                            <button id="aiBtnRefresh">更新</button>
-                            <a href="https://mycm.cc.cd/vip.html" target="_blank" rel="noopener noreferrer" class="ai-rule-link-btn">分析</a>
-                        </div>
-                        <div class="ai-input-row">
-                            <span>总行数：<span id="aiTotalLines">0</span></span>
-                            <span>有效：<span id="aiValidLines">0</span></span>
-                        </div>
-
-                        <div class="ai-row-2col">
-                            <div class="ai-col">
-                                <div class="ai-title">🔥 A · B 推荐</div>
-                                <div id="aiHotA"></div>
-                                <div id="aiHotB"></div>
-                            </div>
-                            <div class="ai-col">
-                                <div id="aiRecommendArea"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="panel">
-                <div class="panel-title">
-                    <span>🟦自定义规则</span>
-					<span>μύρμηξ®</span>
-                    <label class="switch-control">
-                        <input type="checkbox" id="matchSwitch" onchange="toggleMatchPanel()">
-                    </label>
-                </div>
-                <div id="rulePanelWrap" style="display:none; margin-top:8px;">
-                  
-                  <div class="rule-import-box">
-                    <!-- 左侧文本域：增加 oninput 自动保存 -->
-                    <textarea class="rule-import-input" id="ruleImportText" placeholder="点☝️ 智能推荐 【分析】，区间规则一键导入
-格式：0～5→0～6" oninput="autoSaveRuleImportText()"></textarea>
+        </div>
+        <!-- 自定义规则面板 -->
+        <div class="panel">
+            <div class="panel-title"><span>🟦自主配置</span><span>μύρμηξ®</span><label class="switch-control"><input type="checkbox" id="matchSwitch" onchange="toggleMatchPanel()"></label></div>
+            <div id="rulePanelWrap" style="display:none; margin-top:8px;">
+                <div class="rule-import-box">
+                    <textarea class="rule-import-input" id="ruleImportText" placeholder="点☝️ 智能推荐 【分析】，区间规则一键导入\n格式：4-5→2-6" oninput="autoSaveRuleImportText()"></textarea>
                     <div class="rule-btn-col">
-                      <button class="rule-import-btn" onclick="importCustomRuleByText()">解析</button>
-                      <button class="rule-txt-btn" onclick="importRuleFromTxt()">导入</button>
-                      <button class="rule-clear-btn" onclick="clearRuleImportInput()">清空</button>
+                        <button class="rule-clear-btn" onclick="clearRuleImportInput()">清空</button>
+                        <button class="rule-txt-btn" onclick="importRuleFromTxt()">TXT</button>
+                        <button class="rule-import-btn" onclick="importCustomRuleByText()">导入</button>
                     </div>
-                  </div>
-                  
-                  <div class="hit-rate-display" id="currentHitRate">当前中奖率：0/0 = 0.00%</div>
-                    <div class="btn-group">
-                        <button class="reset" onclick="resetRules()">🔄 restore</button>
-                        <button class="clear-rules" onclick="clearAllRules()">🗑 A-B</button>
-                        <button class="add-custom primary" onclick="addCustomRule()">➕ ADD</button>
-                    </div>
-                    <div class="rule-inputs" id="defaultRuleInputs">
-                        <div class="rule-item"><span class="rule-label">规则1：A</span><input type="text" class="rule-input" id="rule1a" oninput="onRuleChange()"></div>
-                        <div class="rule-item"><span class="rule-label">规则1：B</span><input type="text" class="rule-input" id="rule1b" oninput="onRuleChange()"></div>
-                        <div class="rule-item"><span class="rule-label">规则2：A</span><input type="text" class="rule-input" id="rule2a" oninput="onRuleChange()"></div>
-                        <div class="rule-item"><span class="rule-label">规则2：B</span><input type="text" class="rule-input" id="rule2b" oninput="onRuleChange()"></div>
-                        <div class="rule-item"><span class="rule-label">规则3：A</span><input type="text" class="rule-input" id="rule3a" oninput="onRuleChange()"></div>
-                        <div class="rule-item"><span class="rule-label">规则3：B</span><input type="text" class="rule-input" id="rule3b" oninput="onRuleChange()"></div>
-                        <div class="rule-item"><span class="rule-label">规则4：A</span><input type="text" class="rule-input" id="rule4a" oninput="onRuleChange()"></div>
-                        <div class="rule-item"><span class="rule-label">规则4：B</span><input type="text" class="rule-input" id="rule4b" oninput="onRuleChange()"></div>
-                        <div class="rule-item"><span class="rule-label">规则5：A</span><input type="text" class="rule-input" id="rule5a" oninput="onRuleChange()"></div>
-                        <div class="rule-item"><span class="rule-label">规则5：B</span><input type="text" class="rule-input" id="rule5b" oninput="onRuleChange()"></div>
+                </div>
+                <div class="hit-rate-display" id="welcomeMessage">大道至简，以简驭繁</div>
+                <div class="btn-group">
+                    <button onclick="resetRules()">🔄 restore</button>
+                    <a href="https://mycm.cc.cd/" target="_blank" rel="noopener noreferrer" class="btn-link">🌐 官网</a>
+                    <button onclick="clearAllRules()">🗑 A-B</button>
+                    <button onclick="addCustomRule()">➕ ADD</button>
+                </div>
+                <div class="rule-inputs-container">
+                    <div id="fixedRulesContainer">
+                        <div class="rule-row" data-idx="1"><div class="rule-index">1</div><input type="text" id="rule1a" placeholder="A" class="rule-a" oninput="onRuleChange()"><input type="text" id="rule1b" placeholder="B" class="rule-b" oninput="onRuleChange()"></div>
+                        <div class="rule-row" data-idx="2"><div class="rule-index">2</div><input type="text" id="rule2a" placeholder="A" class="rule-a" oninput="onRuleChange()"><input type="text" id="rule2b" placeholder="B" class="rule-b" oninput="onRuleChange()"></div>
+                        <div class="rule-row" data-idx="3"><div class="rule-index">3</div><input type="text" id="rule3a" placeholder="A" class="rule-a" oninput="onRuleChange()"><input type="text" id="rule3b" placeholder="B" class="rule-b" oninput="onRuleChange()"></div>
+                        <div class="rule-row" data-idx="4"><div class="rule-index">4</div><input type="text" id="rule4a" placeholder="A" class="rule-a" oninput="onRuleChange()"><input type="text" id="rule4b" placeholder="B" class="rule-b" oninput="onRuleChange()"></div>
+                        <div class="rule-row" data-idx="5"><div class="rule-index">5</div><input type="text" id="rule5a" placeholder="A" class="rule-a" oninput="onRuleChange()"><input type="text" id="rule5b" placeholder="B" class="rule-b" oninput="onRuleChange()"></div>
                     </div>
                     <div id="customRuleContainer"></div>
                 </div>
             </div>
-
-            <div class="panel">
-                <div class="result-section" id="compareResult"></div>
-            </div>
-
-            <div class="panel">
-                <div class="panel-title">
-                    <span>⚪ 当前组合</span>
-					<span>Antalysis</span>
-                    <label class="switch-control">
-                        <input type="checkbox" id="comboSwitch" onchange="toggleComboPanel()">
-                    </label>
-                </div>
-                <div id="comboPanelWrap" style="display:none; margin-top:8px;">
-                    <div class="combo-section" id="comboResult"></div>
-                </div>
-            </div>
-
         </div>
-        <div class="footer">© 2026 蚂蚁数据 · mycm.cc.cd v6.9.5</div>
+        <!-- 统计结果 -->
+        <div class="panel"><div class="result-section" id="compareResult"></div></div>
     </div>
+    <div class="footer">© 2026 蚂蚁数据 · mycm.cc.cd v7.0.0</div>
+</div>
 
-<!-- 隐藏的文件选择器：用于 G·A/G·B 导入 -->
 <input type="file" id="importFileInput" accept=".txt" style="display:none" onchange="handleFileSelect(event)">
-<!-- 隐藏的文件选择器：用于自定义规则导入 -->
 <input type="file" id="importRuleFileInput" accept=".txt" style="display:none" onchange="handleRuleFileSelect(event)">
 
 <script>
+// ==================== 授权模块 ====================
 const SECRET_SALT = "ANT2026_ZODIAC";
 const STORAGE_KEY = "ANT_AUTH";
+
 function getDeviceCode() {
-    let code = localStorage.getItem("device_code");
-    if (!code) {
-        const temp = [navigator.userAgent, screen.width, screen.height, navigator.language].join("|");
-        let hash = 0;
-        for (let i = 0; i < temp.length; i++) {
-            hash = ((hash << 5) - hash) + temp.charCodeAt(i);
-            hash = hash & hash;
+    try {
+        let code = localStorage.getItem("device_code");
+        if (!code) {
+            const temp = [navigator.userAgent, screen.width, screen.height, navigator.language].join("|");
+            let hash = 0;
+            for (let i = 0; i < temp.length; i++) {
+                hash = ((hash << 5) - hash) + temp.charCodeAt(i);
+                hash = hash & hash;
+            }
+            code = Math.abs(hash).toString(16).toUpperCase();
+            localStorage.setItem("device_code", code);
         }
-        code = Math.abs(hash).toString(16).toUpperCase();
-        localStorage.setItem("device_code", code);
-    }
-    return code;
+        return code;
+    } catch(e) { return "UNKNOWN_DEVICE"; }
 }
-function safeCopy(text, tipId) {
+
+// 增强版复制函数（支持移动端 + 提示）
+async function copyToClipboard(text, tipId) {
     if (!text || text.trim() === '') {
-        if (tipId) document.getElementById(tipId).innerText = '❌ 无内容';
-        setTimeout(() => { if (tipId) document.getElementById(tipId).innerText = '' }, 1500);
-        return;
+        if (tipId) {
+            const tipEl = document.getElementById(tipId);
+            if (tipEl) tipEl.innerText = '❌ 无内容';
+            setTimeout(() => { if (tipEl) tipEl.innerText = ''; }, 1500);
+        }
+        return false;
     }
+    // 传统方法（兼容所有移动端）
     const textarea = document.createElement('textarea');
     textarea.value = text;
     textarea.style.position = 'fixed';
-    textarea.style.opacity = '0';
+    textarea.style.top = '-9999px';
     textarea.style.left = '-9999px';
     document.body.appendChild(textarea);
     textarea.select();
     textarea.setSelectionRange(0, textarea.value.length);
     let success = false;
-    try { success = document.execCommand('copy'); } catch (e) {}
+    try {
+        success = document.execCommand('copy');
+    } catch (e) {
+        console.error('复制失败', e);
+    }
     document.body.removeChild(textarea);
     if (tipId) {
         const tipEl = document.getElementById(tipId);
-        tipEl.innerText = success ? '✅已Copy' : '❌Copy失败';
-        setTimeout(() => tipEl.innerText = '', 1500);
+        if (tipEl) {
+            tipEl.innerText = success ? '✅已Copy' : '❌Copy失败';
+            setTimeout(() => tipEl.innerText = '', 1500);
+        }
     }
     return success;
 }
+
 function copyDeviceCode() {
     const code = document.getElementById("deviceCode").innerText;
-    const ok = safeCopy(code);
-    const tip = document.getElementById("authTip");
-    if (ok) {
-        tip.style.color = "#6cce6c";
-        tip.textContent = "✅ 串码Copy成功！";
-        setTimeout(() => tip.textContent = "", 1500);
-    } else {
-        tip.textContent = "❌ Copy失败";
-    }
+    copyToClipboard(code, 'authTip');
 }
+
 function validateAuth(device, auth) {
     try {
         const [t, s] = auth.split("_");
@@ -737,14 +695,14 @@ function validateAuth(device, auth) {
         }
         const cs = Math.abs(hash).toString(16).slice(0,8).toUpperCase();
         return cs === s;
-    } catch(e) {
-        return false;
-    }
+    } catch(e) { return false; }
 }
+
 function checkAuthStatus() {
     const auth = localStorage.getItem(STORAGE_KEY);
     return auth && validateAuth(getDeviceCode(), auth);
 }
+
 function checkAuth() {
     const d = getDeviceCode();
     const a = document.getElementById("authCode").value.trim();
@@ -759,6 +717,8 @@ function checkAuth() {
         tip.textContent = "❌ 授权码无效或已过期 联系 @mayiya_bot";
     }
 }
+
+// ==================== 生肖数据 ====================
 const ZODIAC_LIST = ['马','蛇','龙','兔','虎','牛','鼠','猪','狗','鸡','猴','羊'];
 const ZODIAC_NUMBER_MAP = {
     '马': [1,13,25,37,49], '蛇': [2,14,26,38], '龙': [3,15,27,39],
@@ -766,6 +726,8 @@ const ZODIAC_NUMBER_MAP = {
     '鼠': [7,19,31,43], '猪': [8,20,32,44], '狗': [9,21,33,45],
     '鸡': [10,22,34,46], '猴': [11,23,35,47], '羊': [12,24,36,48]
 };
+
+// ==================== 全局状态 ====================
 const state = {
     countData: { 1: {}, 2: {} },
     minMax: { 1: { min: 0, max: 0 }, 2: { min: 0, max: 0 } },
@@ -773,64 +735,54 @@ const state = {
     timers: { autoCompare: null, ruleChange: null, noteSave: null, inputSave: null, rangeSave: null, ruleImportSave: null },
     customRules: []
 };
+
+// ==================== 工具函数 ====================
 const utils = {
     padZero: n => n.toString().padStart(2, '0'),
     getZodiac: n => ZODIAC_LIST[(n - 1) % 12],
     uniqueSort: arr => [...new Set(arr)].sort((a, b) => a - b),
     formatNumbers: arr => utils.uniqueSort(arr).map(utils.padZero).join(' ') || '无',
     parseNumbers: str => (str.match(/\d+/g) || []).map(Number).filter(n => n >= 1 && n <= 49),
-    shuffleArray: arr => {
-        const newArr = [...arr];
-        for (let i = newArr.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [newArr[i], newArr[j]] = [newArr[j], newArr[i]];
-        }
-        return newArr;
-    }
+    shuffleArray: arr => { const a = [...arr]; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
 };
+
 const ui = {
     bindCopyButtons() {
         document.querySelectorAll('.copy-btn').forEach(btn => {
-            btn.onclick = () => safeCopy(btn.dataset.copy, btn.dataset.tip);
+            // 移除旧监听避免重复
+            if (btn._copyHandler) btn.removeEventListener('click', btn._copyHandler);
+            const handler = () => {
+                const text = btn.getAttribute('data-copy');
+                const tipId = btn.getAttribute('data-tip');
+                copyToClipboard(text, tipId);
+            };
+            btn.addEventListener('click', handler);
+            btn._copyHandler = handler;
         });
     },
     updateInputInfo(num) {
-        const value = document.getElementById(`numInput${num}`).value;
-        const count = utils.parseNumbers(value).length;
-        document.getElementById(`inputInfo${num}`).innerHTML = 
-            `已输入：${count} 个 <span id="inputTip${num}" class="copy-tip"></span>`;
-    },
-    toggleResultPanel(num, show) {
-        ['baseResult', 'groupResult', 'zodiacResult'].forEach(id => {
-            document.getElementById(`${id}${num}`).style.display = show ? 'block' : 'none';
-        });
-    },
-    updateHitRate(hit, total) {
-        const rate = total > 0 ? ((hit / total) * 100).toFixed(2) : "0.00";
-        const el = document.getElementById('currentHitRate');
-        el.innerHTML = `中奖概率：${hit}/${total} = ${rate}%`;
+        const val = document.getElementById(`numInput${num}`).value;
+        const cnt = utils.parseNumbers(val).length;
+        document.getElementById(`inputInfo${num}`).innerHTML = `已输入：${cnt} 个 <span id="inputTip${num}" class="copy-tip"></span>`;
     }
 };
+
 const zodiacUI = {
-    showGroupZodiacNum(groupNo, zodiac) {
-        const nums = ZODIAC_NUMBER_MAP[zodiac].map(utils.padZero).join(' ');
-        const el = document.getElementById(`zodiacShowNum${groupNo}`);
-        el.textContent = `${zodiac}：${nums}`;
-        el.style.display = 'block';
-    },
     showTotalZodiacNum(zodiac) {
         const nums = ZODIAC_NUMBER_MAP[zodiac].map(utils.padZero).join(' ');
         const el = document.getElementById('totalZodiacShowNum');
-        el.textContent = `${zodiac}：${nums}`;
-        el.style.display = 'block';
+        if (el) {
+            el.textContent = `${zodiac}：${nums}`;
+            el.style.display = 'block';
+        }
     },
     queryZodiac() {
         const val = document.getElementById('queryZodiacInput').value.trim();
         const nums = utils.parseNumbers(val);
-        const result = nums.map(n => `${utils.padZero(n)}=${utils.getZodiac(n)}`).join('  ');
-        document.getElementById('queryZodiacResult').textContent = result;
+        document.getElementById('queryZodiacResult').textContent = nums.map(n => `${utils.padZero(n)}=${utils.getZodiac(n)}`).join('  ');
     }
 };
+
 const storage = {
     saveNote() { localStorage.setItem('lottery_note', document.getElementById('noteTextarea').value); },
     loadNote() { document.getElementById('noteTextarea').value = localStorage.getItem('lottery_note') || ''; },
@@ -841,810 +793,189 @@ const storage = {
     saveRange() { localStorage.setItem('lottery_range', document.getElementById('rangeData').value); },
     loadRange() { document.getElementById('rangeData').value = localStorage.getItem('lottery_range') || ''; },
     autoSaveRange() { clearTimeout(state.timers.rangeSave); state.timers.rangeSave = setTimeout(storage.saveRange, 300); },
-    // 新增：规则导入文本框的自动保存
     saveRuleImportText() { localStorage.setItem('rule_import_text', document.getElementById('ruleImportText').value); },
-    loadRuleImportText() { 
-        const saved = localStorage.getItem('rule_import_text');
-        if (saved !== null) document.getElementById('ruleImportText').value = saved;
-    },
+    loadRuleImportText() { const saved = localStorage.getItem('rule_import_text'); if (saved !== null) document.getElementById('ruleImportText').value = saved; },
     autoSaveRuleImportText() { clearTimeout(state.timers.ruleImportSave); state.timers.ruleImportSave = setTimeout(storage.saveRuleImportText, 300); },
     clearRuleImportText() { localStorage.removeItem('rule_import_text'); }
 };
+
 function autoSaveRuleImportText() { storage.autoSaveRuleImportText(); }
-function autoSaveRange() { storage.autoSaveRange(); compareAll(); }
-function toggleNote() {
-    const noteEl = document.getElementById('noteTextarea');
-    const checked = document.getElementById('noteSwitch').checked;
-    noteEl.style.display = checked ? 'block' : 'none';
-    localStorage.setItem('note_visible', checked ? 1 : 0);
+function autoSaveRange() { storage.autoSaveRange(); }
+function toggleNote() { const noteEl = document.getElementById('noteTextarea'); const checked = document.getElementById('noteSwitch').checked; noteEl.style.display = checked ? 'block' : 'none'; localStorage.setItem('note_visible', checked ? 1 : 0); }
+function keepNoteState() { if (localStorage.getItem('note_visible') == 1) { document.getElementById('noteSwitch').checked = true; document.getElementById('noteTextarea').style.display = 'block'; } }
+
+function toggleGlobalStat() { const chk = document.getElementById('globalStatSwitch'); const contents = document.querySelectorAll('.stat-content'); for (let el of contents) el.style.display = chk.checked ? 'block' : 'none'; localStorage.setItem('globalStatVisible', chk.checked ? 1 : 0); }
+function toggleMatchPanel() { const wrap = document.getElementById('rulePanelWrap'); const on = document.getElementById('matchSwitch').checked; wrap.style.display = on ? 'block' : 'none'; }
+function toggleRangePanel() { const wrap = document.getElementById('rangePanelWrap'); const on = document.getElementById('rangeSwitch').checked; wrap.style.display = on ? 'block' : 'none'; }
+
+function copyBothData() { const ga = document.getElementById('numInput1').value.trim(); const gb = document.getElementById('numInput2').value.trim(); copyToClipboard("G · A\n" + ga + "\n...........\nG · B\n" + gb, 'inputTip2'); }
+function shuffleBoth() { [1,2].forEach(n => { const el = document.getElementById(`numInput${n}`); const nums = utils.parseNumbers(el.value); el.value = utils.shuffleArray(nums).map(utils.padZero).join(' '); autoCalc(n); }); }
+function sortBoth() { [1,2].forEach(n => { const el = document.getElementById(`numInput${n}`); const nums = utils.parseNumbers(el.value).sort((a,b)=>a-b); el.value = nums.map(utils.padZero).join(' '); autoCalc(n); }); }
+function clearBoth() { [1,2].forEach(n => { document.getElementById(`numInput${n}`).value = ''; document.getElementById(`baseResult${n}`).innerHTML = ''; document.getElementById(`groupResult${n}`).innerHTML = ''; state.countData[n] = {}; state.minMax[n] = {min:0,max:0}; ui.updateInputInfo(n); }); autoCalc(1); autoCalc(2); }
+function clearRange() { document.getElementById('rangeData').value = ''; storage.saveRange(); }
+
+// 区间解析
+function expandRange(str) { 
+    str = str.trim(); 
+    let normalized = str.replace(/[～~－]/g, '-');
+    let m = normalized.match(/^(\d+)-(\d+)$/); 
+    if (m) { 
+        let s = parseInt(m[1]), e = parseInt(m[2]); 
+        if (!isNaN(s) && !isNaN(e) && s <= e) { 
+            let res = []; 
+            for (let i = s; i <= e; i++) res.push(i.toString()); 
+            return res; 
+        } 
+    } 
+    return [str]; 
 }
-function keepNoteState() {
-    if (localStorage.getItem('note_visible') == 1) {
-        document.getElementById('noteSwitch').checked = true;
-        document.getElementById('noteTextarea').style.display = 'block';
-    }
+function parseRuleLine(line) { 
+    line = line.trim(); 
+    if (!line) return null; 
+    let arrow = line.match(/(.+?)(?:→|➔|=>|->)(.+)/); 
+    if (arrow) { 
+        let a = arrow[1].trim(), b = arrow[2].trim(); 
+        if (a && b) return { a: a, bValues: expandRange(b) }; 
+    } 
+    let parts = line.split(/\s+/); 
+    if (parts.length >= 2) return { a: parts[0], bValues: expandRange(parts[1]) }; 
+    return null; 
 }
-function toggleGroup(num) {
-    const wrap = document.getElementById(`group${num}Content`);
-    const on = document.getElementById(`group${num}Switch`).checked;
-    wrap.style.display = on ? 'block' : 'none';
+
+function getAllRuleSet() { let set = new Set(); for (let i = 1; i <= 5; i++) { let a = document.getElementById(`rule${i}a`).value.trim(); let b = document.getElementById(`rule${i}b`).value.trim(); if (a && b) set.add(`${a}|${b}`); } for (let r of state.customRules) if (r.a && r.b) set.add(`${r.a}|${r.b}`); return set; }
+function fillRuleToSlots(aVal, bVal) { let key = `${aVal}|${bVal}`; if (getAllRuleSet().has(key)) return false; for (let i = 1; i <= 5; i++) { let aEl = document.getElementById(`rule${i}a`); let bEl = document.getElementById(`rule${i}b`); if (aEl && bEl && (!aEl.value.trim() || !bEl.value.trim())) { aEl.value = aVal; bEl.value = bVal; onRuleChange(); return true; } } state.customRules.push({ a: aVal, b: bVal }); renderCustomRules(); onRuleChange(); return true; }
+function openCustomRulePanel() { let chk = document.getElementById('matchSwitch'); if (!chk.checked) { chk.checked = true; toggleMatchPanel(); } }
+function importRulesFromRange() { openCustomRulePanel(); let text = document.getElementById('rangeData').value; let lines = text.split(/\r?\n/); for (let line of lines) { let parsed = parseRuleLine(line); if (parsed && parsed.a && parsed.bValues.length) { for (let b of parsed.bValues) fillRuleToSlots(parsed.a, b); } } }
+function importCustomRuleByText() { let txt = document.getElementById('ruleImportText').value; let lines = txt.split(/[\r\n]+/); for (let line of lines) { let parsed = parseRuleLine(line); if (parsed && parsed.a && parsed.bValues.length) { for (let b of parsed.bValues) fillRuleToSlots(parsed.a, b); } } }
+
+function rangeToNumbers(r) { 
+    r = r.trim(); 
+    let normalized = r.replace(/[～~－]/g, '-');
+    let m = normalized.match(/^(\d+)-(\d+)$/); 
+    if (m) { 
+        let s = parseInt(m[1]), e = parseInt(m[2]); 
+        if (!isNaN(s) && !isNaN(e) && s <= e) { 
+            let arr = []; 
+            for (let i = s; i <= e; i++) arr.push(i); 
+            return arr; 
+        } 
+    } 
+    let n = parseInt(r); 
+    return isNaN(n) ? [] : [n]; 
 }
-function toggleMatchPanel() {
-    const wrap = document.getElementById('rulePanelWrap');
-    const on = document.getElementById('matchSwitch').checked;
-    wrap.style.display = on ? 'block' : 'none';
-}
-function toggleRangePanel() {
-    const wrap = document.getElementById('rangePanelWrap');
-    const on = document.getElementById('rangeSwitch').checked;
-    wrap.style.display = on ? 'block' : 'none';
-}
-function toggleComboPanel() {
-    const wrap = document.getElementById('comboPanelWrap');
-    const on = document.getElementById('comboSwitch').checked;
-    wrap.style.display = on ? 'block' : 'none';
-    if (on) {
-        buildBestCombo();
-    } else {
-        document.getElementById('comboResult').innerHTML = '';
-    }
-}
-function toggleAIPanel() {
-    const wrap = document.getElementById('aiPanelWrap');
-    const on = document.getElementById('aiSwitch').checked;
-    wrap.style.display = on ? 'block' : 'none';
-}
-function copyInput(num) {
-    const val = document.getElementById(`numInput${num}`).value.trim();
-    safeCopy(val, `inputTip${num}`);
-}
-function shuffleNum(num) {
-    const el = document.getElementById(`numInput${num}`);
-    const numbers = utils.parseNumbers(el.value);
-    el.value = utils.shuffleArray(numbers).map(utils.padZero).join(' ');
-    autoCalc(num);
-}
-function uniqueNum(num) {
-    const el = document.getElementById(`numInput${num}`);
-    const numbers = utils.uniqueSort(utils.parseNumbers(el.value));
-    el.value = numbers.map(utils.padZero).join(' ');
-    autoCalc(num);
-}
-function sortNum(num) {
-    const el = document.getElementById(`numInput${num}`);
-    const numbers = utils.parseNumbers(el.value).sort((a, b) => a - b);
-    el.value = numbers.map(utils.padZero).join(' ');
-    autoCalc(num);
-}
-function clearAll(num) {
-    document.getElementById(`numInput${num}`).value = '';
-    ['baseResult','groupResult','zodiacResult'].forEach(id=>{document.getElementById(`${id}${num}`).innerHTML='';});
-    state.countData[num]={}; state.minMax[num]={min:0,max:0};
-    ui.updateInputInfo(num); ui.toggleResultPanel(num,false);
-    autoCalc(1); autoCalc(2);
-}
-function clearRange() {
-    document.getElementById('rangeData').value = '';
-    document.getElementById('rangeResult').innerHTML = '';
-    storage.saveRange();
-    aiRun();
-}
-function renderBase(num, total, unique, maxCount) {
-    document.getElementById(`baseResult${num}`).innerHTML = `
-        <div class="result-title">📊 盘口频次统计</div>
-        <div class="base-row">
-            <div>加密数据：${total}</div>
-            <div>高频：${maxCount}次(热)</div>
-            <div>低频：0次(冷)</div>
-        </div>`;
-}
-function renderGroup(num, sortedCounts, groupMap, maxCount) {
-    let html = `<div class="result-title">📦 冷 → 热  · 分组</div>`;
-    sortedCounts.forEach(c=>{
-        const nums = groupMap[c].join(',');
-        if (!nums) return;
-        html+=`<div class="group-item">${c}次 - ${nums}</div>`;
-    });
-    const copyText = sortedCounts.map(c=>{
-        const nums = groupMap[c].join(',');
-        return nums ? `${c}次 - ${nums}` : '';
-    }).filter(Boolean).join('\n');
-    state.groupLines[num]=copyText;
-    html+=`<div class="title-right"><button class="copy-btn" data-copy="${copyText}" data-tip="gTip${num}">Copy All</button><span id="gTip${num}" class="copy-tip"></span></div>`;
-    document.getElementById(`groupResult${num}`).innerHTML=html;
-}
-function renderZodiac(num, zodiacCount) {
-    const sorted=Object.entries(zodiacCount).sort((a,b)=>b[1]-a[1]);
-    if(!sorted.length)return;
-    const max=sorted[0][1],min=sorted.at(-1)[1];
-    let html=`<div class="result-title">𓃗 冷热门生肖</div>`;
-    sorted.forEach(([z,count])=>{html+=`<div class="zodiac-item" onclick="zodiacUI.showGroupZodiacNum(${num},'${z}')">${z} ${count}</div>`;});
-    html+=`<div class="zodiac-show-num" id="zodiacShowNum${num}" style="display:none;"></div>`;
-    document.getElementById(`zodiacResult${num}`).innerHTML=html;
-}
-function calculate(num) {
-    const numbers=utils.parseNumbers(document.getElementById(`numInput${num}`).value);
-    if(numbers.length===0){state.countData[num]={};state.minMax[num]={min:0,max:0};ui.toggleResultPanel(num,false);return;}
-    ui.toggleResultPanel(num,true);
-    const countMap={};for(let i=1;i<=49;i++)countMap[i]=0;numbers.forEach(n=>countMap[n]++);state.countData[num]=countMap;
-    const values=Object.values(countMap).filter(v=>v>0);state.minMax[num].max=values.length?Math.max(...values):0;
-    const maxCount = state.minMax[num].max;
-    const groupMap = {};
-    for (let c = 0; c <= maxCount; c++) {
-        groupMap[c] = [];
-    }
-    for (let i = 1; i <= 49; i++) {
-        const c = countMap[i];
-        groupMap[c].push(i);
-    }
-    const sortedCounts = Array.from({length: maxCount + 1}, (_, i) => i).filter(c => groupMap[c].length > 0);
-    const zodiacCount={};ZODIAC_LIST.forEach(z=>zodiacCount[z]=0);numbers.forEach(n=>zodiacCount[utils.getZodiac(n)]++);
-    renderBase(num,numbers.length,new Set(numbers).size,state.minMax[num].max);
-    renderGroup(num,sortedCounts,groupMap,state.minMax[num].max);
-    renderZodiac(num,zodiacCount);
-}
-function matchRule(value, ruleText) {
-    ruleText=(ruleText||'').trim().replace(/~/g, '-').replace(/～/g, '-');
-    if(!ruleText)return true;
-    if(ruleText.includes('-')){
-        const [a,b]=ruleText.split('-').map(Number);
-        return value>=Math.min(a,b)&&value<=Math.max(a,b);
-    }
-    return value==Number(ruleText);
-}
-function getDynamicDefaults() {
-    const m1=state.minMax[1].max||0,m2=state.minMax[2].max||0;
-    return [{a:'1-2',b:'0-4'},{a:'3-4',b:'1-6'},{a:'5-6',b:'2-6'},{a:'0-0',b:'0-2'},{a:`7-${m1}`,b:`3-${m2}`}];
-}
-function addCustomRule(){state.customRules.push({a:'',b:''});renderCustomRules();onRuleChange();}
-function deleteCustomRule(index){state.customRules.splice(index,1);renderCustomRules();onRuleChange();}
-function updateCustomRule(index,key,value){if(state.customRules[index]){state.customRules[index][key]=value.trim();onRuleChange();}}
-function renderCustomRules(){
-    const container=document.getElementById('customRuleContainer');
-    let html='';state.customRules.forEach((rule,index)=>{
-        const realIndex=6+index;
-        html+=`
-        <div class="custom-rule-row">
-            <button class="float-del-btn" onclick="deleteCustomRule(${index})">×</button>
-            <div class="rule-item"><span class="rule-label">规则${realIndex}：A</span><input type="text" class="rule-input" value="${rule.a}" oninput="updateCustomRule(${index},'a',this.value)"></div>
-            <div class="rule-item"><span class="rule-label">规则${realIndex}：B</span><input type="text" class="rule-input" value="${rule.b}" oninput="updateCustomRule(${index},'b',this.value)"></div>
-        </div>`;
-    });
-    container.innerHTML=html;
-}
-function clearAllRules() {
-  const keys = ['1a','1b','2a','2b','3a','3b','4a','4b','5a','5b'];
-  keys.forEach(key => {
-    const el = document.getElementById(`rule${key}`);
-    if (el) el.value = '';
-  });
-  state.customRules = [];
-  renderCustomRules();
-  onRuleChange();
-}
-function syncRules(){
-    const defaults=getDynamicDefaults();
-    const keys=['1a','1b','2a','2b','3a','3b','4a','4b','5a','5b'];
-    keys.forEach((key,i)=>{document.getElementById(`rule${key}`).value=i%2===0?defaults[Math.floor(i/2)].a:defaults[Math.floor(i/2)].b;});
-    state.customRules=[];renderCustomRules();
-}
-function resetRules(){syncRules();compareAll();}
-function onRuleChange(){clearTimeout(state.timers.ruleChange);state.timers.ruleChange=setTimeout(compareAll,200);}
-function getTotalZodiacStat(){
-    const total={};ZODIAC_LIST.forEach(z=>total[z]=0);
-    const arr1=utils.parseNumbers(document.getElementById('numInput1').value);
-    const arr2=utils.parseNumbers(document.getElementById('numInput2').value);
-    arr1.forEach(n=>total[utils.getZodiac(n)]++);arr2.forEach(n=>total[utils.getZodiac(n)]++);
-    return Object.entries(total).sort((a,b)=>b[1]-a[1]);
-}
-function compareAll(){
-    const rules=[
-        {a:document.getElementById('rule1a').value.trim(),b:document.getElementById('rule1b').value.trim()},
-        {a:document.getElementById('rule2a').value.trim(),b:document.getElementById('rule2b').value.trim()},
-        {a:document.getElementById('rule3a').value.trim(),b:document.getElementById('rule3b').value.trim()},
-        {a:document.getElementById('rule4a').value.trim(),b:document.getElementById('rule4b').value.trim()},
-        {a:document.getElementById('rule5a').value.trim(),b:document.getElementById('rule5b').value.trim()},
+function ruleContains(ruleVal, val) { return rangeToNumbers(ruleVal).includes(val); }
+
+// 核心比较函数
+function compareAll() {
+    const rules = [
+        { a: document.getElementById('rule1a').value.trim(), b: document.getElementById('rule1b').value.trim() },
+        { a: document.getElementById('rule2a').value.trim(), b: document.getElementById('rule2b').value.trim() },
+        { a: document.getElementById('rule3a').value.trim(), b: document.getElementById('rule3b').value.trim() },
+        { a: document.getElementById('rule4a').value.trim(), b: document.getElementById('rule4b').value.trim() },
+        { a: document.getElementById('rule5a').value.trim(), b: document.getElementById('rule5b').value.trim() },
     ];
-    const allRules=[...rules,...state.customRules].filter(r=>r.a&&r.b);
-    const rangeText=document.getElementById('rangeData').value.trim();
-    const allLines=rangeText?rangeText.split('\n').filter(l=>l.trim()):[];
-    const totalLines = allLines.length;
-    let abHitCount = 0;
-    for(let line of allLines){
-        const [aVal,bVal]=line.trim().split(/\s+/).map(Number);
-        if(isNaN(aVal)||isNaN(bVal))continue;
-        let matched=false;
-        for(let rule of allRules){
-            if(matchRule(aVal,rule.a)&&matchRule(bVal,rule.b)){
-                matched=true;
-                break;
-            }
+    const allRules = [...rules, ...state.customRules].filter(r => r.a && r.b);
+    const rangeText = document.getElementById('rangeData').value.trim();
+    const lines = rangeText ? rangeText.split('\n').filter(l => l.trim()) : [];
+    let totalCombos = 0, hitCombos = 0;
+    for (let line of lines) {
+        let arrow = line.match(/(.+?)(?:→|➔|=>|->)(.+)/);
+        let aStr = '', bStr = '';
+        if (arrow) { aStr = arrow[1].trim(); bStr = arrow[2].trim(); }
+        else { let parts = line.split(/\s+/); if (parts.length >= 2) { aStr = parts[0]; bStr = parts[1]; } }
+        if (!aStr || !bStr) continue;
+        let aVals = rangeToNumbers(aStr), bVals = rangeToNumbers(bStr);
+        if (aVals.length === 0 || bVals.length === 0) continue;
+        totalCombos += aVals.length * bVals.length;
+        for (let a of aVals) for (let b of bVals) {
+            let matched = false;
+            for (let rule of allRules) if (ruleContains(rule.a, a) && ruleContains(rule.b, b)) { matched = true; break; }
+            if (matched) hitCombos++;
         }
-        if(matched)abHitCount++;
     }
-    ui.updateHitRate(abHitCount, totalLines);
-    const c1=state.countData[1],c2=state.countData[2];
-    if(!c1||!c2){
-        document.getElementById('compareResult').innerHTML='';
-        document.getElementById('compareResult').style.display='none';
-        return;
-    }
-    const allNumbers=Array.from({length:49},(_,i)=>i+1);
-    const el=document.getElementById('compareResult');
-    el.style.display='block';
-    const results=[],texts=[];
-    allRules.forEach(r=>{
-        const res=allNumbers.filter(n=>matchRule(c1[n],r.a)&&matchRule(c2[n],r.b));
-        results.push(res);texts.push(`${r.a} → ${r.b}`);
-    });
-    const final=utils.uniqueSort(results.flat());
-    const totalStat=getTotalZodiacStat();
-    let totalHtml=`<div class="total-zodiac-title">📊 A ‧ B冷热门</div><div class="total-zodiac-list">`;
-    totalStat.forEach(([z,n])=>{totalHtml+=`<span class="zodiac-item" onclick="zodiacUI.showTotalZodiacNum('${z}')">${z} ${n}</span>`;});
-    totalHtml+=`</div><div class="zodiac-show-num" id="totalZodiacShowNum" style="display:none;margin-top:6px;"></div>`;
-    let resHtml='';texts.forEach((text,i)=>{resHtml+=`<div class="group-item compare-row">【${text} · ${results[i].length}】：${utils.formatNumbers(results[i])}</div>`;});
-    el.innerHTML=`
-    <div class="result-title">
-        🔵 统计结果
-        <label class="switch-control">Memo book<input type="checkbox" id="noteSwitch" onchange="toggleNote()"></label>
-    </div>
+    let overallRateHtml = '';
+    if (totalCombos > 0) { const overallRate = (hitCombos / totalCombos) * 100; overallRateHtml = `<div class="hit-rate-display" style="margin-bottom:8px;">预测命中率：${hitCombos} / ${totalCombos} = ${overallRate.toFixed(2)}%</div>`; }
+    else { overallRateHtml = `<div class="hit-rate-display" style="margin-bottom:8px;">预测命中率：0/0 = 0.00%</div>`; }
+    const c1 = state.countData[1], c2 = state.countData[2];
+    if (!c1 || !c2) { document.getElementById('compareResult').innerHTML = overallRateHtml; document.getElementById('compareResult').style.display = 'block'; return; }
+    const allNumbers = Array.from({ length: 49 }, (_, i) => i + 1);
+    const results = [], texts = [];
+    allRules.forEach(r => { const res = allNumbers.filter(n => matchRule(c1[n], r.a) && matchRule(c2[n], r.b)); results.push(res); texts.push(`${r.a} → ${r.b}`); });
+    const final = utils.uniqueSort(results.flat());
+    const totalStat = getTotalZodiacStat();
+    let totalHtml = `<div class="total-zodiac-title">📊 生肖冷热门</div><div class="total-zodiac-list">`;
+    totalStat.forEach(([z,n]) => { totalHtml += `<span class="zodiac-item" onclick="zodiacUI.showTotalZodiacNum('${z}')">${z} ${n}</span>`; });
+    totalHtml += `</div><div class="zodiac-show-num" id="totalZodiacShowNum" style="display:none;margin-top:6px;"></div>`;
+    let resHtml = ''; texts.forEach((text,i) => { resHtml += `<div class="group-item compare-row">【${text} · ${results[i].length}】：${utils.formatNumbers(results[i])}</div>`; });
+    const now = new Date();
+    const dateStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} 周${['日','一','二','三','四','五','六'][now.getDay()]}`;
+    const finalHtml = `
+    <div class="result-title"><span>🔵 统计结果 &nbsp; ${dateStr}</span><label class="switch-control">Memo book<input type="checkbox" id="noteSwitch" onchange="toggleNote()"></label></div>
     <textarea id="noteTextarea" class="note-textarea" placeholder="本澳彩盘口统计系统由蚂蚁数据团队研发，欢迎使用！" oninput="storage.autoSaveNote()"></textarea>
     ${resHtml}
+    ${overallRateHtml}
     <div class="group-item final-row">✅ 特 ·${final.length}：${utils.formatNumbers(final)}</div>
     <div class="title-right"><button class="copy-btn" data-copy="${utils.formatNumbers(final)}" data-tip="cfTip">Copy</button><span id="cfTip" class="copy-tip"></span></div>
     <div class="query-zodiac-input"><input id="queryZodiacInput" oninput="zodiacUI.queryZodiac()" placeholder="输入数字查生肖"></div>
     <div class="query-zodiac-result" id="queryZodiacResult"></div>
     <div class="total-zodiac-stat">${totalHtml}</div>`;
-    ui.bindCopyButtons();storage.loadNote();keepNoteState();
-}
-function autoCalc(num){
-    ui.updateInputInfo(num);calculate(num);storage.autoSaveInput();
-    clearTimeout(state.timers.autoCompare);
-    state.timers.autoCompare = setTimeout(()=>{compareAll();},260);
-}
-function bindPaste(){
-    [1,2].forEach(num=>{
-        document.getElementById(`numInput${num}`).addEventListener('paste',e=>{
-            e.preventDefault();
-            const text=(e.clipboardData||window.clipboardData).getData('text');
-            const numbers=utils.parseNumbers(text);
-            const el=document.getElementById(`numInput${num}`);
-            const start=el.selectionStart;
-            el.value=el.value.substring(0,start)+numbers.join(' ')+el.value.substring(start);
-            autoCalc(num);
-        });
-    });
-}
-const rangeLevels = [
-  { name: "100% 全覆盖", rate: 1.00 },
-  { name: "≥95% 命中率", rate: 0.95 },
-  { name: "≥90% 命中率", rate: 0.90 },
-  { name: "≥85% 命中率", rate: 0.85 },
-  { name: "≥70% 命中率", rate: 0.70 }
-];
-function getSmartGroups(values) {
-  const countMap = {};
-  values.forEach(v => { countMap[v] = (countMap[v] || 0) + 1; });
-  const groupsByCount = {};
-  Object.entries(countMap).forEach(([num, cnt]) => {
-    if (!groupsByCount[cnt]) groupsByCount[cnt] = [];
-    groupsByCount[cnt].push(Number(num));
-  });
-  const result = [];
-  Object.keys(groupsByCount).sort((a, b) => a - b).forEach(cnt => {
-    const nums = groupsByCount[cnt].sort((a, b) => a - b);
-    result.push({
-      count: Number(cnt),
-      label: `${cnt}次 - ${nums.join(',')}`,
-      numbers: nums
-    });
-  });
-  return result;
-}
-function getBestRange(values, need) {
-  const sorted = [...values].sort((a, b) => a - b);
-  let best = { min: sorted[0], max: sorted[sorted.length-1], hit: sorted.length };
-  for (let s = 0; s < sorted.length; s++) {
-    for (let e = s; e < sorted.length; e++) {
-      const cnt = sorted.filter(v => v >= sorted[s] && v <= sorted[e]).length;
-      const range = sorted[e] - sorted[s];
-      const bestRange = best.max - best.min;
-      if (cnt >= need && range <= bestRange) {
-        best = { min: sorted[s], max: sorted[e], hit: cnt };
-      }
-    }
-  }
-  return best;
-}
-function importPairToRule(aText, bText) {
-  let leftPart = aText.split("-").pop()?.trim() || "";
-  let aNumbers = leftPart.match(/\d+/g) || [];
-  if (aNumbers.length === 0) return;
-  let bMatch = bText.match(/(\d+)~(\d+)/);
-  if (!bMatch) return;
-  let bValue = `${bMatch[1]}~${bMatch[2]}`;
-  for (let num of aNumbers) {
-    let aValue = num.trim();
-    if (!aValue) continue;
-    let added = false;
-    for (let i = 0; i < 5; i++) {
-      let aEl = document.getElementById(`rule${i+1}a`);
-      let bEl = document.getElementById(`rule${i+1}b`);
-      if (aEl && bEl && !aEl.value && !bEl.value) {
-        aEl.value = aValue;
-        bEl.value = bValue;
-        added = true;
-        break;
-      }
-    }
-    if (!added) {
-      state.customRules.push({ a: aValue, b: bValue });
-    }
-  }
-  renderCustomRules();
-  onRuleChange();
-}
-function generateRange() {
-  const text = document.getElementById("rangeData").value.trim();
-  if (!text) { alert("请输入成对数据"); return; }
-  const lines = text.split("\n").filter(l => l.trim());
-  const data = [];
-  for (let line of lines) {
-    const [a, b] = line.trim().split(/\s+/).map(Number);
-    if (!isNaN(a) && !isNaN(b)) data.push({ L: a, R: b });
-  }
-  if (data.length === 0) { alert("未识别有效数据"); return; }
-  const leftValues = data.map(x => x.L);
-  const leftGroups = getSmartGroups(leftValues);
-  const groupedData = leftGroups.map(g => data.filter(d => g.numbers.includes(d.L)));
-  let html = "";
-  for (let lv of rangeLevels) {
-    let totalHit = 0, totalCnt = 0;
-    let details = "";
-    for (let i = 0; i < leftGroups.length; i++) {
-      const items = groupedData[i];
-      const cnt = items.length;
-      if (cnt === 0) {
-        details += `<div class="group-item">${leftGroups[i].label} → 无数据</div>`;
-        continue;
-      }
-      const rights = items.map(x => x.R);
-      const need = Math.ceil(cnt * lv.rate);
-      const best = getBestRange(rights, need);
-      const pct = ((best.hit / cnt) * 100).toFixed(1);
-      const showText = `${leftGroups[i].label} → ${best.min}~${best.max}`;
-      details += `<div class="group-item">${showText} (${pct}%)
-        <div style="text-align:right;"><button class="range-import-btn" onclick="importPairToRule('${leftGroups[i].label}','${best.min}~${best.max}')">✅ (A+B)</button></div></div>`;
-      totalHit += best.hit; totalCnt += cnt;
-    }
-    const totalRate = ((totalHit / totalCnt) * 100).toFixed(2);
-    html += `<div style="margin-bottom:10px;"><div class="result-title">${lv.name}</div>${details}
-      <div style="margin-top:6px;">整体命中率：${totalHit}/${totalCnt} = ${totalRate}%</div></div>`;
-  }
-  document.getElementById("rangeResult").innerHTML = html;
-  compareAll();
-}
-function buildBestCombo() {
-    const text = document.getElementById('rangeData').value.trim();
-    if (!text) {
-        document.getElementById('comboResult').innerHTML = `<div class="result-title">请先在官方规则栏输入规则</div>`;
-        return;
-    }
-    const lines = text.split('\n').map(l => {
-        const p = l.trim().split(/\s+/).map(Number);
-        return (p.length >= 2 && !isNaN(p[0]) && !isNaN(p[1])) ? [p[0], p[1]] : null;
-    }).filter(Boolean);
-    const total = lines.length;
-    if (total === 0) {
-        document.getElementById('comboResult').innerHTML = `<div class="result-title">无有效数据</div>`;
-        return;
-    }
-    const countA = {}, countB = {};
-    lines.forEach(([a, b]) => {
-        countA[a] = (countA[a] || 0) + 1;
-        countB[b] = (countB[b] || 0) + 1;
-    });
-    function formatCount(counter) {
-        let str = '';
-        const keys = Object.keys(counter).map(Number).sort((x, y) => x - y);
-        keys.forEach(k=>{
-            str += `<div class="ab-stat-line">${k}：${counter[k]}次</div>`;
-        });
-        return str;
-    }
-    const aMap = {};
-    lines.forEach(([a, b]) => {
-        if (!aMap[a]) aMap[a] = [];
-        aMap[a].push(b);
-    });
-    const aSorted = Object.keys(aMap).map(Number).sort((x, y) => x - y);
-    let freqHtml = '';
-    aSorted.forEach(a => {
-        freqHtml += `<div class="ab-stat-line">A=${a} → B：${aMap[a].join(',')}</div>`;
-    });
-    const comboMap = {};
-    lines.forEach(([a, b]) => {
-        const key = `${a},${b}`;
-        comboMap[key] = (comboMap[key] || 0) + 1;
-    });
-    const comboList = [];
-    for (const key in comboMap) {
-        const [a, b] = key.split(',').map(Number);
-        comboList.push({ a, b, count: comboMap[key] });
-    }
-    comboList.sort((x, y) => y.count - x.count);
-    const maxCount = comboList[0]?.count || 0;
-    const groups = [];
-    for (let c = maxCount; c >= 1; c--) {
-        const items = comboList.filter(x => x.count === c);
-        if (items.length > 0) groups.push({ count: c, items });
-    }
-    let html = `
-        <div class="result-title">📊 A / B 出现次数</div>
-        <div style="display:flex; gap:12px;">
-            <div style="flex:1;">
-                <div class="percent-title">A 次数</div>
-                ${formatCount(countA)}
-            </div>
-            <div style="flex:1;">
-                <div class="percent-title">B 次数</div>
-                ${formatCount(countB)}
-            </div>
-        </div>
-        <div class="result-title" style="margin-top:10px">📌 A → B组频 </div>
-        <div class="percent-block">${freqHtml}</div>
-        <div class="result-title" style="margin-top:10px">🎯 AB组合出现次数</div>
-    `;
-    groups.forEach(g => {
-        html += `<div class="percent-block">`;
-        html += `<div class="percent-title">出现 ${g.count} 次</div>`;
-        g.items.forEach(it => {
-            html += `<div>A=${it.a}　B=${it.b}　→ ${it.count}/${total}</div>`;
-        });
-        html += `</div>`;
-    });
-    document.getElementById('comboResult').innerHTML = html;
+    document.getElementById('compareResult').innerHTML = finalHtml;
+    ui.bindCopyButtons(); storage.loadNote(); keepNoteState();
 }
 
-function importAIRule(aStr, bStr) {
-  addCustomRule();
-  const last = state.customRules.length - 1;
-  state.customRules[last].a = aStr.trim();
-  state.customRules[last].b = bStr.trim();
-  renderCustomRules();
-  onRuleChange();
-  aiShowToast("导入成功");
-}
+function matchRule(val, rule) { rule = (rule || '').trim().replace(/~/g,'-').replace(/～/g,'-'); if (!rule) return true; if (rule.includes('-')) { let [a,b] = rule.split('-').map(Number); return val >= Math.min(a,b) && val <= Math.max(a,b); } return val == Number(rule); }
+function getDynamicDefaults() { let m1 = state.minMax[1].max||0, m2 = state.minMax[2].max||0; return [{a:'1-2',b:'0-4'},{a:'3-4',b:'1-6'},{a:'5-6',b:'2-6'},{a:'0-0',b:'0-2'},{a:`7-${m1}`,b:`3-${m2}`}]; }
+function addCustomRule() { openCustomRulePanel(); state.customRules.push({a:'',b:''}); renderCustomRules(); onRuleChange(); }
+function deleteCustomRule(idx) { state.customRules.splice(idx,1); renderCustomRules(); onRuleChange(); }
+function updateCustomRule(idx,key,val) { if (state.customRules[idx]) { state.customRules[idx][key] = val.trim(); onRuleChange(); } }
+function renderCustomRules() { let container = document.getElementById('customRuleContainer'); let html = ''; state.customRules.forEach((rule, index) => { let idx = 6 + index; html += `<div class="custom-rule-row" data-idx="${idx}"><div class="rule-index">${idx}</div><input type="text" class="rule-input-a" value="${escapeHtml(rule.a)}" placeholder="A" oninput="updateCustomRule(${index},'a',this.value)"><input type="text" class="rule-input-b" value="${escapeHtml(rule.b)}" placeholder="B" oninput="updateCustomRule(${index},'b',this.value)"><button class="del-rule-btn" onclick="deleteCustomRule(${index})">✖</button></div>`; }); container.innerHTML = html; }
+function escapeHtml(str) { return str.replace(/[&<>]/g, function(m) { if (m === '&') return '&amp;'; if (m === '<') return '&lt;'; if (m === '>') return '&gt;'; return m; }); }
+function clearAllRules() { for (let i=1;i<=5;i++) { document.getElementById(`rule${i}a`).value = ''; document.getElementById(`rule${i}b`).value = ''; } state.customRules = []; renderCustomRules(); onRuleChange(); }
+function syncRules() { let def = getDynamicDefaults(); for (let i=1;i<=5;i++) { document.getElementById(`rule${i}a`).value = def[i-1].a; document.getElementById(`rule${i}b`).value = def[i-1].b; } state.customRules = []; renderCustomRules(); }
+function resetRules() { syncRules(); compareAll(); }
+function onRuleChange() { clearTimeout(state.timers.ruleChange); state.timers.ruleChange = setTimeout(compareAll, 200); }
+function getTotalZodiacStat() { let total = {}; ZODIAC_LIST.forEach(z=>total[z]=0); let a1 = utils.parseNumbers(document.getElementById('numInput1').value); let a2 = utils.parseNumbers(document.getElementById('numInput2').value); a1.forEach(n=>total[utils.getZodiac(n)]++); a2.forEach(n=>total[utils.getZodiac(n)]++); return Object.entries(total).sort((a,b)=>b[1]-a[1]); }
 
-function clearRuleImportInput() {
-  document.getElementById('ruleImportText').value = '';
-  storage.clearRuleImportText();  // 清空存储
-}
+function renderBase(num,total,unique,maxCount) { let container = document.getElementById(`baseResult${num}`); if (!container) return; container.innerHTML = `<div class="result-title">📊 盘口频次</div><div class="stat-content"><div class="base-row"><div>加密数据：${total}</div><div>高频：${maxCount}次(热)</div><div>低频：0次(冷)</div></div></div>`; let chk = document.getElementById('globalStatSwitch'); let cd = container.querySelector('.stat-content'); if (cd) cd.style.display = (chk && chk.checked) ? 'block' : 'none'; }
+function renderGroup(num,sortedCounts,groupMap,maxCount) { let html = `<div class="result-title"></div><div class="stat-content">`; sortedCounts.forEach(c=>{ let nums = groupMap[c].join(','); if (nums) html+=`<div class="group-item">${c}次 - ${nums}</div>`; }); let copyText = sortedCounts.map(c=>{ let nums = groupMap[c].join(','); return nums ? `${c}次 - ${nums}` : ''; }).filter(Boolean).join('\n'); state.groupLines[num]=copyText; html+=`<div class="title-right"><button class="copy-btn" data-copy="${copyText}" data-tip="gTip${num}">Copy All</button><span id="gTip${num}" class="copy-tip"></span></div></div>`; document.getElementById(`groupResult${num}`).innerHTML = html; ui.bindCopyButtons(); let chk = document.getElementById('globalStatSwitch'); let cd = document.querySelector(`#groupResult${num} .stat-content`); if (cd) cd.style.display = (chk && chk.checked) ? 'block' : 'none'; }
+function calculate(num) { let numbers = utils.parseNumbers(document.getElementById(`numInput${num}`).value); if (numbers.length === 0) { state.countData[num] = {}; state.minMax[num] = {min:0,max:0}; document.getElementById(`baseResult${num}`).innerHTML = ''; document.getElementById(`groupResult${num}`).innerHTML = ''; return; } let countMap = {}; for (let i=1;i<=49;i++) countMap[i]=0; numbers.forEach(n=>countMap[n]++); state.countData[num]=countMap; let values = Object.values(countMap).filter(v=>v>0); state.minMax[num].max = values.length ? Math.max(...values) : 0; let maxCount = state.minMax[num].max; let groupMap = {}; for (let c=0;c<=maxCount;c++) groupMap[c]=[]; for (let i=1;i<=49;i++) { let c = countMap[i]; groupMap[c].push(i); } let sortedCounts = Array.from({length:maxCount+1},(_,i)=>i).filter(c=>groupMap[c].length>0); renderBase(num,numbers.length,new Set(numbers).size,maxCount); renderGroup(num,sortedCounts,groupMap,maxCount); }
+function autoCalc(num) { ui.updateInputInfo(num); calculate(num); storage.autoSaveInput(); clearTimeout(state.timers.autoCompare); state.timers.autoCompare = setTimeout(compareAll, 260); }
+function bindPaste() { [1,2].forEach(n=>{ document.getElementById(`numInput${n}`).addEventListener('paste',e=>{ e.preventDefault(); let text = (e.clipboardData||window.clipboardData).getData('text'); let nums = utils.parseNumbers(text); let el = document.getElementById(`numInput${n}`); let start = el.selectionStart; el.value = el.value.substring(0,start) + nums.join(' ') + el.value.substring(start); autoCalc(n); }); }); }
 
-function importCustomRuleByText() {
-  const txt = document.getElementById('ruleImportText').value;
-  const lines = txt.split(/[\r\n]+/)
-    .map(s => s.trim())
-    .filter(s => s);
+function clearRuleImportInput() { document.getElementById('ruleImportText').value = ''; storage.clearRuleImportText(); }
+function importRuleFromTxt() { openCustomRulePanel(); document.getElementById('importRuleFileInput').click(); }
+function handleRuleFileSelect(e) { let file = e.target.files[0]; if (!file) return; let reader = new FileReader(); reader.onload = function(ev) { document.getElementById('ruleImportText').value = ev.target.result; storage.saveRuleImportText(); importCustomRuleByText(); }; reader.readAsText(file, "UTF-8"); e.target.value = ''; }
 
-  lines.forEach(line => {
-    let parts = line.split(/→|->|=>/);
-    if (parts.length < 2) return;
+function importTxtToBoth() { document.getElementById('importFileInput').click(); }
+function handleFileSelect(e) { let file = e.target.files[0]; if (!file) return; let reader = new FileReader(); reader.onload = function(ev) { let content = ev.target.result; let parts = content.split(/\.{6,}/); if (parts.length < 2) { alert("文件格式错误：未找到分隔符 '........'，请确保上半部分为G·A数据，下半部分为G·B数据，中间用........隔开。"); return; } let ga = parts[0].trim(); let gb = parts[1].trim(); if (parts.length > 2) gb = parts.slice(1).join(' ').trim(); document.getElementById('numInput1').value = ga; document.getElementById('numInput2').value = gb; autoCalc(1); autoCalc(2); storage.saveInput(); }; reader.readAsText(file, "UTF-8"); e.target.value = ''; }
 
-    let a = parts[0].trim();
-    let b = parts[1].trim();
-    if (!a || !b) return;
+const DEFAULT_RANGE_DATA = `1～2→0～4
+3～4→1～6
+5～6→2～6
+0～0→0～2
+7～9→3～9`;
 
-    let filled = false;
-    for (let i = 1; i <= 5; i++) {
-      let aDom = document.getElementById(`rule${i}a`);
-      let bDom = document.getElementById(`rule${i}b`);
-      if (aDom && bDom && !aDom.value && !bDom.value) {
-        aDom.value = a;
-        bDom.value = b;
-        filled = true;
-        break;
-      }
-    }
-    if (!filled) {
-      state.customRules.push({ a, b });
-    }
-  });
-
-  renderCustomRules();
-  onRuleChange();
-}
-
-const aiModeDynamic = document.getElementById("aiModeDynamic");
-const aiModeFixed = document.getElementById("aiModeFixed");
-const aiBtnRefresh = document.getElementById("aiBtnRefresh");
-let aiCurrentMode = "dynamic";
-let aiDATA = {};
-
-function safeMin(arr) {
-  if (!arr || arr.length === 0) return 2;
-  return Math.min(...arr);
-}
-function safeMax(arr) {
-  if (!arr || arr.length === 0) return 4;
-  return Math.max(...arr);
-}
-function toRange(arr){
-  if(!arr||!arr.length)return "";
-  let min = safeMin(arr);
-  let max = safeMax(arr);
-  if(max - min >= 5) max = min + 4;
-  if(max - min < 2) max = min + 2;
-  return min === max ? `${min}` : `${min}~${max}`;
-}
-function buildConsecutiveBlock(rawArr, whiteSet){
-  if(!rawArr.length) return [2,3,4];
-  let freq = Array(10).fill(0);
-  rawArr.forEach(n=>{if(!isNaN(n))freq[n]++;});
-  let hotList = [];
-  for(let i=0;i<10;i++){
-    if(whiteSet.has(i) && freq[i]>0) hotList.push({v:i,cnt:freq[i]});
-  }
-  hotList.sort((a,b)=>b.cnt-a.cnt);
-  let core = hotList.slice(0,5).map(x=>x.v).sort((a,b)=>a-b);
-  if(!core.length) return [2,3,4];
-  let minV=core[0], maxV=core[core.length-1];
-  let main=[];
-  for(let i=minV;i<=maxV;i++){
-    if(whiteSet.has(i)) main.push(i);
-  }
-  if(main.length < 3) main=[2,3,4];
-  if(main.length > 5) main=main.slice(0,4);
-  return main;
-}
-
-function aiBuildDynamicRanges(arr){
-  const numArr = arr.filter(n=>!isNaN(n)&&n>=0&&n<=9);
-  const allSet = new Set([0,1,2,3,4,5,6,7,8,9]);
-
-  let mainBlock = buildConsecutiveBlock(numArr, allSet);
-  let rest = Array.from(allSet).filter(x => !mainBlock.includes(x));
-  
-  let freq = Array(10).fill(0);
-  numArr.forEach(n=>{if(!isNaN(n))freq[n]++;});
-  rest.sort((a,b)=>freq[b]-freq[a]);
-
-  let len = rest.length;
-  let p1 = Math.ceil(len/3);
-  let p2 = Math.ceil(len*2/3);
-  let seg1 = rest.slice(0,p1);
-  let seg2 = rest.slice(p1,p2);
-  let seg3 = rest.slice(p2);
-
-  return [
-    {label:toRange(mainBlock) || "0~1"},
-    {label:toRange(seg1) || "2~3"},
-    {label:toRange(seg2) || "4~5"},
-    {label:toRange(seg3) || "6~9"}
-  ];
-}
-
-const aiFixedRanges = [
-  {min:0,max:2,label:"0~2"},
-  {min:3,max:5,label:"3~5"},
-  {min:6,max:8,label:"6~8"},
-  {min:9,max:9,label:"9"}
-];
-
-function aiGetRangeLabel(v,ranges){
-  for(let r of ranges){
-    let parts = r.label.split("~");
-    if(parts.length===2){
-      let mi=+parts[0],ma=+parts[1];
-      if(v>=mi&&v<=ma) return r.label;
-    }else{
-      if(v==+r.label) return r.label;
-    }
-  }
-  return ranges[0].label;
-}
-
-function aiBuild(ds){
-  if(!ds.length)return{list:[],total:0,max:0,count:{}};
-  const listA = ds.map(o=>o.a);
-  const listB = ds.map(o=>o.b);
-  const ra = aiCurrentMode==="dynamic"?aiBuildDynamicRanges(listA):aiFixedRanges;
-  const rb = aiCurrentMode==="dynamic"?aiBuildDynamicRanges(listB):aiFixedRanges;
-  const seq = [];
-  const count={},score={};
-
-  ds.forEach((o,i)=>{
-    let la=aiGetRangeLabel(o.a,ra);
-    let lb=aiGetRangeLabel(o.b,rb);
-    let k=la+" → "+lb;
-    seq.push(k);
-    count[k]=(count[k]||0)+1;
-  });
-
-  const miss={};
-  for(let k in count){
-    let last = seq.lastIndexOf(k);
-    miss[k] = ds.length - 1 - last;
-  }
-
-  ds.forEach((o,i)=>{
-    let la=aiGetRangeLabel(o.a,ra);
-    let lb=aiGetRangeLabel(o.b,rb);
-    let k=la+" → "+lb;
-    if(i>=ds.length-5) score[k]=(score[k]||0)+8;
-    else if(i>=ds.length-10) score[k]=(score[k]||0)+4;
-    else if(i>=ds.length-20) score[k]=(score[k]||0)+2;
-    else score[k]=(score[k]||0)+1;
-  });
-
-  for(let k in score){
-    score[k] += miss[k] * 0.05;
-    let rh=seq.slice(-8).filter(x=>x===k).length;
-    if(rh>=3) score[k] +=20;
-    if(rh>=5) score[k] +=30;
-  }
-
-  const list=Object.entries(score).sort((a,b)=>b[1]-a[1]);
-  const total=list.length>0?list.reduce((s,v)=>s+v[1],0):0;
-  const max=list.length>0?list[0][1]:0;
-  return {list,total,max,count};
-}
-
-function aiRenderHotNumbers(raw){
-  const la = aiBuildDynamicRanges(raw.map(o=>o.a));
-  const lb = aiBuildDynamicRanges(raw.map(o=>o.b));
-  const aiHotA = document.getElementById("aiHotA");
-  const aiHotB = document.getElementById("aiHotB");
-  aiHotA.innerHTML=`<span class="ai-hot-item">${la[0].label}</span>`;
-  aiHotB.innerHTML=`<span class="ai-hot-item">${lb[0].label}</span>`;
-}
-
-function aiRenderRecommend(g){
-  const aiRecommendArea = document.getElementById("aiRecommendArea");
-  if(!g||!g.list.length){aiRecommendArea.innerHTML="暂无数据";return}
-  aiRecommendArea.innerHTML = g.list.slice(0,3).map(([k]) => {
-    let [a,b] = k.split(" → ");
-    return `<span class="ai-recommend-item" onclick="importAIRule('${a}','${b}')">${k}</span>`;
-  }).join("");
-}
-
-function aiShowToast(m){
-  const t = document.createElement('div');
-  t.className='ai-toast';
-  t.textContent=m;
-  document.body.appendChild(t);
-  t.style.display='block';
-  setTimeout(()=>{document.body.removeChild(t);},1400);
-}
-
-function aiRun(){
-  const txt=document.getElementById("rangeData").value.trim();
-  const lines=txt?txt.split("\n").map(i=>i.trim()).filter(Boolean):[];
-  document.getElementById("aiTotalLines").textContent=lines.length;
-  const raw=[];
-  lines.forEach(l=>{
-    const p=l.split(/\s+/).map(Number);
-    if(!isNaN(p[0])&&!isNaN(p[1])&&p.length>=2) raw.push({a:p[0],b:p[1]});
-  });
-  document.getElementById("aiValidLines").textContent=raw.length;
-  if(!raw.length){
-    document.getElementById("aiHotA").innerHTML=document.getElementById("aiHotB").innerHTML="";
-    document.getElementById("aiRecommendArea").innerHTML="暂无数据";
-    return;
-  }
-  aiRenderHotNumbers(raw);
-  const d20=raw.slice(-30);
-  aiDATA={all:aiBuild(raw),20:aiBuild(d20)};
-  aiRenderRecommend(aiDATA[20]);
-}
-
-aiBtnRefresh.addEventListener('click', () => {
-  aiRun();
-  aiShowToast("已更新");
-});
-aiModeDynamic.addEventListener('click', () => {
-  aiCurrentMode = "dynamic";
-  aiModeDynamic.classList.add("active");
-  aiModeFixed.classList.remove("active");
-  aiRun();
-});
-aiModeFixed.addEventListener('click', () => {
-  aiCurrentMode = "fixed";
-  aiModeFixed.classList.add("active");
-  aiModeDynamic.classList.remove("active");
-  aiRun();
-});
-
-// ================= 导入TXT到G·A和G·B =================
-function importTxtToAB() {
-    document.getElementById('importFileInput').click();
-}
-function handleFileSelect(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        const content = e.target.result;
-        const separator = /\.{6,}/;
-        let parts = content.split(separator);
-        if (parts.length < 2) {
-            alert("文件格式错误：未找到分隔符 '........'，请确保上半部分为G·A数据，下半部分为G·B数据，中间用........隔开。");
-            return;
-        }
-        let gaRaw = parts[0].trim();
-        let gbRaw = parts[1].trim();
-        if (parts.length > 2) {
-            gbRaw = parts.slice(1).join(' ').trim();
-        }
-        document.getElementById('numInput1').value = gaRaw;
-        document.getElementById('numInput2').value = gbRaw;
-        autoCalc(1);
-        autoCalc(2);
-        storage.saveInput();
-        alert("蚂蚁数据：导入成功！G·A 和 G·B 数据已更新。");
-    };
-    reader.onerror = function() {
-        alert("读取文件失败，请重试。");
-    };
-    reader.readAsText(file, "UTF-8");
-    event.target.value = '';
-}
-
-// ================= 导入TXT到规则导入文本框（无成功提示，且会自动保存） =================
-function importRuleFromTxt() {
-    document.getElementById('importRuleFileInput').click();
-}
-function handleRuleFileSelect(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        const content = e.target.result;
-        document.getElementById('ruleImportText').value = content;
-        storage.saveRuleImportText();  // 保存到本地存储
-    };
-    reader.onerror = function() {
-        alert("读取文件失败，请重试。");
-    };
-    reader.readAsText(file, "UTF-8");
-    event.target.value = '';
-}
-// ====================================================
-
-window.onload=function(){
-    const code=getDeviceCode();
-    document.getElementById("deviceCode").textContent=code;
-    
-    if(!checkAuthStatus()){
-      document.getElementById("authModal").style.display = "flex";
-    }
-
+window.onload = function() {
+    let code = getDeviceCode();
+    let deviceSpan = document.getElementById("deviceCode");
+    if (deviceSpan) deviceSpan.textContent = code;
+    if (!checkAuthStatus()) document.getElementById("authModal").style.display = "flex";
     storage.loadInput();
     storage.loadRange();
-    storage.loadRuleImportText();  // 加载规则导入文本框的内容
+    let rangeDataElem = document.getElementById('rangeData');
+    if (rangeDataElem && (!rangeDataElem.value || rangeDataElem.value.trim() === '')) {
+        rangeDataElem.value = DEFAULT_RANGE_DATA;
+        storage.saveRange();
+    }
+    storage.loadRuleImportText();
     bindPaste();
     clearAllRules();
-    autoCalc(1);autoCalc(2);
-    aiRun();
+    autoCalc(1); autoCalc(2);
+    let saved = localStorage.getItem('globalStatVisible');
+    let chk = document.getElementById('globalStatSwitch');
+    if (saved === '1') chk.checked = true; else chk.checked = false;
+    toggleGlobalStat();
 };
-
-function insertDateToTitle() {
-  try {
-    const date = new Date();
-    const ymd = date.getFullYear() + "-" + String(date.getMonth()+1).padStart(2,0) + "-" + String(date.getDate()).padStart(2,0);
-    const weeks = ["日","一","二","三","四","五","六"];
-    const week = "周" + weeks[date.getDay()];
-    const dateText = `${ymd} ${week} `;
-    const title = document.querySelector("#compareResult .result-title");
-    if (title && !title.dataset.dateDone) {
-      title.innerHTML = dateText + title.innerHTML;
-      title.dataset.dateDone = "1";
-    }
-  } catch(e){}
-}
-window.addEventListener("load", function(){
-  setTimeout(insertDateToTitle, 300);
-});
 </script>
 </body>
 </html>
