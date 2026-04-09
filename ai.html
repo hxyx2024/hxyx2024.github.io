@@ -924,7 +924,7 @@ function compareAll() {
 }
 
 function matchRule(val, rule) { rule = (rule || '').trim().replace(/~/g,'-').replace(/～/g,'-'); if (!rule) return true; if (rule.includes('-')) { let [a,b] = rule.split('-').map(Number); return val >= Math.min(a,b) && val <= Math.max(a,b); } return val == Number(rule); }
-function getDynamicDefaults() { let m1 = state.minMax[1].max||0, m2 = state.minMax[2].max||0; return [{a:'1-2',b:'0-4'},{a:'3-4',b:'1-6'},{a:'5-6',b:'2-6'},{a:'0-0',b:'0-2'},{a:`7-${m1}`,b:`3-${m2}`}]; }
+function getDynamicDefaults() { let m1 = state.minMax[1].max||0, m2 = state.minMax[2].max||0; return [{a:'0-2',b:'0-2'},{a:'2-2',b:'1-4'},{a:'3-5',b:'2-6'},{a:'6-6',b:'2-6'},{a:`7-${m1}`,b:`3-${m2}`}]; }
 function addCustomRule() { openCustomRulePanel(); state.customRules.push({a:'',b:''}); renderCustomRules(); onRuleChange(); }
 function deleteCustomRule(idx) { state.customRules.splice(idx,1); renderCustomRules(); onRuleChange(); }
 function updateCustomRule(idx,key,val) { if (state.customRules[idx]) { state.customRules[idx][key] = val.trim(); onRuleChange(); } }
