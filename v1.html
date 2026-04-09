@@ -1,0 +1,1527 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, maximum-scale=2.0, minimum-scale=1.0">
+    <title>MAYI · 盘口智能统计</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Microsoft YaHei", sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        html, body {
+            width: 100%;
+            min-height: 100vh;
+            background: #121212;
+            color: #eee;
+            padding: 6px;
+        }
+        .container {
+            max-width: 700px;
+            margin: 0 auto;
+        }
+        .tool-box {
+            background: #1a1a1a;
+            padding: 10px;
+            border-radius: 12px;
+            border: 1px solid #2a2a2a;
+        }
+        h1 {
+            text-align: center;
+            font-size: 18px;
+            margin-bottom: 10px;
+            color: #fff;
+        }
+        .panel {
+            margin-bottom: 10px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #222;
+        }
+        .panel:last-child {
+            margin-bottom: 0;
+            padding-bottom: 0;
+            border-bottom: none;
+        }
+        .panel-title {
+            font-size: 14px;
+            margin-bottom: 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .panel-title-left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .sub-group {
+            background: #1e1e1e;
+            border-radius: 8px;
+            padding: 8px;
+            margin-bottom: 12px;
+            border-left: 3px solid #007bff;
+        }
+        .sub-group:last-child {
+            margin-bottom: 0;
+        }
+        .sub-title {
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 6px;
+            color: #fff;
+        }
+        .input-box {
+            margin-bottom: 6px;
+        }
+        textarea {
+            width: 100%;
+            height: 70px;
+            padding: 6px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            background: #222;
+            color: #eee;
+            outline: none;
+        }
+        .input-info {
+            font-size: 12px;
+            color: #888;
+            margin-top: 2px;
+        }
+        .btn-group {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 6px;
+            flex-wrap: wrap;
+        }
+        button {
+            flex: 1;
+            min-width: 60px;
+            padding: 6px 4px;
+            border: none;
+            border-radius: 6px;
+            background: #252525;
+            color: #eee;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        button:active {
+            opacity: 0.7;
+            transform: scale(0.96);
+        }
+        button.primary {
+            background: #007bff;
+            color: #fff;
+        }
+        button.primary:hover,
+        button.primary:active {
+            background: #0056b3 !important;
+        }
+        .result-section {
+            margin-top: 6px;
+            padding: 6px;
+            border-radius: 6px;
+            background: #222;
+        }
+        .result-title {
+            font-size: 14px;
+            margin-bottom: 6px;
+            padding-bottom: 4px;
+            border-bottom: 1px solid #333;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .base-row {
+            display: flex;
+            gap: 10px;
+            font-size: 13px;
+            flex-wrap: wrap;
+        }
+        .group-item {
+            padding: 4px 6px;
+            margin: 3px 0;
+            background: #252525;
+            font-size: 13px;
+            border-radius: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100% !important;
+            white-space: normal !important;
+            word-break: break-all !important;
+            overflow-wrap: break-word !important;
+            border-left: 2px solid #007bff;
+        }
+        .copy-btn {
+            padding: 3px 6px;
+            background: #333;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        .copy-tip {
+            color: #6cce6c;
+            font-size: 12px;
+            float: right;
+            margin-left: 6px;
+        }
+        .compare-row {
+            background: #252525;
+            border-left: 2px solid #007bff;
+        }
+        .final-row {
+            background: #252525;
+            border-left: 2px solid #007bff;
+            font-weight: normal;
+        }
+        .rule-inputs {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 6px;
+            margin-bottom: 8px;
+        }
+        .rule-item {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+        .rule-label {
+            font-size: 12px;
+            color: #ccc;
+            text-align: center;
+        }
+        .rule-input {
+            width: 100%;
+            padding: 7px 6px;
+            border-radius: 6px;
+            background: #252525;
+            color: #eee;
+            font-size: 14px;
+            border: none;
+            text-align: center;
+        }
+        .custom-rule-row {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 6px;
+            margin-bottom: 8px;
+            position: relative;
+        }
+        .float-del-btn {
+            position: absolute;
+            right: 0;
+            top: 0;
+            width: 28px;
+            height: 28px;
+            background: transparent;
+            color: #eee;
+            border: none;
+            font-size: 16px;
+        }
+        .switch-control {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            color: #888;
+        }
+        .switch-control input {
+            width: 32px;
+            height: 16px;
+            appearance: none;
+            background: #333;
+            border-radius: 10px;
+            position: relative;
+        }
+        .switch-control input:checked {
+            background: #007bff;
+        }
+        .switch-control input::after {
+            content: '';
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            background: #fff;
+            border-radius: 50%;
+            top: 2px;
+            left: 2px;
+            transition: 0.2s;
+        }
+        .switch-control input:checked::after {
+            left: 18px;
+        }
+        .note-textarea {
+            width: 100%;
+            height: 100px;
+            margin-top: 6px;
+            display: none;
+            background: #252525;
+            border: none;
+            border-radius: 6px;
+            color: #eee;
+            padding: 6px;
+        }
+        .query-zodiac-input {
+            margin-top: 6px;
+            max-width: 60%;
+        }
+        .query-zodiac-input input {
+            width: 100%;
+            padding: 7px 6px;
+            border-radius: 6px;
+            background: #222;
+            color: #eee;
+            font-size: 14px;
+            border: none;
+        }
+        .query-zodiac-result {
+            margin-top: 6px;
+            padding: 6px;
+            background: #252525;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+        .total-zodiac-stat {
+            margin-top: 6px;
+            padding: 6px;
+            background: #252525;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+        .total-zodiac-list {
+            display: grid;
+            grid-template-columns: repeat(6,1fr);
+            gap: 4px;
+            justify-items: center;
+        }
+        .total-zodiac-list .zodiac-item {
+            display: inline-block;
+            margin: 2px 4px 2px 0;
+            padding: 2px 4px;
+            background: #252525;
+            border-radius: 4px;
+            font-size: 12px;
+            color: #eee;
+            cursor: pointer;
+        }
+        .hit-rate-display {
+            margin: 8px 0;
+            padding: 6px;
+            background: #252525;
+            border-radius: 6px;
+            text-align: center;
+            font-size: 13px;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 10px;
+            font-size: 12px;
+            color: #666;
+        }
+        .auth-modal {
+            position: fixed; top:0; left:0; width:100%; height:100%;
+            background: rgba(0,0,0,.95); z-index:9999;
+            display: flex; align-items:center; justify-content:center;
+            display: none;
+        }
+        .auth-box {
+            background: #1a1a1a;
+            padding: 20px;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 360px;
+            text-align: center;
+        }
+        .device-info {
+            background: #252525;
+            padding: 8px;
+            border-radius: 6px;
+            color: #eee;
+            margin: 10px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .auth-input {
+            width: 100%;
+            padding: 8px;
+            margin: 8px 0;
+            border-radius: 6px;
+            border: none;
+            background: #252525;
+            color: #fff;
+            text-align: center;
+        }
+        .auth-btn {
+            width: 100%;
+            padding: 8px;
+            border: none;
+            border-radius: 6px;
+            background: #007bff;
+            color: #fff;
+            font-weight: normal;
+        }
+        .auth-tip {
+            margin-top: 8px;
+            font-size: 13px;
+            color: #ff6b6b;
+        }
+        .copy-code-btn,
+        .range-import-btn {
+            padding: 4px 6px;
+            border-radius: 4px;
+            border: none;
+            font-size: 12px;
+            background: #007bff;
+            color: #fff;
+        }
+        .ai-card{background:#1a2a3a;border-radius:6px;padding:6px;margin-bottom:6px;border:1px solid #007bff;width:auto;height:auto;box-sizing:border-box;}
+        .ai-title{color:#eee;margin:3px 0;font-size:12px}
+        .ai-row-2col{display:flex;gap:6px;margin:4px 0;align-items:flex-start}
+        .ai-col{flex:1;min-width:0}
+        .ai-hot-item{background:#007bff;color:#fff;padding:3px 5px;border-radius:3px;font-size:13px;display:inline-block;margin:2px}
+        .ai-recommend-item{background:#007bff;color:#fff;padding:3px 5px;border-radius:3px;display:block;margin:3px 0;font-size:13px;cursor:pointer;width:100%}
+        .ai-btn-row-3{display:flex;gap:4px;margin:4px 0}
+        .ai-btn-row-3 button{
+          flex:1;padding:6px 2px;border-radius:5px;border:none;
+          font-size:12px;background:#007bff;color:#fff;min-height:28px;
+        }
+        .ai-btn-row-3 button.active{background:#0056b3}
+        .ai-rule-link-btn{flex:1;padding:6px 2px;border-radius:5px;border:none;font-size:12px;background:#007bff;color:#fff;min-height:28px;text-decoration:none;display:flex;align-items:center;justify-content:center;}
+        .ai-input-row{display:flex;justify-content:space-between;font-size:10px;color:#aaa;margin:4px 0}
+        .ai-toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#007bff;color:#fff;padding:6px 12px;border-radius:4px;font-size:12px;display:none;z-index:99}
+        .rule-import-box {
+            margin: 8px 0;
+            display: flex;
+            gap: 6px;
+            align-items: stretch;
+        }
+        .rule-import-input {
+            flex: 1;
+            min-height: 90px;
+            padding: 7px 6px;
+            border-radius: 6px;
+            background: #222;
+            color: #eee;
+            font-size: 14px;
+            border: none;
+            resize: none;
+            white-space: pre-wrap;
+        }
+        .rule-btn-col {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .rule-import-btn {
+            padding: 7px 10px;
+            border-radius: 6px;
+            background: #007bff;
+            color: #fff;
+            font-size: 13px;
+            border: none;
+            white-space: nowrap;
+        }
+        .rule-clear-btn {
+            padding: 7px 10px;
+            border-radius: 6px;
+            background: #444;
+            color: #fff;
+            font-size: 13px;
+            border: none;
+            white-space: nowrap;
+        }
+        .zodiac-show-num {
+            display: none;
+        }
+        .stat-content {
+            transition: all 0.2s;
+        }
+        .link-btn {
+            background: #007bff;
+            color: #fff;
+            padding: 6px 4px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex: 1;
+            min-width: 60px;
+        }
+        .link-btn:hover {
+            background: #0056b3;
+        }
+    </style>
+</head>
+<body>
+
+<div class="auth-modal" id="authModal">
+    <div class="auth-box">
+        <h2>🔒 授权验证</h2>
+        <div style="color:#ccc;">你的设备串码：</div>
+        <div class="device-info">
+            <span id="deviceCode">Loading...</span>
+            <button class="copy-code-btn" onclick="copyDeviceCode()">📋 Copy</button>
+        </div>
+        <div style="color:#ccc;margin-top:10px;">请输入授权码：</div>
+        <input type="text" class="auth-input" id="authCode" placeholder="输入授权码">
+        <button class="auth-btn" onclick="checkAuth()">确认验证</button>
+        <div class="auth-tip" id="authTip"></div>
+        <div class="auth-footer" style="margin-top:12px;font-size:12px;color:888;line-height:1.4;">
+            首次使用或授权已过期，请将【设备串码】发送给 @mayiya_bot 获取授权码<br>
+            官方授权：<a href="https://t.me/mayiya_bot" target="_blank">机器人</a>
+        </div>
+    </div>
+</div>
+
+    <div class="container">
+        <div class="tool-box">
+            <h1>Ant Data AI Stats Tool</h1>
+            
+            <div class="panel">
+                <div class="panel-title">
+                    <div class="panel-title-left">
+                        <span>G · A &nbsp;&nbsp;|&nbsp;&nbsp; G · B</span>
+                    </div>
+                    <label class="switch-control">
+                        <input type="checkbox" id="globalStatSwitch" onchange="toggleGlobalStat()"> 📊 盘口频次统计
+                    </label>
+                </div>
+                <div id="group1Content">
+                    <!-- G·A 子区域（无操作按钮） -->
+                    <div class="sub-group">
+                        <div class="sub-title">📊 G · A 数据区</div>
+                        <div class="input-box">
+                            <textarea id="numInput1" placeholder="G · A 官方数据粘贴到这里（ 电报 @mayi2036 ）" oninput="autoCalc(1)"></textarea>
+                            <div class="input-info" id="inputInfo1">已输入：0 个</div>
+                        </div>
+                        <div class="result-section" id="baseResult1"></div>
+                        <div class="result-section" id="groupResult1"></div>
+                    </div>
+
+                    <!-- G·B 子区域 -->
+                    <div class="sub-group">
+                        <div class="sub-title">📊 G · B 数据区</div>
+                        <div class="input-box">
+                            <textarea id="numInput2" placeholder="G · B 官方数据粘贴到这里（ 电报 @mayi2036 ）" oninput="autoCalc(2)"></textarea>
+                            <div class="input-info" id="inputInfo2">已输入：0 个</div>
+                        </div>
+                        <div class="btn-group">
+                            <button class="shuffle" onclick="shuffleBoth()">🔀 shuffle</button>
+                            <button class="sort" onclick="sortBoth()">📶Sort</button>
+                            <button class="copy-input" onclick="copyBothData()">📋 Copy</button>
+                            <button class="clear" onclick="clearBoth()">🗑Clear</button>
+                            <button class="import-ab" onclick="importTxtToBoth()">📄 导入 TXT (A+B)</button>
+                        </div>
+                        <div class="result-section" id="baseResult2"></div>
+                        <div class="result-section" id="groupResult2"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 官方规则面板 -->
+            <div class="panel">
+                <div class="panel-title">
+                    <div class="panel-title-left">
+                        <span>🟥 官方规则一键导入</span>
+                    </div>
+                    <label class="switch-control">
+                        <input type="checkbox" id="rangeSwitch" onchange="toggleRangePanel()">
+                    </label>
+                </div>
+                <div id="rangePanelWrap" style="display:none; margin-top:8px;">
+                    <div class="input-box">
+                        <textarea id="rangeData" placeholder="输入多行规则，每行格式：A→B 或 A B&#10;例如：&#10;4-5→2-6&#10;1→0-2" oninput="autoSaveRange()"></textarea>
+                    </div>
+                    <div class="btn-group">
+                        <button onclick="importRulesFromRange()" class="primary">📥 一键导入</button>
+                        <a href="https://mycm.cc.cd/" target="_blank" rel="noopener noreferrer" class="link-btn">🌐 官网</a>
+                        <button onclick="clearRange()">🗑 清空</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 智能推荐 -->
+            <div class="panel">
+                <div class="panel-title">
+                    <span>🟩智能推荐</span>
+                    <label class="switch-control">
+                        <input type="checkbox" id="aiSwitch" onchange="toggleAIPanel()">
+                    </label>
+                </div>
+                <div id="aiPanelWrap" style="display:none; margin-top:6px;">
+                    <div class="ai-card">
+                        <div class="ai-title">数据来源：蚂蚁官方</div>
+                        <div class="ai-btn-row-3">
+                            <button class="active" id="aiModeDynamic">动态</button>
+                            <button id="aiModeFixed">固定</button>
+                            <button id="aiBtnRefresh">更新</button>
+                            <a href="https://mycm.cc.cd/vip.html" target="_blank" rel="noopener noreferrer" class="ai-rule-link-btn">分析</a>
+                        </div>
+                        <div class="ai-input-row">
+                            <span>总行数：<span id="aiTotalLines">0</span></span>
+                            <span>有效：<span id="aiValidLines">0</span></span>
+                        </div>
+                        <div class="ai-row-2col">
+                            <div class="ai-col">
+                                <div class="ai-title">🔥 A · B 推荐</div>
+                                <div id="aiHotA"></div>
+                                <div id="aiHotB"></div>
+                            </div>
+                            <div class="ai-col">
+                                <div id="aiRecommendArea"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 自定义规则 -->
+            <div class="panel">
+                <div class="panel-title">
+                    <span>🟦自定义规则</span>
+					<span>μύρμηξ®</span>
+                    <label class="switch-control">
+                        <input type="checkbox" id="matchSwitch" onchange="toggleMatchPanel()">
+                    </label>
+                </div>
+                <div id="rulePanelWrap" style="display:none; margin-top:8px;">
+                  <div class="rule-import-box">
+                    <textarea class="rule-import-input" id="ruleImportText" placeholder="点☝️ 智能推荐 【分析】，区间规则一键导入
+格式：4-5→2-6" oninput="autoSaveRuleImportText()"></textarea>
+                    <div class="rule-btn-col">
+                      <button class="rule-import-btn" onclick="importCustomRuleByText()">解析</button>
+                      <button class="rule-txt-btn" onclick="importRuleFromTxt()">导入</button>
+                      <button class="rule-clear-btn" onclick="clearRuleImportInput()">清空</button>
+                    </div>
+                  </div>
+                  <div class="hit-rate-display" id="currentHitRate">当前中奖率：0/0 = 0.00%</div>
+                    <div class="btn-group">
+                        <button class="reset" onclick="resetRules()">🔄 restore</button>
+                        <button class="clear-rules" onclick="clearAllRules()">🗑 A-B</button>
+                        <button class="add-custom primary" onclick="addCustomRule()">➕ ADD</button>
+                    </div>
+                    <div class="rule-inputs" id="defaultRuleInputs">
+                        <div class="rule-item"><span class="rule-label">规则1：A</span><input type="text" class="rule-input" id="rule1a" oninput="onRuleChange()"></div>
+                        <div class="rule-item"><span class="rule-label">规则1：B</span><input type="text" class="rule-input" id="rule1b" oninput="onRuleChange()"></div>
+                        <div class="rule-item"><span class="rule-label">规则2：A</span><input type="text" class="rule-input" id="rule2a" oninput="onRuleChange()"></div>
+                        <div class="rule-item"><span class="rule-label">规则2：B</span><input type="text" class="rule-input" id="rule2b" oninput="onRuleChange()"></div>
+                        <div class="rule-item"><span class="rule-label">规则3：A</span><input type="text" class="rule-input" id="rule3a" oninput="onRuleChange()"></div>
+                        <div class="rule-item"><span class="rule-label">规则3：B</span><input type="text" class="rule-input" id="rule3b" oninput="onRuleChange()"></div>
+                        <div class="rule-item"><span class="rule-label">规则4：A</span><input type="text" class="rule-input" id="rule4a" oninput="onRuleChange()"></div>
+                        <div class="rule-item"><span class="rule-label">规则4：B</span><input type="text" class="rule-input" id="rule4b" oninput="onRuleChange()"></div>
+                        <div class="rule-item"><span class="rule-label">规则5：A</span><input type="text" class="rule-input" id="rule5a" oninput="onRuleChange()"></div>
+                        <div class="rule-item"><span class="rule-label">规则5：B</span><input type="text" class="rule-input" id="rule5b" oninput="onRuleChange()"></div>
+                    </div>
+                    <div id="customRuleContainer"></div>
+                </div>
+            </div>
+
+            <!-- 统计结果 -->
+            <div class="panel">
+                <div class="result-section" id="compareResult"></div>
+            </div>
+
+        </div>
+        <div class="footer">© 2026 蚂蚁数据 · mycm.cc.cd v6.9.5</div>
+    </div>
+
+<input type="file" id="importFileInput" accept=".txt" style="display:none" onchange="handleFileSelect(event)">
+<input type="file" id="importRuleFileInput" accept=".txt" style="display:none" onchange="handleRuleFileSelect(event)">
+
+<script>
+const SECRET_SALT = "ANT2026_ZODIAC";
+const STORAGE_KEY = "ANT_AUTH";
+function getDeviceCode() {
+    let code = localStorage.getItem("device_code");
+    if (!code) {
+        const temp = [navigator.userAgent, screen.width, screen.height, navigator.language].join("|");
+        let hash = 0;
+        for (let i = 0; i < temp.length; i++) {
+            hash = ((hash << 5) - hash) + temp.charCodeAt(i);
+            hash = hash & hash;
+        }
+        code = Math.abs(hash).toString(16).toUpperCase();
+        localStorage.setItem("device_code", code);
+    }
+    return code;
+}
+function safeCopy(text, tipId) {
+    if (!text || text.trim() === '') {
+        if (tipId) document.getElementById(tipId).innerText = '❌ 无内容';
+        setTimeout(() => { if (tipId) document.getElementById(tipId).innerText = '' }, 1500);
+        return;
+    }
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    textarea.style.left = '-9999px';
+    document.body.appendChild(textarea);
+    textarea.select();
+    textarea.setSelectionRange(0, textarea.value.length);
+    let success = false;
+    try { success = document.execCommand('copy'); } catch (e) {}
+    document.body.removeChild(textarea);
+    if (tipId) {
+        const tipEl = document.getElementById(tipId);
+        tipEl.innerText = success ? '✅已Copy' : '❌Copy失败';
+        setTimeout(() => tipEl.innerText = '', 1500);
+    }
+    return success;
+}
+function copyDeviceCode() {
+    const code = document.getElementById("deviceCode").innerText;
+    const ok = safeCopy(code);
+    const tip = document.getElementById("authTip");
+    if (ok) {
+        tip.style.color = "#6cce6c";
+        tip.textContent = "✅ 串码Copy成功！";
+        setTimeout(() => tip.textContent = "", 1500);
+    } else {
+        tip.textContent = "❌ Copy失败";
+    }
+}
+function validateAuth(device, auth) {
+    try {
+        const [t, s] = auth.split("_");
+        const et = Number(t);
+        if (et < Date.now()) return false;
+        let hash = 0;
+        const raw = device + SECRET_SALT + et;
+        for (let i = 0; i < raw.length; i++) {
+            hash = ((hash << 5) - hash) + raw.charCodeAt(i);
+            hash = hash & hash;
+        }
+        const cs = Math.abs(hash).toString(16).slice(0,8).toUpperCase();
+        return cs === s;
+    } catch(e) {
+        return false;
+    }
+}
+function checkAuthStatus() {
+    const auth = localStorage.getItem(STORAGE_KEY);
+    return auth && validateAuth(getDeviceCode(), auth);
+}
+function checkAuth() {
+    const d = getDeviceCode();
+    const a = document.getElementById("authCode").value.trim();
+    const tip = document.getElementById("authTip");
+    if (!a) { tip.textContent = "请输入授权码！"; return; }
+    if (validateAuth(d, a)) {
+        localStorage.setItem(STORAGE_KEY, a);
+        tip.style.color = "#6cce6c";
+        tip.textContent = "✅ 验证成功！";
+        setTimeout(()=>document.getElementById("authModal").style.display="none",800);
+    } else {
+        tip.textContent = "❌ 授权码无效或已过期 联系 @mayiya_bot";
+    }
+}
+const ZODIAC_LIST = ['马','蛇','龙','兔','虎','牛','鼠','猪','狗','鸡','猴','羊'];
+const ZODIAC_NUMBER_MAP = {
+    '马': [1,13,25,37,49], '蛇': [2,14,26,38], '龙': [3,15,27,39],
+    '兔': [4,16,28,40], '虎': [5,17,29,41], '牛': [6,18,30,42],
+    '鼠': [7,19,31,43], '猪': [8,20,32,44], '狗': [9,21,33,45],
+    '鸡': [10,22,34,46], '猴': [11,23,35,47], '羊': [12,24,36,48]
+};
+const state = {
+    countData: { 1: {}, 2: {} },
+    minMax: { 1: { min: 0, max: 0 }, 2: { min: 0, max: 0 } },
+    groupLines: { 1: '', 2: '' },
+    timers: { autoCompare: null, ruleChange: null, noteSave: null, inputSave: null, rangeSave: null, ruleImportSave: null },
+    customRules: []
+};
+const utils = {
+    padZero: n => n.toString().padStart(2, '0'),
+    getZodiac: n => ZODIAC_LIST[(n - 1) % 12],
+    uniqueSort: arr => [...new Set(arr)].sort((a, b) => a - b),
+    formatNumbers: arr => utils.uniqueSort(arr).map(utils.padZero).join(' ') || '无',
+    parseNumbers: str => (str.match(/\d+/g) || []).map(Number).filter(n => n >= 1 && n <= 49),
+    shuffleArray: arr => {
+        const newArr = [...arr];
+        for (let i = newArr.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [newArr[i], newArr[j]] = [newArr[j], newArr[i]];
+        }
+        return newArr;
+    }
+};
+const ui = {
+    bindCopyButtons() {
+        document.querySelectorAll('.copy-btn').forEach(btn => {
+            btn.onclick = () => safeCopy(btn.dataset.copy, btn.dataset.tip);
+        });
+    },
+    updateInputInfo(num) {
+        const value = document.getElementById(`numInput${num}`).value;
+        const count = utils.parseNumbers(value).length;
+        document.getElementById(`inputInfo${num}`).innerHTML = 
+            `已输入：${count} 个 <span id="inputTip${num}" class="copy-tip"></span>`;
+    },
+    updateHitRate(hit, total) {
+        const rate = total > 0 ? ((hit / total) * 100).toFixed(2) : "0.00";
+        const el = document.getElementById('currentHitRate');
+        el.innerHTML = `中奖概率：${hit}/${total} = ${rate}%`;
+    }
+};
+const zodiacUI = {
+    showTotalZodiacNum(zodiac) {
+        const nums = ZODIAC_NUMBER_MAP[zodiac].map(utils.padZero).join(' ');
+        const el = document.getElementById('totalZodiacShowNum');
+        el.textContent = `${zodiac}：${nums}`;
+        el.style.display = 'block';
+    },
+    queryZodiac() {
+        const val = document.getElementById('queryZodiacInput').value.trim();
+        const nums = utils.parseNumbers(val);
+        const result = nums.map(n => `${utils.padZero(n)}=${utils.getZodiac(n)}`).join('  ');
+        document.getElementById('queryZodiacResult').textContent = result;
+    }
+};
+const storage = {
+    saveNote() { localStorage.setItem('lottery_note', document.getElementById('noteTextarea').value); },
+    loadNote() { document.getElementById('noteTextarea').value = localStorage.getItem('lottery_note') || ''; },
+    autoSaveNote() { clearTimeout(state.timers.noteSave); state.timers.noteSave = setTimeout(storage.saveNote, 500); },
+    saveInput() { localStorage.setItem('lottery_input1', document.getElementById('numInput1').value); localStorage.setItem('lottery_input2', document.getElementById('numInput2').value); },
+    loadInput() { document.getElementById('numInput1').value = localStorage.getItem('lottery_input1') || ''; document.getElementById('numInput2').value = localStorage.getItem('lottery_input2') || ''; },
+    autoSaveInput() { clearTimeout(state.timers.inputSave); state.timers.inputSave = setTimeout(storage.saveInput, 300); },
+    saveRange() { localStorage.setItem('lottery_range', document.getElementById('rangeData').value); },
+    loadRange() { document.getElementById('rangeData').value = localStorage.getItem('lottery_range') || ''; },
+    autoSaveRange() { clearTimeout(state.timers.rangeSave); state.timers.rangeSave = setTimeout(storage.saveRange, 300); },
+    saveRuleImportText() { localStorage.setItem('rule_import_text', document.getElementById('ruleImportText').value); },
+    loadRuleImportText() { 
+        const saved = localStorage.getItem('rule_import_text');
+        if (saved !== null) document.getElementById('ruleImportText').value = saved;
+    },
+    autoSaveRuleImportText() { clearTimeout(state.timers.ruleImportSave); state.timers.ruleImportSave = setTimeout(storage.saveRuleImportText, 300); },
+    clearRuleImportText() { localStorage.removeItem('rule_import_text'); }
+};
+function autoSaveRuleImportText() { storage.autoSaveRuleImportText(); }
+function autoSaveRange() { storage.autoSaveRange(); }
+function toggleNote() {
+    const noteEl = document.getElementById('noteTextarea');
+    const checked = document.getElementById('noteSwitch').checked;
+    noteEl.style.display = checked ? 'block' : 'none';
+    localStorage.setItem('note_visible', checked ? 1 : 0);
+}
+function keepNoteState() {
+    if (localStorage.getItem('note_visible') == 1) {
+        document.getElementById('noteSwitch').checked = true;
+        document.getElementById('noteTextarea').style.display = 'block';
+    }
+}
+function toggleGlobalStat() {
+    const chk = document.getElementById('globalStatSwitch');
+    const contents = document.querySelectorAll('.stat-content');
+    for (let el of contents) {
+        el.style.display = chk.checked ? 'block' : 'none';
+    }
+    localStorage.setItem('globalStatVisible', chk.checked ? 1 : 0);
+}
+function toggleMatchPanel() {
+    const wrap = document.getElementById('rulePanelWrap');
+    const on = document.getElementById('matchSwitch').checked;
+    wrap.style.display = on ? 'block' : 'none';
+}
+function toggleRangePanel() {
+    const wrap = document.getElementById('rangePanelWrap');
+    const on = document.getElementById('rangeSwitch').checked;
+    wrap.style.display = on ? 'block' : 'none';
+}
+function toggleAIPanel() {
+    const wrap = document.getElementById('aiPanelWrap');
+    const on = document.getElementById('aiSwitch').checked;
+    wrap.style.display = on ? 'block' : 'none';
+}
+function copyBothData() {
+    const gaData = document.getElementById('numInput1').value.trim();
+    const gbData = document.getElementById('numInput2').value.trim();
+    const combined = "G · A\n" + gaData + "\n...........\nG · B\n" + gbData;
+    safeCopy(combined, 'inputTip2');
+}
+function shuffleBoth() {
+    [1, 2].forEach(num => {
+        const el = document.getElementById(`numInput${num}`);
+        const numbers = utils.parseNumbers(el.value);
+        el.value = utils.shuffleArray(numbers).map(utils.padZero).join(' ');
+        autoCalc(num);
+    });
+}
+function sortBoth() {
+    [1, 2].forEach(num => {
+        const el = document.getElementById(`numInput${num}`);
+        const numbers = utils.parseNumbers(el.value).sort((a, b) => a - b);
+        el.value = numbers.map(utils.padZero).join(' ');
+        autoCalc(num);
+    });
+}
+function clearBoth() {
+    [1, 2].forEach(num => {
+        document.getElementById(`numInput${num}`).value = '';
+        const baseDiv = document.getElementById(`baseResult${num}`);
+        if (baseDiv) baseDiv.innerHTML = '';
+        const groupDiv = document.getElementById(`groupResult${num}`);
+        if (groupDiv) groupDiv.innerHTML = '';
+        state.countData[num] = {};
+        state.minMax[num] = { min: 0, max: 0 };
+        ui.updateInputInfo(num);
+    });
+    autoCalc(1);
+    autoCalc(2);
+}
+function clearRange() {
+    document.getElementById('rangeData').value = '';
+    storage.saveRange();
+}
+function expandRange(str) {
+    str = str.trim();
+    let match = str.match(/^(\d+)[\-~](\d+)$/);
+    if (match) {
+        let start = parseInt(match[1], 10);
+        let end = parseInt(match[2], 10);
+        if (!isNaN(start) && !isNaN(end) && start <= end) {
+            let result = [];
+            for (let i = start; i <= end; i++) result.push(i.toString());
+            return result;
+        }
+    }
+    return [str];
+}
+function parseRuleLine(line) {
+    line = line.trim();
+    if (!line) return null;
+    let arrowMatch = line.match(/(.+?)(?:→|➔|=>|->)(.+)/);
+    if (arrowMatch) {
+        let aPart = arrowMatch[1].trim();
+        let bPart = arrowMatch[2].trim();
+        if (aPart && bPart) {
+            let bValues = expandRange(bPart);
+            return { a: aPart, bValues: bValues };
+        }
+    }
+    let parts = line.split(/\s+/);
+    if (parts.length >= 2) {
+        let aPart = parts[0];
+        let bPart = parts[1];
+        let bValues = expandRange(bPart);
+        return { a: aPart, bValues: bValues };
+    }
+    return null;
+}
+function getAllRuleSet() {
+    const set = new Set();
+    for (let i = 1; i <= 5; i++) {
+        let a = document.getElementById(`rule${i}a`).value.trim();
+        let b = document.getElementById(`rule${i}b`).value.trim();
+        if (a && b) set.add(`${a}|${b}`);
+    }
+    for (let r of state.customRules) {
+        if (r.a && r.b) set.add(`${r.a}|${r.b}`);
+    }
+    return set;
+}
+function fillRuleToSlots(aValue, bValue) {
+    const key = `${aValue}|${bValue}`;
+    if (getAllRuleSet().has(key)) return false;
+    for (let i = 1; i <= 5; i++) {
+        let aEl = document.getElementById(`rule${i}a`);
+        let bEl = document.getElementById(`rule${i}b`);
+        if (aEl && bEl && !aEl.value.trim() && !bEl.value.trim()) {
+            aEl.value = aValue;
+            bEl.value = bValue;
+            onRuleChange();
+            return true;
+        }
+    }
+    state.customRules.push({ a: aValue, b: bValue });
+    renderCustomRules();
+    onRuleChange();
+    return true;
+}
+function openCustomRulePanel() {
+    const chk = document.getElementById('matchSwitch');
+    if (!chk.checked) {
+        chk.checked = true;
+        toggleMatchPanel();
+    }
+}
+function importRulesFromRange() {
+    openCustomRulePanel();
+    const text = document.getElementById('rangeData').value;
+    const lines = text.split(/\r?\n/);
+    for (let line of lines) {
+        let parsed = parseRuleLine(line);
+        if (parsed && parsed.a && parsed.bValues.length) {
+            for (let bVal of parsed.bValues) {
+                fillRuleToSlots(parsed.a, bVal);
+            }
+        }
+    }
+}
+function importCustomRuleByText() {
+    const txt = document.getElementById('ruleImportText').value;
+    const lines = txt.split(/[\r\n]+/);
+    for (let line of lines) {
+        let parsed = parseRuleLine(line);
+        if (parsed && parsed.a && parsed.bValues.length) {
+            for (let bVal of parsed.bValues) {
+                fillRuleToSlots(parsed.a, bVal);
+            }
+        }
+    }
+}
+function rangeToNumbers(rangeStr) {
+    rangeStr = rangeStr.trim();
+    let match = rangeStr.match(/^(\d+)[\-~](\d+)$/);
+    if (match) {
+        let start = parseInt(match[1], 10);
+        let end = parseInt(match[2], 10);
+        if (!isNaN(start) && !isNaN(end) && start <= end) {
+            let nums = [];
+            for (let i = start; i <= end; i++) nums.push(i);
+            return nums;
+        }
+    }
+    let num = parseInt(rangeStr, 10);
+    if (!isNaN(num)) return [num];
+    return [];
+}
+function ruleContains(ruleValue, val) {
+    let nums = rangeToNumbers(ruleValue);
+    return nums.includes(val);
+}
+function compareAll() {
+    const rules = [
+        { a: document.getElementById('rule1a').value.trim(), b: document.getElementById('rule1b').value.trim() },
+        { a: document.getElementById('rule2a').value.trim(), b: document.getElementById('rule2b').value.trim() },
+        { a: document.getElementById('rule3a').value.trim(), b: document.getElementById('rule3b').value.trim() },
+        { a: document.getElementById('rule4a').value.trim(), b: document.getElementById('rule4b').value.trim() },
+        { a: document.getElementById('rule5a').value.trim(), b: document.getElementById('rule5b').value.trim() },
+    ];
+    const allRules = [...rules, ...state.customRules].filter(r => r.a && r.b);
+    const rangeText = document.getElementById('rangeData').value.trim();
+    const allLines = rangeText ? rangeText.split('\n').filter(l => l.trim()) : [];
+    let totalCombos = 0, hitCombos = 0;
+    for (let line of allLines) {
+        let arrowMatch = line.match(/(.+?)(?:→|➔|=>|->)(.+)/);
+        let officialAStr = '', officialBStr = '';
+        if (arrowMatch) {
+            officialAStr = arrowMatch[1].trim();
+            officialBStr = arrowMatch[2].trim();
+        } else {
+            let parts = line.split(/\s+/);
+            if (parts.length >= 2) {
+                officialAStr = parts[0];
+                officialBStr = parts[1];
+            }
+        }
+        if (!officialAStr || !officialBStr) continue;
+        let aValues = rangeToNumbers(officialAStr);
+        let bValues = rangeToNumbers(officialBStr);
+        if (aValues.length === 0 || bValues.length === 0) continue;
+        totalCombos += aValues.length * bValues.length;
+        for (let a of aValues) {
+            for (let b of bValues) {
+                let matched = false;
+                for (let rule of allRules) {
+                    if (ruleContains(rule.a, a) && ruleContains(rule.b, b)) {
+                        matched = true;
+                        break;
+                    }
+                }
+                if (matched) hitCombos++;
+            }
+        }
+    }
+    ui.updateHitRate(hitCombos, totalCombos);
+    const c1 = state.countData[1], c2 = state.countData[2];
+    if (!c1 || !c2) {
+        document.getElementById('compareResult').innerHTML = '';
+        document.getElementById('compareResult').style.display = 'none';
+        return;
+    }
+    const allNumbers = Array.from({ length: 49 }, (_, i) => i + 1);
+    const el = document.getElementById('compareResult');
+    el.style.display = 'block';
+    const results = [], texts = [];
+    allRules.forEach(r => {
+        const res = allNumbers.filter(n => matchRule(c1[n], r.a) && matchRule(c2[n], r.b));
+        results.push(res);
+        texts.push(`${r.a} → ${r.b}`);
+    });
+    const final = utils.uniqueSort(results.flat());
+    const totalStat = getTotalZodiacStat();
+    let totalHtml = `<div class="total-zodiac-title">📊 A ‧ B冷热门</div><div class="total-zodiac-list">`;
+    totalStat.forEach(([z, n]) => { totalHtml += `<span class="zodiac-item" onclick="zodiacUI.showTotalZodiacNum('${z}')">${z} ${n}</span>`; });
+    totalHtml += `</div><div class="zodiac-show-num" id="totalZodiacShowNum" style="display:none;margin-top:6px;"></div>`;
+    let resHtml = '';
+    texts.forEach((text, i) => { resHtml += `<div class="group-item compare-row">【${text} · ${results[i].length}】：${utils.formatNumbers(results[i])}</div>`; });
+    el.innerHTML = `
+    <div class="result-title">
+        🔵 统计结果
+        <label class="switch-control">Memo book<input type="checkbox" id="noteSwitch" onchange="toggleNote()"></label>
+    </div>
+    <textarea id="noteTextarea" class="note-textarea" placeholder="本澳彩盘口统计系统由蚂蚁数据团队研发，欢迎使用！" oninput="storage.autoSaveNote()"></textarea>
+    ${resHtml}
+    <div class="group-item final-row">✅ 特 ·${final.length}：${utils.formatNumbers(final)}</div>
+    <div class="title-right"><button class="copy-btn" data-copy="${utils.formatNumbers(final)}" data-tip="cfTip">Copy</button><span id="cfTip" class="copy-tip"></span></div>
+    <div class="query-zodiac-input"><input id="queryZodiacInput" oninput="zodiacUI.queryZodiac()" placeholder="输入数字查生肖"></div>
+    <div class="query-zodiac-result" id="queryZodiacResult"></div>
+    <div class="total-zodiac-stat">${totalHtml}</div>`;
+    ui.bindCopyButtons();
+    storage.loadNote();
+    keepNoteState();
+}
+function matchRule(value, ruleText) {
+    ruleText = (ruleText || '').trim().replace(/~/g, '-').replace(/～/g, '-');
+    if (!ruleText) return true;
+    if (ruleText.includes('-')) {
+        const [a, b] = ruleText.split('-').map(Number);
+        return value >= Math.min(a, b) && value <= Math.max(a, b);
+    }
+    return value == Number(ruleText);
+}
+function getDynamicDefaults() {
+    const m1 = state.minMax[1].max || 0, m2 = state.minMax[2].max || 0;
+    return [{ a: '1-2', b: '0-4' }, { a: '3-4', b: '1-6' }, { a: '5-6', b: '2-6' }, { a: '0-0', b: '0-2' }, { a: `7-${m1}`, b: `3-${m2}` }];
+}
+function addCustomRule() {
+    openCustomRulePanel();
+    state.customRules.push({ a: '', b: '' });
+    renderCustomRules();
+    onRuleChange();
+}
+function deleteCustomRule(index) { state.customRules.splice(index, 1); renderCustomRules(); onRuleChange(); }
+function updateCustomRule(index, key, value) { if (state.customRules[index]) { state.customRules[index][key] = value.trim(); onRuleChange(); } }
+function renderCustomRules() {
+    const container = document.getElementById('customRuleContainer');
+    let html = '';
+    state.customRules.forEach((rule, index) => {
+        const realIndex = 6 + index;
+        html += `
+        <div class="custom-rule-row">
+            <button class="float-del-btn" onclick="deleteCustomRule(${index})">×</button>
+            <div class="rule-item"><span class="rule-label">规则${realIndex}：A</span><input type="text" class="rule-input" value="${rule.a}" oninput="updateCustomRule(${index},'a',this.value)"></div>
+            <div class="rule-item"><span class="rule-label">规则${realIndex}：B</span><input type="text" class="rule-input" value="${rule.b}" oninput="updateCustomRule(${index},'b',this.value)"></div>
+        </div>`;
+    });
+    container.innerHTML = html;
+}
+function clearAllRules() {
+    const keys = ['1a', '1b', '2a', '2b', '3a', '3b', '4a', '4b', '5a', '5b'];
+    keys.forEach(key => {
+        const el = document.getElementById(`rule${key}`);
+        if (el) el.value = '';
+    });
+    state.customRules = [];
+    renderCustomRules();
+    onRuleChange();
+}
+function syncRules() {
+    const defaults = getDynamicDefaults();
+    const keys = ['1a', '1b', '2a', '2b', '3a', '3b', '4a', '4b', '5a', '5b'];
+    keys.forEach((key, i) => { document.getElementById(`rule${key}`).value = i % 2 === 0 ? defaults[Math.floor(i / 2)].a : defaults[Math.floor(i / 2)].b; });
+    state.customRules = [];
+    renderCustomRules();
+}
+function resetRules() { syncRules(); compareAll(); }
+function onRuleChange() { clearTimeout(state.timers.ruleChange); state.timers.ruleChange = setTimeout(compareAll, 200); }
+function getTotalZodiacStat() {
+    const total = {};
+    ZODIAC_LIST.forEach(z => total[z] = 0);
+    const arr1 = utils.parseNumbers(document.getElementById('numInput1').value);
+    const arr2 = utils.parseNumbers(document.getElementById('numInput2').value);
+    arr1.forEach(n => total[utils.getZodiac(n)]++);
+    arr2.forEach(n => total[utils.getZodiac(n)]++);
+    return Object.entries(total).sort((a, b) => b[1] - a[1]);
+}
+function renderBase(num, total, unique, maxCount) {
+    const container = document.getElementById(`baseResult${num}`);
+    if (!container) return;
+    container.innerHTML = `
+        <div class="result-title">📊 盘口频次统计</div>
+        <div class="stat-content">
+            <div class="base-row">
+                <div>加密数据：${total}</div>
+                <div>高频：${maxCount}次(热)</div>
+                <div>低频：0次(冷)</div>
+            </div>
+        </div>`;
+    const chk = document.getElementById('globalStatSwitch');
+    const contentDiv = container.querySelector('.stat-content');
+    if (contentDiv) {
+        contentDiv.style.display = (chk && chk.checked) ? 'block' : 'none';
+    }
+}
+function renderGroup(num, sortedCounts, groupMap, maxCount) {
+    let html = `<div class="result-title"></div>`;
+    let contentHtml = `<div class="stat-content">`;
+    sortedCounts.forEach(c=>{
+        const nums = groupMap[c].join(',');
+        if (!nums) return;
+        contentHtml+=`<div class="group-item">${c}次 - ${nums}</div>`;
+    });
+    const copyText = sortedCounts.map(c=>{
+        const nums = groupMap[c].join(',');
+        return nums ? `${c}次 - ${nums}` : '';
+    }).filter(Boolean).join('\n');
+    state.groupLines[num]=copyText;
+    contentHtml+=`<div class="title-right"><button class="copy-btn" data-copy="${copyText}" data-tip="gTip${num}">Copy All</button><span id="gTip${num}" class="copy-tip"></span></div>`;
+    contentHtml += `</div>`;
+    html += contentHtml;
+    document.getElementById(`groupResult${num}`).innerHTML = html;
+    ui.bindCopyButtons();
+    const chk = document.getElementById('globalStatSwitch');
+    const contentDiv = document.querySelector(`#groupResult${num} .stat-content`);
+    if (contentDiv) {
+        contentDiv.style.display = (chk && chk.checked) ? 'block' : 'none';
+    }
+}
+function calculate(num) {
+    const numbers = utils.parseNumbers(document.getElementById(`numInput${num}`).value);
+    if (numbers.length === 0) {
+        state.countData[num] = {};
+        state.minMax[num] = { min: 0, max: 0 };
+        const baseDiv = document.getElementById(`baseResult${num}`);
+        const groupDiv = document.getElementById(`groupResult${num}`);
+        if (baseDiv) baseDiv.innerHTML = '';
+        if (groupDiv) groupDiv.innerHTML = '';
+        return;
+    }
+    const countMap = {};
+    for (let i = 1; i <= 49; i++) countMap[i] = 0;
+    numbers.forEach(n => countMap[n]++);
+    state.countData[num] = countMap;
+    const values = Object.values(countMap).filter(v => v > 0);
+    state.minMax[num].max = values.length ? Math.max(...values) : 0;
+    const maxCount = state.minMax[num].max;
+    const groupMap = {};
+    for (let c = 0; c <= maxCount; c++) groupMap[c] = [];
+    for (let i = 1; i <= 49; i++) {
+        const c = countMap[i];
+        groupMap[c].push(i);
+    }
+    const sortedCounts = Array.from({ length: maxCount + 1 }, (_, i) => i).filter(c => groupMap[c].length > 0);
+    renderBase(num, numbers.length, new Set(numbers).size, maxCount);
+    renderGroup(num, sortedCounts, groupMap, maxCount);
+}
+function autoCalc(num) {
+    ui.updateInputInfo(num);
+    calculate(num);
+    storage.autoSaveInput();
+    clearTimeout(state.timers.autoCompare);
+    state.timers.autoCompare = setTimeout(() => { compareAll(); }, 260);
+}
+function bindPaste() {
+    [1, 2].forEach(num => {
+        document.getElementById(`numInput${num}`).addEventListener('paste', e => {
+            e.preventDefault();
+            const text = (e.clipboardData || window.clipboardData).getData('text');
+            const numbers = utils.parseNumbers(text);
+            const el = document.getElementById(`numInput${num}`);
+            const start = el.selectionStart;
+            el.value = el.value.substring(0, start) + numbers.join(' ') + el.value.substring(start);
+            autoCalc(num);
+        });
+    });
+}
+function importAIRule(aStr, bStr) {
+    openCustomRulePanel();
+    fillRuleToSlots(aStr, bStr);
+    aiShowToast("导入成功");
+}
+function clearRuleImportInput() {
+  document.getElementById('ruleImportText').value = '';
+  storage.clearRuleImportText();
+}
+function importRuleFromTxt() {
+    openCustomRulePanel();
+    document.getElementById('importRuleFileInput').click();
+}
+function handleRuleFileSelect(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const content = e.target.result;
+        document.getElementById('ruleImportText').value = content;
+        storage.saveRuleImportText();
+        importCustomRuleByText();
+    };
+    reader.onerror = function() {
+        alert("读取文件失败，请重试。");
+    };
+    reader.readAsText(file, "UTF-8");
+    event.target.value = '';
+}
+const aiModeDynamic = document.getElementById("aiModeDynamic");
+const aiModeFixed = document.getElementById("aiModeFixed");
+const aiBtnRefresh = document.getElementById("aiBtnRefresh");
+let aiCurrentMode = "dynamic";
+let aiDATA = {};
+function safeMin(arr) {
+  if (!arr || arr.length === 0) return 2;
+  return Math.min(...arr);
+}
+function safeMax(arr) {
+  if (!arr || arr.length === 0) return 4;
+  return Math.max(...arr);
+}
+function toRange(arr){
+  if(!arr||!arr.length)return "";
+  let min = safeMin(arr);
+  let max = safeMax(arr);
+  if(max - min >= 5) max = min + 4;
+  if(max - min < 2) max = min + 2;
+  return min === max ? `${min}` : `${min}~${max}`;
+}
+function buildConsecutiveBlock(rawArr, whiteSet){
+  if(!rawArr.length) return [2,3,4];
+  let freq = Array(10).fill(0);
+  rawArr.forEach(n=>{if(!isNaN(n))freq[n]++;});
+  let hotList = [];
+  for(let i=0;i<10;i++){
+    if(whiteSet.has(i) && freq[i]>0) hotList.push({v:i,cnt:freq[i]});
+  }
+  hotList.sort((a,b)=>b.cnt-a.cnt);
+  let core = hotList.slice(0,5).map(x=>x.v).sort((a,b)=>a-b);
+  if(!core.length) return [2,3,4];
+  let minV=core[0], maxV=core[core.length-1];
+  let main=[];
+  for(let i=minV;i<=maxV;i++){
+    if(whiteSet.has(i)) main.push(i);
+  }
+  if(main.length < 3) main=[2,3,4];
+  if(main.length > 5) main=main.slice(0,4);
+  return main;
+}
+function aiBuildDynamicRanges(arr){
+  const numArr = arr.filter(n=>!isNaN(n)&&n>=0&&n<=9);
+  const allSet = new Set([0,1,2,3,4,5,6,7,8,9]);
+  let mainBlock = buildConsecutiveBlock(numArr, allSet);
+  let rest = Array.from(allSet).filter(x => !mainBlock.includes(x));
+  let freq = Array(10).fill(0);
+  numArr.forEach(n=>{if(!isNaN(n))freq[n]++;});
+  rest.sort((a,b)=>freq[b]-freq[a]);
+  let len = rest.length;
+  let p1 = Math.ceil(len/3);
+  let p2 = Math.ceil(len*2/3);
+  let seg1 = rest.slice(0,p1);
+  let seg2 = rest.slice(p1,p2);
+  let seg3 = rest.slice(p2);
+  return [
+    {label:toRange(mainBlock) || "0~1"},
+    {label:toRange(seg1) || "2~3"},
+    {label:toRange(seg2) || "4~5"},
+    {label:toRange(seg3) || "6~9"}
+  ];
+}
+const aiFixedRanges = [
+  {min:0,max:2,label:"0~2"},
+  {min:3,max:5,label:"3~5"},
+  {min:6,max:8,label:"6~8"},
+  {min:9,max:9,label:"9"}
+];
+function aiGetRangeLabel(v,ranges){
+  for(let r of ranges){
+    let parts = r.label.split("~");
+    if(parts.length===2){
+      let mi=+parts[0],ma=+parts[1];
+      if(v>=mi&&v<=ma) return r.label;
+    }else{
+      if(v==+r.label) return r.label;
+    }
+  }
+  return ranges[0].label;
+}
+function aiBuild(ds){
+  if(!ds.length)return{list:[],total:0,max:0,count:{}};
+  const listA = ds.map(o=>o.a);
+  const listB = ds.map(o=>o.b);
+  const ra = aiCurrentMode==="dynamic"?aiBuildDynamicRanges(listA):aiFixedRanges;
+  const rb = aiCurrentMode==="dynamic"?aiBuildDynamicRanges(listB):aiFixedRanges;
+  const seq = [];
+  const count={},score={};
+  ds.forEach((o,i)=>{
+    let la=aiGetRangeLabel(o.a,ra);
+    let lb=aiGetRangeLabel(o.b,rb);
+    let k=la+" → "+lb;
+    seq.push(k);
+    count[k]=(count[k]||0)+1;
+  });
+  const miss={};
+  for(let k in count){
+    let last = seq.lastIndexOf(k);
+    miss[k] = ds.length - 1 - last;
+  }
+  ds.forEach((o,i)=>{
+    let la=aiGetRangeLabel(o.a,ra);
+    let lb=aiGetRangeLabel(o.b,rb);
+    let k=la+" → "+lb;
+    if(i>=ds.length-5) score[k]=(score[k]||0)+8;
+    else if(i>=ds.length-10) score[k]=(score[k]||0)+4;
+    else if(i>=ds.length-20) score[k]=(score[k]||0)+2;
+    else score[k]=(score[k]||0)+1;
+  });
+  for(let k in score){
+    score[k] += miss[k] * 0.05;
+    let rh=seq.slice(-8).filter(x=>x===k).length;
+    if(rh>=3) score[k] +=20;
+    if(rh>=5) score[k] +=30;
+  }
+  const list=Object.entries(score).sort((a,b)=>b[1]-a[1]);
+  const total=list.length>0?list.reduce((s,v)=>s+v[1],0):0;
+  const max=list.length>0?list[0][1]:0;
+  return {list,total,max,count};
+}
+function aiRenderHotNumbers(raw){
+  const la = aiBuildDynamicRanges(raw.map(o=>o.a));
+  const lb = aiBuildDynamicRanges(raw.map(o=>o.b));
+  const aiHotA = document.getElementById("aiHotA");
+  const aiHotB = document.getElementById("aiHotB");
+  aiHotA.innerHTML=`<span class="ai-hot-item">${la[0].label}</span>`;
+  aiHotB.innerHTML=`<span class="ai-hot-item">${lb[0].label}</span>`;
+}
+function aiRenderRecommend(g){
+  const aiRecommendArea = document.getElementById("aiRecommendArea");
+  if(!g||!g.list.length){aiRecommendArea.innerHTML="暂无数据";return}
+  aiRecommendArea.innerHTML = g.list.slice(0,3).map(([k]) => {
+    let [a,b] = k.split(" → ");
+    return `<span class="ai-recommend-item" onclick="importAIRule('${a}','${b}')">${k}</span>`;
+  }).join("");
+}
+function aiShowToast(m){
+  const t = document.createElement('div');
+  t.className='ai-toast';
+  t.textContent=m;
+  document.body.appendChild(t);
+  t.style.display='block';
+  setTimeout(()=>{document.body.removeChild(t);},1400);
+}
+function aiRun(){
+  const txt=document.getElementById("rangeData").value.trim();
+  const lines=txt?txt.split("\n").map(i=>i.trim()).filter(Boolean):[];
+  document.getElementById("aiTotalLines").textContent=lines.length;
+  const raw=[];
+  lines.forEach(l=>{
+    let parsed = parseRuleLine(l);
+    if (parsed && parsed.bValues.length) {
+      let aNum = parseInt(parsed.a);
+      let bNum = parseInt(parsed.bValues[0]);
+      if (!isNaN(aNum) && !isNaN(bNum)) raw.push({a:aNum, b:bNum});
+    }
+  });
+  document.getElementById("aiValidLines").textContent=raw.length;
+  if(!raw.length){
+    document.getElementById("aiHotA").innerHTML=document.getElementById("aiHotB").innerHTML="";
+    document.getElementById("aiRecommendArea").innerHTML="暂无数据";
+    return;
+  }
+  aiRenderHotNumbers(raw);
+  const d20=raw.slice(-30);
+  aiDATA={all:aiBuild(raw),20:aiBuild(d20)};
+  aiRenderRecommend(aiDATA[20]);
+}
+aiBtnRefresh.addEventListener('click', () => {
+  aiRun();
+  aiShowToast("已更新");
+});
+aiModeDynamic.addEventListener('click', () => {
+  aiCurrentMode = "dynamic";
+  aiModeDynamic.classList.add("active");
+  aiModeFixed.classList.remove("active");
+  aiRun();
+});
+aiModeFixed.addEventListener('click', () => {
+  aiCurrentMode = "fixed";
+  aiModeFixed.classList.add("active");
+  aiModeDynamic.classList.remove("active");
+  aiRun();
+});
+function importTxtToBoth() {
+    document.getElementById('importFileInput').click();
+}
+function handleFileSelect(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const content = e.target.result;
+        const separator = /\.{6,}/;
+        let parts = content.split(separator);
+        if (parts.length < 2) {
+            alert("文件格式错误：未找到分隔符 '........'，请确保上半部分为G·A数据，下半部分为G·B数据，中间用........隔开。");
+            return;
+        }
+        let gaRaw = parts[0].trim();
+        let gbRaw = parts[1].trim();
+        if (parts.length > 2) {
+            gbRaw = parts.slice(1).join(' ').trim();
+        }
+        document.getElementById('numInput1').value = gaRaw;
+        document.getElementById('numInput2').value = gbRaw;
+        autoCalc(1);
+        autoCalc(2);
+        storage.saveInput();
+        alert("蚂蚁数据：导入成功！G·A 和 G·B 数据已更新。");
+    };
+    reader.onerror = function() {
+        alert("读取文件失败，请重试。");
+    };
+    reader.readAsText(file, "UTF-8");
+    event.target.value = '';
+}
+window.onload=function(){
+    const code=getDeviceCode();
+    document.getElementById("deviceCode").textContent=code;
+    if(!checkAuthStatus()){
+      document.getElementById("authModal").style.display = "flex";
+    }
+    storage.loadInput();
+    storage.loadRange();
+    storage.loadRuleImportText();
+    bindPaste();
+    clearAllRules();
+    autoCalc(1);autoCalc(2);
+    aiRun();
+    const savedStat = localStorage.getItem('globalStatVisible');
+    const chk = document.getElementById('globalStatSwitch');
+    if (savedStat === '1') {
+        chk.checked = true;
+    } else {
+        chk.checked = false;
+    }
+    toggleGlobalStat();
+};
+function insertDateToTitle() {
+  try {
+    const date = new Date();
+    const ymd = date.getFullYear() + "-" + String(date.getMonth()+1).padStart(2,0) + "-" + String(date.getDate()).padStart(2,0);
+    const weeks = ["日","一","二","三","四","五","六"];
+    const week = "周" + weeks[date.getDay()];
+    const dateText = `${ymd} ${week} `;
+    const title = document.querySelector("#compareResult .result-title");
+    if (title && !title.dataset.dateDone) {
+      title.innerHTML = dateText + title.innerHTML;
+      title.dataset.dateDone = "1";
+    }
+  } catch(e){}
+}
+window.addEventListener("load", function(){
+  setTimeout(insertDateToTitle, 300);
+});
+</script>
+</body>
+</html>
