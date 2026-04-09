@@ -566,7 +566,7 @@
         <!-- 官方规则一键导入 -->
         <div class="panel">
             <div class="panel-title">
-                <div class="panel-title-left"><span>🟥 默认规则</span></div>
+                <div class="panel-title-left"><span>🟥 默认区间</span></div>
                 <label class="switch-control"><input type="checkbox" id="rangeSwitch" onchange="toggleRangePanel()"></label>
             </div>
             <div id="rangePanelWrap" style="display:none; margin-top:8px;">
@@ -581,7 +581,7 @@
         </div>
         <!-- 自定义规则面板 -->
         <div class="panel">
-            <div class="panel-title"><span>🟦自主配置</span><span>μύρμηξ®</span><label class="switch-control"><input type="checkbox" id="matchSwitch" onchange="toggleMatchPanel()"></label></div>
+            <div class="panel-title"><span>🟦区间配置</span><span>μύρμηξ®</span><label class="switch-control"><input type="checkbox" id="matchSwitch" onchange="toggleMatchPanel()"></label></div>
             <div id="rulePanelWrap" style="display:none; margin-top:8px;">
                 <div class="rule-import-box">
                     <textarea class="rule-import-input" id="ruleImportText" placeholder="点☝️ 智能推荐 【分析】，区间规则一键导入\n格式：4-5→2-6" oninput="autoSaveRuleImportText()"></textarea>
@@ -594,7 +594,7 @@
                 <div class="hit-rate-display" id="welcomeMessage">大道至简，以简驭繁</div>
                 <div class="btn-group">
                     <button onclick="resetRules()">🔄 restore</button>
-                    <a href="https://mycm.cc.cd/" target="_blank" rel="noopener noreferrer" class="btn-link">🌐 官网</a>
+                    <a href="https://mycm.cc.cd/vip.html" target="_blank" rel="noopener noreferrer" class="btn-link">🌐 区间</a>
                     <button onclick="clearAllRules()">🗑 A-B</button>
                     <button onclick="addCustomRule()">➕ ADD</button>
                 </div>
