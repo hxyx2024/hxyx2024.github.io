@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, maximum-scale=2.0, minimum-scale=1.0, viewport-fit=cover">
     <title>MAYI · 盘口智能统计</title>
     <style>
-        /* ========== 全局样式 ========== */
         * {
             margin: 0;
             padding: 0;
@@ -257,7 +256,6 @@
             text-align: center;
             min-width: 80px;
         }
-        /* 删除按钮：纯文本 X，无背景无边框 */
         .del-rule-btn {
             position: absolute;
             right: 0px;
@@ -292,6 +290,7 @@
             background: #333;
             border-radius: 20px;
             position: relative;
+            cursor: pointer;
         }
         .switch-control input:checked {
             background: #007bff;
@@ -383,7 +382,6 @@
             font-size: 11px;
             color: #666;
         }
-        /* 授权弹窗样式修复 */
         .auth-modal {
             position: fixed; top:0; left:0; width:100%; height:100%;
             background: rgba(0,0,0,0.95);
@@ -438,7 +436,6 @@
             background: #007bff;
             color: #fff;
         }
-        /* 导入框布局：左侧文本域与右侧三按钮等高 */
         .rule-import-box {
             margin: 10px 0;
             display: flex;
@@ -483,10 +480,6 @@
             flex: 1;
             min-width: 60px;
         }
-        .stat-content {
-            transition: all 0.2s;
-        }
-        /* 响应式调整 */
         @media (max-width: 600px) {
             body { padding: 4px; }
             .tool-box { padding: 8px; }
@@ -535,7 +528,6 @@
 <div class="container">
     <div class="tool-box">
         <h1>Ant Data AI Stats Tool</h1>
-        <!-- G·A / G·B 面板 -->
         <div class="panel">
             <div class="panel-title">
                 <div class="panel-title-left"><span>盘口数据区</span></div>
@@ -563,14 +555,13 @@
                 </div>
             </div>
         </div>
-        <!-- 官方规则一键导入 -->
         <div class="panel">
             <div class="panel-title">
                 <div class="panel-title-left"><span>🟥 默认区间</span></div>
                 <label class="switch-control"><input type="checkbox" id="rangeSwitch" onchange="toggleRangePanel()"></label>
             </div>
             <div id="rangePanelWrap" style="display:none; margin-top:8px;">
-                <div class="input-box"><textarea id="rangeData" placeholder="输入多行规则，每行格式：A→B 或 A B&#10;支持区间符号 - ~ ～ －" oninput="autoSaveRange()"></textarea></div>
+                <div class="input-box"><textarea id="rangeData" placeholder="输入多行规则，每行格式：A→B 或 A B&#10;支持区间符号 - ~ ～ －" oninput="onRangeDataChange()"></textarea></div>
                 <div class="btn-group">
                     <button onclick="importRulesFromRange()" class="primary">📥 导入</button>
                     <a href="https://mycm.cc.cd/" target="_blank" rel="noopener noreferrer" class="link-btn">🌐 官网</a>
@@ -579,12 +570,11 @@
                 </div>
             </div>
         </div>
-        <!-- 自定义规则面板 -->
         <div class="panel">
             <div class="panel-title"><span>🟦区间配置</span><span>μύρμηξ®</span><label class="switch-control"><input type="checkbox" id="matchSwitch" onchange="toggleMatchPanel()"></label></div>
             <div id="rulePanelWrap" style="display:none; margin-top:8px;">
                 <div class="rule-import-box">
-                    <textarea class="rule-import-input" id="ruleImportText" placeholder="区间规则一键导入\n格式：4-5→2-6" oninput="autoSaveRuleImportText()"></textarea>
+                    <textarea class="rule-import-input" id="ruleImportText" placeholder="区间规则一键导入&#10;格式：1-4→1-4" oninput="autoSaveRuleImportText()"></textarea>
                     <div class="rule-btn-col">
                         <button class="rule-clear-btn" onclick="clearRuleImportInput()">清空</button>
                         <button class="rule-txt-btn" onclick="importRuleFromTxt()">TXT</button>
@@ -594,6 +584,7 @@
                 <div class="hit-rate-display" id="welcomeMessage">大道至简，以简驭繁</div>
                 <div class="btn-group">
                     <button onclick="resetRules()">🔄 restore</button>
+					<a href="https://m.hxyx.cc.cd/i.html" target="_blank" rel="noopener noreferrer" class="btn-link">🧰 工具</a>
                     <a href="https://mycm.cc.cd/vip.html" target="_blank" rel="noopener noreferrer" class="btn-link">🌐 区间</a>
                     <button onclick="clearAllRules()">🗑 A-B</button>
                     <button onclick="addCustomRule()">➕ ADD</button>
@@ -610,7 +601,6 @@
                 </div>
             </div>
         </div>
-        <!-- 统计结果 -->
         <div class="panel"><div class="result-section" id="compareResult"></div></div>
     </div>
     <div class="footer">© 2026 蚂蚁数据 · mycm.cc.cd v7.0.0</div>
@@ -620,7 +610,6 @@
 <input type="file" id="importRuleFileInput" accept=".txt" style="display:none" onchange="handleRuleFileSelect(event)">
 
 <script>
-// ==================== 授权模块 ====================
 const SECRET_SALT = "ANT2026_ZODIAC";
 const STORAGE_KEY = "ANT_AUTH";
 
@@ -641,7 +630,6 @@ function getDeviceCode() {
     } catch(e) { return "UNKNOWN_DEVICE"; }
 }
 
-// 增强版复制函数（支持移动端 + 提示）
 async function copyToClipboard(text, tipId) {
     if (!text || text.trim() === '') {
         if (tipId) {
@@ -651,7 +639,6 @@ async function copyToClipboard(text, tipId) {
         }
         return false;
     }
-    // 传统方法（兼容所有移动端）
     const textarea = document.createElement('textarea');
     textarea.value = text;
     textarea.style.position = 'fixed';
@@ -718,7 +705,6 @@ function checkAuth() {
     }
 }
 
-// ==================== 生肖数据 ====================
 const ZODIAC_LIST = ['马','蛇','龙','兔','虎','牛','鼠','猪','狗','鸡','猴','羊'];
 const ZODIAC_NUMBER_MAP = {
     '马': [1,13,25,37,49], '蛇': [2,14,26,38], '龙': [3,15,27,39],
@@ -727,16 +713,14 @@ const ZODIAC_NUMBER_MAP = {
     '鸡': [10,22,34,46], '猴': [11,23,35,47], '羊': [12,24,36,48]
 };
 
-// ==================== 全局状态 ====================
 const state = {
     countData: { 1: {}, 2: {} },
     minMax: { 1: { min: 0, max: 0 }, 2: { min: 0, max: 0 } },
     groupLines: { 1: '', 2: '' },
-    timers: { autoCompare: null, ruleChange: null, noteSave: null, inputSave: null, rangeSave: null, ruleImportSave: null },
+    timers: { autoCompare: null, ruleChange: null, noteSave: null, inputSave: null, rangeSave: null, ruleImportSave: null, rangeCompare: null },
     customRules: []
 };
 
-// ==================== 工具函数 ====================
 const utils = {
     padZero: n => n.toString().padStart(2, '0'),
     getZodiac: n => ZODIAC_LIST[(n - 1) % 12],
@@ -749,7 +733,6 @@ const utils = {
 const ui = {
     bindCopyButtons() {
         document.querySelectorAll('.copy-btn').forEach(btn => {
-            // 移除旧监听避免重复
             if (btn._copyHandler) btn.removeEventListener('click', btn._copyHandler);
             const handler = () => {
                 const text = btn.getAttribute('data-copy');
@@ -791,70 +774,35 @@ const storage = {
     loadInput() { document.getElementById('numInput1').value = localStorage.getItem('lottery_input1') || ''; document.getElementById('numInput2').value = localStorage.getItem('lottery_input2') || ''; },
     autoSaveInput() { clearTimeout(state.timers.inputSave); state.timers.inputSave = setTimeout(storage.saveInput, 300); },
     saveRange() { localStorage.setItem('lottery_range', document.getElementById('rangeData').value); },
-    loadRange() { document.getElementById('rangeData').value = localStorage.getItem('lottery_range') || ''; },
-    autoSaveRange() { clearTimeout(state.timers.rangeSave); state.timers.rangeSave = setTimeout(storage.saveRange, 300); },
+    loadRange() { const saved = localStorage.getItem('lottery_range'); if (saved !== null) document.getElementById('rangeData').value = saved; },
+    autoSaveRange() { clearTimeout(state.timers.rangeSave); state.timers.rangeSave = setTimeout(() => { storage.saveRange(); compareAll(); }, 300); },
     saveRuleImportText() { localStorage.setItem('rule_import_text', document.getElementById('ruleImportText').value); },
     loadRuleImportText() { const saved = localStorage.getItem('rule_import_text'); if (saved !== null) document.getElementById('ruleImportText').value = saved; },
     autoSaveRuleImportText() { clearTimeout(state.timers.ruleImportSave); state.timers.ruleImportSave = setTimeout(storage.saveRuleImportText, 300); },
     clearRuleImportText() { localStorage.removeItem('rule_import_text'); }
 };
 
+function onRangeDataChange() { storage.autoSaveRange(); clearTimeout(state.timers.rangeCompare); state.timers.rangeCompare = setTimeout(() => compareAll(), 100); }
 function autoSaveRuleImportText() { storage.autoSaveRuleImportText(); }
-function autoSaveRange() { storage.autoSaveRange(); }
 function toggleNote() { const noteEl = document.getElementById('noteTextarea'); const checked = document.getElementById('noteSwitch').checked; noteEl.style.display = checked ? 'block' : 'none'; localStorage.setItem('note_visible', checked ? 1 : 0); }
 function keepNoteState() { if (localStorage.getItem('note_visible') == 1) { document.getElementById('noteSwitch').checked = true; document.getElementById('noteTextarea').style.display = 'block'; } }
-
 function toggleGlobalStat() { const chk = document.getElementById('globalStatSwitch'); const contents = document.querySelectorAll('.stat-content'); for (let el of contents) el.style.display = chk.checked ? 'block' : 'none'; localStorage.setItem('globalStatVisible', chk.checked ? 1 : 0); }
 function toggleMatchPanel() { const wrap = document.getElementById('rulePanelWrap'); const on = document.getElementById('matchSwitch').checked; wrap.style.display = on ? 'block' : 'none'; }
 function toggleRangePanel() { const wrap = document.getElementById('rangePanelWrap'); const on = document.getElementById('rangeSwitch').checked; wrap.style.display = on ? 'block' : 'none'; }
-
 function copyBothData() { const ga = document.getElementById('numInput1').value.trim(); const gb = document.getElementById('numInput2').value.trim(); copyToClipboard("G · A\n" + ga + "\n...........\nG · B\n" + gb, 'inputTip2'); }
 function shuffleBoth() { [1,2].forEach(n => { const el = document.getElementById(`numInput${n}`); const nums = utils.parseNumbers(el.value); el.value = utils.shuffleArray(nums).map(utils.padZero).join(' '); autoCalc(n); }); }
 function sortBoth() { [1,2].forEach(n => { const el = document.getElementById(`numInput${n}`); const nums = utils.parseNumbers(el.value).sort((a,b)=>a-b); el.value = nums.map(utils.padZero).join(' '); autoCalc(n); }); }
 function clearBoth() { [1,2].forEach(n => { document.getElementById(`numInput${n}`).value = ''; document.getElementById(`baseResult${n}`).innerHTML = ''; document.getElementById(`groupResult${n}`).innerHTML = ''; state.countData[n] = {}; state.minMax[n] = {min:0,max:0}; ui.updateInputInfo(n); }); autoCalc(1); autoCalc(2); }
-function clearRange() { document.getElementById('rangeData').value = ''; storage.saveRange(); }
-
-// 区间解析
-function expandRange(str) { 
-    str = str.trim(); 
-    let normalized = str.replace(/[～~－]/g, '-');
-    let m = normalized.match(/^(\d+)-(\d+)$/); 
-    if (m) { 
-        let s = parseInt(m[1]), e = parseInt(m[2]); 
-        if (!isNaN(s) && !isNaN(e) && s <= e) { 
-            let res = []; 
-            for (let i = s; i <= e; i++) res.push(i.toString()); 
-            return res; 
-        } 
-    } 
-    return [str]; 
-}
-function parseRuleLine(line) { 
-    line = line.trim(); 
-    if (!line) return null; 
-    let arrow = line.match(/(.+?)(?:→|➔|=>|->)(.+)/); 
-    if (arrow) { 
-        let a = arrow[1].trim(), b = arrow[2].trim(); 
-        if (a && b) return { a: a, bValues: expandRange(b) }; 
-    } 
-    let parts = line.split(/\s+/); 
-    if (parts.length >= 2) return { a: parts[0], bValues: expandRange(parts[1]) }; 
-    return null; 
-}
-
-function getAllRuleSet() { let set = new Set(); for (let i = 1; i <= 5; i++) { let a = document.getElementById(`rule${i}a`).value.trim(); let b = document.getElementById(`rule${i}b`).value.trim(); if (a && b) set.add(`${a}|${b}`); } for (let r of state.customRules) if (r.a && r.b) set.add(`${r.a}|${r.b}`); return set; }
-function fillRuleToSlots(aVal, bVal) { let key = `${aVal}|${bVal}`; if (getAllRuleSet().has(key)) return false; for (let i = 1; i <= 5; i++) { let aEl = document.getElementById(`rule${i}a`); let bEl = document.getElementById(`rule${i}b`); if (aEl && bEl && (!aEl.value.trim() || !bEl.value.trim())) { aEl.value = aVal; bEl.value = bVal; onRuleChange(); return true; } } state.customRules.push({ a: aVal, b: bVal }); renderCustomRules(); onRuleChange(); return true; }
-function openCustomRulePanel() { let chk = document.getElementById('matchSwitch'); if (!chk.checked) { chk.checked = true; toggleMatchPanel(); } }
-function importRulesFromRange() { openCustomRulePanel(); let text = document.getElementById('rangeData').value; let lines = text.split(/\r?\n/); for (let line of lines) { let parsed = parseRuleLine(line); if (parsed && parsed.a && parsed.bValues.length) { for (let b of parsed.bValues) fillRuleToSlots(parsed.a, b); } } }
-function importCustomRuleByText() { let txt = document.getElementById('ruleImportText').value; let lines = txt.split(/[\r\n]+/); for (let line of lines) { let parsed = parseRuleLine(line); if (parsed && parsed.a && parsed.bValues.length) { for (let b of parsed.bValues) fillRuleToSlots(parsed.a, b); } } }
+function clearRange() { document.getElementById('rangeData').value = ''; storage.saveRange(); onRangeDataChange(); }
 
 function rangeToNumbers(r) { 
     r = r.trim(); 
+    if (!r || r === '-') return [];
     let normalized = r.replace(/[～~－]/g, '-');
     let m = normalized.match(/^(\d+)-(\d+)$/); 
     if (m) { 
         let s = parseInt(m[1]), e = parseInt(m[2]); 
-        if (!isNaN(s) && !isNaN(e) && s <= e) { 
+        if (!isNaN(s) && !isNaN(e) && s <= e && s >= 0 && e <= 49) { 
             let arr = []; 
             for (let i = s; i <= e; i++) arr.push(i); 
             return arr; 
@@ -863,9 +811,86 @@ function rangeToNumbers(r) {
     let n = parseInt(r); 
     return isNaN(n) ? [] : [n]; 
 }
-function ruleContains(ruleVal, val) { return rangeToNumbers(ruleVal).includes(val); }
 
-// 核心比较函数
+// 修改：parseRuleLine 不再拆分 B，保持原始字符串
+function parseRuleLine(line) { 
+    line = line.trim(); 
+    if (!line) return null; 
+    let arrow = line.match(/(.+?)(?:→|➔|=>|->)(.+)/); 
+    if (arrow) { 
+        let a = arrow[1].trim(), b = arrow[2].trim(); 
+        if (a && b) return { a: a, b: b };  // B 保持原样，不拆分
+    } 
+    let parts = line.split(/\s+/); 
+    if (parts.length >= 2) return { a: parts[0], b: parts[1] }; 
+    return null; 
+}
+
+function getAllRuleSet() { let set = new Set(); for (let i = 1; i <= 5; i++) { let a = document.getElementById(`rule${i}a`).value.trim(); let b = document.getElementById(`rule${i}b`).value.trim(); if (a && b) set.add(`${a}|${b}`); } for (let r of state.customRules) if (r.a && r.b) set.add(`${r.a}|${r.b}`); return set; }
+
+// 修改：fillRuleToSlots 直接存入原始 B
+function fillRuleToSlots(aVal, bVal) { 
+    let key = `${aVal}|${bVal}`; 
+    if (getAllRuleSet().has(key)) return false; 
+    for (let i = 1; i <= 5; i++) { 
+        let aEl = document.getElementById(`rule${i}a`); 
+        let bEl = document.getElementById(`rule${i}b`); 
+        if (aEl && bEl && (!aEl.value.trim() || !bEl.value.trim())) { 
+            aEl.value = aVal; 
+            bEl.value = bVal;  // 直接存入原始 B 字符串
+            onRuleChange(); 
+            return true; 
+        } 
+    } 
+    state.customRules.push({ a: aVal, b: bVal }); 
+    renderCustomRules(); 
+    onRuleChange(); 
+    return true; 
+}
+
+function openCustomRulePanel() { let chk = document.getElementById('matchSwitch'); if (!chk.checked) { chk.checked = true; toggleMatchPanel(); } }
+
+// 修改：importRulesFromRange 不再拆分 B
+function importRulesFromRange() { 
+    openCustomRulePanel(); 
+    let text = document.getElementById('rangeData').value; 
+    let lines = text.split(/\r?\n/); 
+    let hasNew = false; 
+    for (let line of lines) { 
+        let parsed = parseRuleLine(line); 
+        if (parsed && parsed.a && parsed.b) { 
+            if (fillRuleToSlots(parsed.a, parsed.b)) hasNew = true; 
+        } 
+    } 
+    if (hasNew) setTimeout(() => compareAll(), 100); 
+}
+
+// 修改：importCustomRuleByText 不再拆分 B
+function importCustomRuleByText() { 
+    let txt = document.getElementById('ruleImportText').value; 
+    let lines = txt.split(/[\r\n]+/); 
+    for (let line of lines) { 
+        let parsed = parseRuleLine(line); 
+        if (parsed && parsed.a && parsed.b) { 
+            fillRuleToSlots(parsed.a, parsed.b); 
+        } 
+    } 
+}
+
+function ruleContains(ruleVal, val) { return rangeToNumbers(ruleVal).includes(val); }
+function matchRule(val, rule) { rule = (rule || '').trim().replace(/~/g,'-').replace(/～/g,'-'); if (!rule) return true; if (rule.includes('-')) { let [a,b] = rule.split('-').map(Number); return val >= Math.min(a,b) && val <= Math.max(a,b); } return val == Number(rule); }
+function getDynamicDefaults() { let m1 = state.minMax[1].max||0, m2 = state.minMax[2].max||0; return [{a:'0-2',b:'0-2'},{a:'2-2',b:'1-4'},{a:'3-5',b:'2-6'},{a:'6-6',b:'2-6'},{a:`7-${m1}`,b:`3-${m2}`}]; }
+function addCustomRule() { openCustomRulePanel(); state.customRules.push({a:'',b:''}); renderCustomRules(); onRuleChange(); }
+function deleteCustomRule(idx) { state.customRules.splice(idx,1); renderCustomRules(); compareAll(); }
+function updateCustomRule(idx,key,val) { if (state.customRules[idx]) { state.customRules[idx][key] = val.trim(); onRuleChange(); } }
+function renderCustomRules() { let container = document.getElementById('customRuleContainer'); let html = ''; state.customRules.forEach((rule, index) => { let idx = 6 + index; html += `<div class="custom-rule-row" data-idx="${idx}"><div class="rule-index">${idx}</div><input type="text" class="rule-input-a" value="${escapeHtml(rule.a)}" placeholder="A" oninput="updateCustomRule(${index},'a',this.value)"><input type="text" class="rule-input-b" value="${escapeHtml(rule.b)}" placeholder="B" oninput="updateCustomRule(${index},'b',this.value)"><button class="del-rule-btn" onclick="deleteCustomRule(${index})">✖</button></div>`; }); container.innerHTML = html; }
+function escapeHtml(str) { return str.replace(/[&<>]/g, function(m) { if (m === '&') return '&amp;'; if (m === '<') return '&lt;'; if (m === '>') return '&gt;'; return m; }); }
+function clearAllRules() { for (let i=1;i<=5;i++) { document.getElementById(`rule${i}a`).value = ''; document.getElementById(`rule${i}b`).value = ''; } state.customRules = []; renderCustomRules(); compareAll(); }
+function syncRules() { let def = getDynamicDefaults(); for (let i=1;i<=5;i++) { document.getElementById(`rule${i}a`).value = def[i-1].a; document.getElementById(`rule${i}b`).value = def[i-1].b; } state.customRules = []; renderCustomRules(); }
+function resetRules() { syncRules(); setTimeout(() => compareAll(), 50); }
+function onRuleChange() { clearTimeout(state.timers.ruleChange); state.timers.ruleChange = setTimeout(compareAll, 200); }
+function getTotalZodiacStat() { let total = {}; ZODIAC_LIST.forEach(z=>total[z]=0); let a1 = utils.parseNumbers(document.getElementById('numInput1').value); let a2 = utils.parseNumbers(document.getElementById('numInput2').value); a1.forEach(n=>total[utils.getZodiac(n)]++); a2.forEach(n=>total[utils.getZodiac(n)]++); return Object.entries(total).sort((a,b)=>b[1]-a[1]); }
+
 function compareAll() {
     const rules = [
         { a: document.getElementById('rule1a').value.trim(), b: document.getElementById('rule1b').value.trim() },
@@ -877,31 +902,55 @@ function compareAll() {
     const allRules = [...rules, ...state.customRules].filter(r => r.a && r.b);
     const rangeText = document.getElementById('rangeData').value.trim();
     const lines = rangeText ? rangeText.split('\n').filter(l => l.trim()) : [];
-    let totalCombos = 0, hitCombos = 0;
+    
+    let allCombosSet = new Set();
+    let hitCombosSet = new Set();
+    
     for (let line of lines) {
         let arrow = line.match(/(.+?)(?:→|➔|=>|->)(.+)/);
         let aStr = '', bStr = '';
         if (arrow) { aStr = arrow[1].trim(); bStr = arrow[2].trim(); }
         else { let parts = line.split(/\s+/); if (parts.length >= 2) { aStr = parts[0]; bStr = parts[1]; } }
         if (!aStr || !bStr) continue;
+        
         let aVals = rangeToNumbers(aStr), bVals = rangeToNumbers(bStr);
         if (aVals.length === 0 || bVals.length === 0) continue;
-        totalCombos += aVals.length * bVals.length;
-        for (let a of aVals) for (let b of bVals) {
-            let matched = false;
-            for (let rule of allRules) if (ruleContains(rule.a, a) && ruleContains(rule.b, b)) { matched = true; break; }
-            if (matched) hitCombos++;
+        
+        for (let a of aVals) {
+            for (let b of bVals) {
+                let comboKey = `${a},${b}`;
+                allCombosSet.add(comboKey);
+                let matched = false;
+                for (let rule of allRules) {
+                    if (ruleContains(rule.a, a) && ruleContains(rule.b, b)) {
+                        matched = true;
+                        break;
+                    }
+                }
+                if (matched) hitCombosSet.add(comboKey);
+            }
         }
     }
-    let overallRateHtml = '';
-    if (totalCombos > 0) { const overallRate = (hitCombos / totalCombos) * 100; overallRateHtml = `<div class="hit-rate-display" style="margin-bottom:8px;">预测命中率：${hitCombos} / ${totalCombos} = ${overallRate.toFixed(2)}%</div>`; }
-    else { overallRateHtml = `<div class="hit-rate-display" style="margin-bottom:8px;">预测命中率：0/0 = 0.00%</div>`; }
+    
+    let totalCombos = allCombosSet.size;
+    let hitCombos = hitCombosSet.size;
+    let overallRateHtml = totalCombos > 0 ? `<div class="hit-rate-display" style="margin-bottom:8px;">组合命中率：${hitCombos} / ${totalCombos} = ${((hitCombos / totalCombos) * 100).toFixed(2)}%</div>` : `<div class="hit-rate-display" style="margin-bottom:8px;">组合命中率：0 / 0 = 0.00%</div>`;
+    
     const c1 = state.countData[1], c2 = state.countData[2];
     if (!c1 || !c2) { document.getElementById('compareResult').innerHTML = overallRateHtml; document.getElementById('compareResult').style.display = 'block'; return; }
+    
     const allNumbers = Array.from({ length: 49 }, (_, i) => i + 1);
     const results = [], texts = [];
-    allRules.forEach(r => { const res = allNumbers.filter(n => matchRule(c1[n], r.a) && matchRule(c2[n], r.b)); results.push(res); texts.push(`${r.a} → ${r.b}`); });
-    const final = utils.uniqueSort(results.flat());
+    allRules.forEach(r => {
+        const resSet = new Set();
+        for (let n of allNumbers) if (matchRule(c1[n], r.a) && matchRule(c2[n], r.b)) resSet.add(n);
+        results.push(Array.from(resSet).sort((a,b)=>a-b));
+        texts.push(`${r.a} → ${r.b}`);
+    });
+    
+    const finalSet = new Set();
+    results.forEach(res => res.forEach(n => finalSet.add(n)));
+    const final = Array.from(finalSet).sort((a,b)=>a-b);
     const totalStat = getTotalZodiacStat();
     let totalHtml = `<div class="total-zodiac-title">📊 生肖冷热门</div><div class="total-zodiac-list">`;
     totalStat.forEach(([z,n]) => { totalHtml += `<span class="zodiac-item" onclick="zodiacUI.showTotalZodiacNum('${z}')">${z} ${n}</span>`; });
@@ -909,51 +958,23 @@ function compareAll() {
     let resHtml = ''; texts.forEach((text,i) => { resHtml += `<div class="group-item compare-row">【${text} · ${results[i].length}】：${utils.formatNumbers(results[i])}</div>`; });
     const now = new Date();
     const dateStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} 周${['日','一','二','三','四','五','六'][now.getDay()]}`;
-    const finalHtml = `
-    <div class="result-title"><span>🔵 统计结果 &nbsp; ${dateStr}</span><label class="switch-control">Memo book<input type="checkbox" id="noteSwitch" onchange="toggleNote()"></label></div>
-    <textarea id="noteTextarea" class="note-textarea" placeholder="本澳彩盘口统计系统由蚂蚁数据团队研发，欢迎使用！" oninput="storage.autoSaveNote()"></textarea>
-    ${resHtml}
-    ${overallRateHtml}
-    <div class="group-item final-row">✅ 特 ·${final.length}：${utils.formatNumbers(final)}</div>
-    <div class="title-right"><button class="copy-btn" data-copy="${utils.formatNumbers(final)}" data-tip="cfTip">Copy</button><span id="cfTip" class="copy-tip"></span></div>
-    <div class="query-zodiac-input"><input id="queryZodiacInput" oninput="zodiacUI.queryZodiac()" placeholder="输入数字查生肖"></div>
-    <div class="query-zodiac-result" id="queryZodiacResult"></div>
-    <div class="total-zodiac-stat">${totalHtml}</div>`;
+    const finalHtml = `<div class="result-title"><span>🔵 统计结果 &nbsp; ${dateStr}</span><label class="switch-control">Memo book<input type="checkbox" id="noteSwitch" onchange="toggleNote()"></label></div><textarea id="noteTextarea" class="note-textarea" placeholder="本澳彩盘口统计系统由蚂蚁数据团队研发，欢迎使用！" oninput="storage.autoSaveNote()"></textarea>${resHtml}${overallRateHtml}<div class="group-item final-row">✅ 特 ·${final.length}：${utils.formatNumbers(final)}</div><div class="title-right"><button class="copy-btn" data-copy="${utils.formatNumbers(final)}" data-tip="cfTip">Copy</button><span id="cfTip" class="copy-tip"></span></div><div class="query-zodiac-input"><input id="queryZodiacInput" oninput="zodiacUI.queryZodiac()" placeholder="输入数字查生肖"></div><div class="query-zodiac-result" id="queryZodiacResult"></div><div class="total-zodiac-stat">${totalHtml}</div>`;
     document.getElementById('compareResult').innerHTML = finalHtml;
     ui.bindCopyButtons(); storage.loadNote(); keepNoteState();
 }
-
-function matchRule(val, rule) { rule = (rule || '').trim().replace(/~/g,'-').replace(/～/g,'-'); if (!rule) return true; if (rule.includes('-')) { let [a,b] = rule.split('-').map(Number); return val >= Math.min(a,b) && val <= Math.max(a,b); } return val == Number(rule); }
-function getDynamicDefaults() { let m1 = state.minMax[1].max||0, m2 = state.minMax[2].max||0; return [{a:'0-2',b:'0-2'},{a:'2-2',b:'1-4'},{a:'3-5',b:'2-6'},{a:'6-6',b:'2-6'},{a:`7-${m1}`,b:`3-${m2}`}]; }
-function addCustomRule() { openCustomRulePanel(); state.customRules.push({a:'',b:''}); renderCustomRules(); onRuleChange(); }
-function deleteCustomRule(idx) { state.customRules.splice(idx,1); renderCustomRules(); onRuleChange(); }
-function updateCustomRule(idx,key,val) { if (state.customRules[idx]) { state.customRules[idx][key] = val.trim(); onRuleChange(); } }
-function renderCustomRules() { let container = document.getElementById('customRuleContainer'); let html = ''; state.customRules.forEach((rule, index) => { let idx = 6 + index; html += `<div class="custom-rule-row" data-idx="${idx}"><div class="rule-index">${idx}</div><input type="text" class="rule-input-a" value="${escapeHtml(rule.a)}" placeholder="A" oninput="updateCustomRule(${index},'a',this.value)"><input type="text" class="rule-input-b" value="${escapeHtml(rule.b)}" placeholder="B" oninput="updateCustomRule(${index},'b',this.value)"><button class="del-rule-btn" onclick="deleteCustomRule(${index})">✖</button></div>`; }); container.innerHTML = html; }
-function escapeHtml(str) { return str.replace(/[&<>]/g, function(m) { if (m === '&') return '&amp;'; if (m === '<') return '&lt;'; if (m === '>') return '&gt;'; return m; }); }
-function clearAllRules() { for (let i=1;i<=5;i++) { document.getElementById(`rule${i}a`).value = ''; document.getElementById(`rule${i}b`).value = ''; } state.customRules = []; renderCustomRules(); onRuleChange(); }
-function syncRules() { let def = getDynamicDefaults(); for (let i=1;i<=5;i++) { document.getElementById(`rule${i}a`).value = def[i-1].a; document.getElementById(`rule${i}b`).value = def[i-1].b; } state.customRules = []; renderCustomRules(); }
-function resetRules() { syncRules(); compareAll(); }
-function onRuleChange() { clearTimeout(state.timers.ruleChange); state.timers.ruleChange = setTimeout(compareAll, 200); }
-function getTotalZodiacStat() { let total = {}; ZODIAC_LIST.forEach(z=>total[z]=0); let a1 = utils.parseNumbers(document.getElementById('numInput1').value); let a2 = utils.parseNumbers(document.getElementById('numInput2').value); a1.forEach(n=>total[utils.getZodiac(n)]++); a2.forEach(n=>total[utils.getZodiac(n)]++); return Object.entries(total).sort((a,b)=>b[1]-a[1]); }
 
 function renderBase(num,total,unique,maxCount) { let container = document.getElementById(`baseResult${num}`); if (!container) return; container.innerHTML = `<div class="result-title">📊 盘口频次</div><div class="stat-content"><div class="base-row"><div>加密数据：${total}</div><div>高频：${maxCount}次(热)</div><div>低频：0次(冷)</div></div></div>`; let chk = document.getElementById('globalStatSwitch'); let cd = container.querySelector('.stat-content'); if (cd) cd.style.display = (chk && chk.checked) ? 'block' : 'none'; }
 function renderGroup(num,sortedCounts,groupMap,maxCount) { let html = `<div class="result-title"></div><div class="stat-content">`; sortedCounts.forEach(c=>{ let nums = groupMap[c].join(','); if (nums) html+=`<div class="group-item">${c}次 - ${nums}</div>`; }); let copyText = sortedCounts.map(c=>{ let nums = groupMap[c].join(','); return nums ? `${c}次 - ${nums}` : ''; }).filter(Boolean).join('\n'); state.groupLines[num]=copyText; html+=`<div class="title-right"><button class="copy-btn" data-copy="${copyText}" data-tip="gTip${num}">Copy All</button><span id="gTip${num}" class="copy-tip"></span></div></div>`; document.getElementById(`groupResult${num}`).innerHTML = html; ui.bindCopyButtons(); let chk = document.getElementById('globalStatSwitch'); let cd = document.querySelector(`#groupResult${num} .stat-content`); if (cd) cd.style.display = (chk && chk.checked) ? 'block' : 'none'; }
 function calculate(num) { let numbers = utils.parseNumbers(document.getElementById(`numInput${num}`).value); if (numbers.length === 0) { state.countData[num] = {}; state.minMax[num] = {min:0,max:0}; document.getElementById(`baseResult${num}`).innerHTML = ''; document.getElementById(`groupResult${num}`).innerHTML = ''; return; } let countMap = {}; for (let i=1;i<=49;i++) countMap[i]=0; numbers.forEach(n=>countMap[n]++); state.countData[num]=countMap; let values = Object.values(countMap).filter(v=>v>0); state.minMax[num].max = values.length ? Math.max(...values) : 0; let maxCount = state.minMax[num].max; let groupMap = {}; for (let c=0;c<=maxCount;c++) groupMap[c]=[]; for (let i=1;i<=49;i++) { let c = countMap[i]; groupMap[c].push(i); } let sortedCounts = Array.from({length:maxCount+1},(_,i)=>i).filter(c=>groupMap[c].length>0); renderBase(num,numbers.length,new Set(numbers).size,maxCount); renderGroup(num,sortedCounts,groupMap,maxCount); }
 function autoCalc(num) { ui.updateInputInfo(num); calculate(num); storage.autoSaveInput(); clearTimeout(state.timers.autoCompare); state.timers.autoCompare = setTimeout(compareAll, 260); }
 function bindPaste() { [1,2].forEach(n=>{ document.getElementById(`numInput${n}`).addEventListener('paste',e=>{ e.preventDefault(); let text = (e.clipboardData||window.clipboardData).getData('text'); let nums = utils.parseNumbers(text); let el = document.getElementById(`numInput${n}`); let start = el.selectionStart; el.value = el.value.substring(0,start) + nums.join(' ') + el.value.substring(start); autoCalc(n); }); }); }
-
 function clearRuleImportInput() { document.getElementById('ruleImportText').value = ''; storage.clearRuleImportText(); }
 function importRuleFromTxt() { openCustomRulePanel(); document.getElementById('importRuleFileInput').click(); }
 function handleRuleFileSelect(e) { let file = e.target.files[0]; if (!file) return; let reader = new FileReader(); reader.onload = function(ev) { document.getElementById('ruleImportText').value = ev.target.result; storage.saveRuleImportText(); importCustomRuleByText(); }; reader.readAsText(file, "UTF-8"); e.target.value = ''; }
-
 function importTxtToBoth() { document.getElementById('importFileInput').click(); }
 function handleFileSelect(e) { let file = e.target.files[0]; if (!file) return; let reader = new FileReader(); reader.onload = function(ev) { let content = ev.target.result; let parts = content.split(/\.{6,}/); if (parts.length < 2) { alert("文件格式错误：未找到分隔符 '........'，请确保上半部分为G·A数据，下半部分为G·B数据，中间用........隔开。"); return; } let ga = parts[0].trim(); let gb = parts[1].trim(); if (parts.length > 2) gb = parts.slice(1).join(' ').trim(); document.getElementById('numInput1').value = ga; document.getElementById('numInput2').value = gb; autoCalc(1); autoCalc(2); storage.saveInput(); }; reader.readAsText(file, "UTF-8"); e.target.value = ''; }
 
-const DEFAULT_RANGE_DATA = `1～2→0～4
-3～4→1～6
-5～6→2～6
-0～0→0～2
-7～9→3～9`;
+const DEFAULT_RANGE_DATA = `1～2→0～4\n3～4→1～6\n5～6→2～6\n0～0→0～2\n7～9→3～9`;
 
 window.onload = function() {
     let code = getDeviceCode();
@@ -971,6 +992,7 @@ window.onload = function() {
     bindPaste();
     clearAllRules();
     autoCalc(1); autoCalc(2);
+    setTimeout(() => compareAll(), 100);
     let saved = localStorage.getItem('globalStatVisible');
     let chk = document.getElementById('globalStatSwitch');
     if (saved === '1') chk.checked = true; else chk.checked = false;
