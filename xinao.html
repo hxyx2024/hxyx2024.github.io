@@ -68,7 +68,6 @@
 
 <div id="appContainer" style="display: none;">
 <div class="container">
-    <!-- 主卡片：合并了组数筛选 -->
     <div class="card">
         <h1>🔴 新澳门渗透采集</h1>
         <div class="sub">打开页面自动获取最新数据 | 也可手动点击“在线采集”</div>
@@ -76,7 +75,6 @@
         <div class="flex-between">
             <span>📆 总组数：<strong id="totalPeriods">0</strong></span>
         </div>
-        <!-- 筛选控件 -->
         <div class="filter-row" style="margin-top: 12px;">
             <label>🔴 选择组数：</label>
             <input type="number" id="periodLimit" value="30" min="1" step="1">
@@ -86,7 +84,6 @@
         <div class="reason">💡 特码肖建议选20~30组 | 页面加载时会自动获取最新数据</div>
     </div>
 
-    <!-- 特码统计卡片 -->
     <div class="card"><div class="card-header"><h3>🔴🔵🟢 特码统计</h3><button class="toggle-btn" data-target="freq-content">▼ 隐藏</button></div>
         <div id="freq-content" class="card-content">
             <div id="rankRuleCaption" class="rule-caption" contenteditable="true">等待采集数据</div>
@@ -95,7 +92,6 @@
         </div>
     </div>
 
-    <!-- 生肖统计卡片 -->
     <div class="card"><div class="card-header"><h3>🔵 生肖统计</h3><button class="toggle-btn" data-target="zodiac-content">▼ 隐藏</button></div>
         <div id="zodiac-content" class="card-content">
             <div id="zodiacRankingContainer"></div>
@@ -104,7 +100,6 @@
         </div>
     </div>
 
-    <!-- 遗漏号码卡片 -->
     <div class="card"><div class="card-header"><h3>⚠️ 遗漏号码（打不中）</h3><button class="toggle-btn" data-target="miss-content">▼ 隐藏</button></div>
         <div id="miss-content" class="card-content"><div id="missNumbers" class="miss-numbers">等待采集...</div></div>
     </div>
@@ -456,7 +451,7 @@
                 <td>${heat}</td>
             </tr>`;
         }
-        tableHtml += '</tbody><tr>';
+        tableHtml += '</tbody></table>';
         document.getElementById('freqTable').innerHTML = tableHtml;
 
         // 遗漏号码
@@ -465,7 +460,7 @@
         let missHtml = miss.length ? `<div class="miss-title">遗漏 ${miss.length}个</div><div>${miss.map(n=>n.toString().padStart(2,'0')).join(', ')}</div>` : '<div>✅全出现</div>';
         document.getElementById('missNumbers').innerHTML = missHtml;
 
-        // 生肖排名表格
+        // 生肖排名表格（修复标签，确保近期和占比显示）
         let zodiacTotal = countZodiacs(currentDisplayRecords);
         let zodiacRecent = countRecentZodiacs(currentDisplayRecords);
         let totalZod = currentDisplayRecords.reduce((s,r)=>s+r.zodiacs.length,0);
@@ -491,7 +486,8 @@
         }
         rankHtml += `</tbody>
         </table>`;
-        rankHtml = rankHtml.replace(/<\/td--/g, '</tr>');
+        // 彻底修复错误标签：将 </td-- 替换为 <table>
+        rankHtml = rankHtml.replace(/<\/td--/g, '</td>');
         document.getElementById('zodiacRankingContainer').innerHTML = rankHtml;
 
         document.querySelectorAll('.num-checkbox').forEach(cb=>cb.addEventListener('change',()=>{
@@ -593,7 +589,6 @@
         else if(typeof remain==='number' && remain>0) licenseSpan.innerText = `✅ 已授权 · 剩余 ${remain} 天`;
         else licenseSpan.innerText = '⚠️ 授权已过期';
 
-        // 加载上次采集的数据
         const lastData = localStorage.getItem('last_collected_data');
         if (lastData) {
             const parsed = parseAllData(lastData);
@@ -607,7 +602,6 @@
             renderAll();
         }
 
-        // 绑定事件
         document.getElementById('copySelectedNumbersBtn').onclick = copySelectedNumbers;
         document.getElementById('copySelectedZodiacBtn').onclick = copySelectedZodiac;
         document.getElementById('selectAllCheckbox').onchange = toggleSelectAll;
@@ -620,7 +614,6 @@
             if(t) t.classList.toggle('collapsed');
         }));
 
-        // 自动采集一次
         if (!autoCollectDone) {
             autoCollectDone = true;
             setTimeout(() => {
@@ -629,7 +622,6 @@
         }
     }
 
-    // 授权面板事件
     document.getElementById('verifyBtn').onclick = ()=>{
         let code = document.getElementById('authCodeInput').value.trim();
         if(!code){ document.getElementById('authStatusMsg').innerText='请输入授权码'; return; }
@@ -657,7 +649,6 @@
     };
     document.getElementById('deviceIdDisplay').innerText = `设备码: ${generateDeviceId()}`;
 
-    // 恢复试用授权
     const trial = TrialMark.get();
     if (trial && trial.expire && Date.now() < trial.expire) {
         const auth = getAuth();
