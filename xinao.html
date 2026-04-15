@@ -68,29 +68,25 @@
 
 <div id="appContainer" style="display: none;">
 <div class="container">
+    <!-- 主卡片：合并了组数筛选 -->
     <div class="card">
         <h1>🔴 新澳门渗透采集</h1>
-        <div class="sub">点击“在线采集”获取最新数据 | 支持多次采集，自动更新</div>
+        <div class="sub">打开页面自动获取最新数据 | 也可手动点击“在线采集”</div>
         <div id="licenseInfo" style="background:#0d0d0d; border-radius: 30px; padding: 6px 12px; margin-bottom: 12px; font-size:12px; display:inline-block; color:#4ade80;">✅ 授权状态: 加载中...</div>
         <div class="flex-between">
             <span>📆 总组数：<strong id="totalPeriods">0</strong></span>
         </div>
-    </div>
-
-    <div class="card">
-        <div class="card-header"><h3>🔵 组数筛选</h3><button class="toggle-btn" data-target="filter-content">▼ 隐藏</button></div>
-        <div id="filter-content" class="card-content">
-            <div class="filter-row">
-                <label>🔴 选择组数：</label>
-                <input type="number" id="periodLimit" value="30" min="1" step="1">
-                <span style="font-size:11px;">（默认30组，0=全部）</span>
-                <button id="onlineCollectBtn" class="success" style="margin-left: auto;">🌐 在线采集</button>
-            </div>
-            <div class="btn-row" style="margin-top: 8px;"></div>
-            <div class="reason">💡 特码肖建议选20~30组 | 选择适合自已的组合最重要，长期跟踪</div>
+        <!-- 筛选控件 -->
+        <div class="filter-row" style="margin-top: 12px;">
+            <label>🔴 选择组数：</label>
+            <input type="number" id="periodLimit" value="30" min="1" step="1">
+            <span style="font-size:11px;">（默认30组，0=全部）</span>
+            <button id="onlineCollectBtn" class="success" style="margin-left: auto;">🌐 在线采集</button>
         </div>
+        <div class="reason">💡 特码肖建议选20~30组 | 页面加载时会自动获取最新数据</div>
     </div>
 
+    <!-- 特码统计卡片 -->
     <div class="card"><div class="card-header"><h3>🔴🔵🟢 特码统计</h3><button class="toggle-btn" data-target="freq-content">▼ 隐藏</button></div>
         <div id="freq-content" class="card-content">
             <div id="rankRuleCaption" class="rule-caption" contenteditable="true">等待采集数据</div>
@@ -99,6 +95,7 @@
         </div>
     </div>
 
+    <!-- 生肖统计卡片 -->
     <div class="card"><div class="card-header"><h3>🔵 生肖统计</h3><button class="toggle-btn" data-target="zodiac-content">▼ 隐藏</button></div>
         <div id="zodiac-content" class="card-content">
             <div id="zodiacRankingContainer"></div>
@@ -107,6 +104,7 @@
         </div>
     </div>
 
+    <!-- 遗漏号码卡片 -->
     <div class="card"><div class="card-header"><h3>⚠️ 遗漏号码（打不中）</h3><button class="toggle-btn" data-target="miss-content">▼ 隐藏</button></div>
         <div id="miss-content" class="card-content"><div id="missNumbers" class="miss-numbers">等待采集...</div></div>
     </div>
@@ -118,7 +116,7 @@
 <script>
     // ==================== 多重存储工具（混淆键名） ====================
     const TrialMark = (function() {
-        const key = '_t_' + btoa('trial_data').substring(0, 16); // 混淆键名
+        const key = '_t_' + btoa('trial_data').substring(0, 16);
         function set(data) {
             const value = JSON.stringify(data);
             try {
@@ -222,22 +220,18 @@
         return Math.ceil(remainMs / (1000 * 60 * 60 * 24));
     }
 
-    // 试用逻辑（多重存储，仅一次）
     function applyTrial() {
         const deviceId = generateDeviceId();
         const trialData = TrialMark.get();
         const now = Date.now();
         if (trialData) {
             if (now < trialData.expire) {
-                // 有效试用，恢复授权
                 saveAuth(trialData.expire, 1);
                 return true;
             } else {
-                // 试用已过期，不允许再次试用
                 return false;
             }
         } else {
-            // 首次试用
             const expire = now + 24 * 60 * 60 * 1000;
             TrialMark.set({ expire, deviceId });
             saveAuth(expire, 1);
@@ -249,8 +243,10 @@
         saveAuth(days === 0 ? 0 : Date.now() + days * 24 * 60 * 60 * 1000, days);
     }
 
-    // ==================== 业务逻辑（与原代码相同） ====================
+    // ==================== 业务逻辑 ====================
     let allRecords = [], currentDisplayRecords = [];
+    let autoCollectDone = false;
+
     const RED_SET = new Set([1,2,7,8,12,13,18,19,23,24,29,30,34,35,40,45,46]);
     const BLUE_SET = new Set([3,4,9,10,14,15,20,25,26,31,36,37,41,42,47,48]);
     const GREEN_SET = new Set([5,6,11,16,17,21,22,27,28,32,33,38,39,43,44,49]);
@@ -442,6 +438,7 @@
         let totalNums = currentDisplayRecords.reduce((s,r)=>s+r.numbers.length,0);
         document.getElementById('totalPeriods').innerText = allRecords.length;
 
+        // 号码表格
         let sortedNumbers = getSortedNumbersAll(freqTotal, freqRecent);
         let tableHtml = `<table class="freq-table"><thead><tr><th class="checkbox-col">✅</th><th>排名</th><th>特码</th><th>频次</th><th>近期</th><th>热度值</th></tr></thead><tbody>`;
         for(let i=0;i<sortedNumbers.length;i++){
@@ -459,14 +456,16 @@
                 <td>${heat}</td>
             </tr>`;
         }
-        tableHtml += '</tbody></table>';
+        tableHtml += '</tbody><tr>';
         document.getElementById('freqTable').innerHTML = tableHtml;
 
+        // 遗漏号码
         let miss = [];
         for(let i=1;i<=49;i++) if(freqTotal[i]===0) miss.push(i);
         let missHtml = miss.length ? `<div class="miss-title">遗漏 ${miss.length}个</div><div>${miss.map(n=>n.toString().padStart(2,'0')).join(', ')}</div>` : '<div>✅全出现</div>';
         document.getElementById('missNumbers').innerHTML = missHtml;
 
+        // 生肖排名表格
         let zodiacTotal = countZodiacs(currentDisplayRecords);
         let zodiacRecent = countRecentZodiacs(currentDisplayRecords);
         let totalZod = currentDisplayRecords.reduce((s,r)=>s+r.zodiacs.length,0);
@@ -492,7 +491,7 @@
         }
         rankHtml += `</tbody>
         </table>`;
-        rankHtml = rankHtml.replace(/<\/td--/g, '</td>');
+        rankHtml = rankHtml.replace(/<\/td--/g, '</tr>');
         document.getElementById('zodiacRankingContainer').innerHTML = rankHtml;
 
         document.querySelectorAll('.num-checkbox').forEach(cb=>cb.addEventListener('change',()=>{
@@ -594,6 +593,7 @@
         else if(typeof remain==='number' && remain>0) licenseSpan.innerText = `✅ 已授权 · 剩余 ${remain} 天`;
         else licenseSpan.innerText = '⚠️ 授权已过期';
 
+        // 加载上次采集的数据
         const lastData = localStorage.getItem('last_collected_data');
         if (lastData) {
             const parsed = parseAllData(lastData);
@@ -607,6 +607,7 @@
             renderAll();
         }
 
+        // 绑定事件
         document.getElementById('copySelectedNumbersBtn').onclick = copySelectedNumbers;
         document.getElementById('copySelectedZodiacBtn').onclick = copySelectedZodiac;
         document.getElementById('selectAllCheckbox').onchange = toggleSelectAll;
@@ -618,9 +619,17 @@
             let t = document.getElementById(this.dataset.target);
             if(t) t.classList.toggle('collapsed');
         }));
+
+        // 自动采集一次
+        if (!autoCollectDone) {
+            autoCollectDone = true;
+            setTimeout(() => {
+                onlineCollect();
+            }, 500);
+        }
     }
 
-    // 授权面板按钮事件
+    // 授权面板事件
     document.getElementById('verifyBtn').onclick = ()=>{
         let code = document.getElementById('authCodeInput').value.trim();
         if(!code){ document.getElementById('authStatusMsg').innerText='请输入授权码'; return; }
@@ -648,7 +657,7 @@
     };
     document.getElementById('deviceIdDisplay').innerText = `设备码: ${generateDeviceId()}`;
 
-    // 尝试恢复授权（如果多重存储中有有效试用但本地授权丢失）
+    // 恢复试用授权
     const trial = TrialMark.get();
     if (trial && trial.expire && Date.now() < trial.expire) {
         const auth = getAuth();
