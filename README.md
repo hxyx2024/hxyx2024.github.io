@@ -1,1 +1,1 @@
-# 静态网页 : https://mycm.cc.cd/
+https://t.me/mayi2036
