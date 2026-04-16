@@ -1,53 +1,50 @@
-from telethon import TelegramClient
+from telethon import TelegramClient, events
 import asyncio
-import re
 import os
 
-API_ID = int(os.getenv("API_ID"))
-API_HASH = os.getenv("API_HASH")
-CHANNEL = "@douapi"
+API_ID = 36088286
+API_HASH = "7b78971ae31f48f666c21cca41d48741"
+SESSION_FILE = "session.session"
+
+# 这里改成你自己的频道用户名/链接/ID
+CHANNEL_USERNAME = "你的频道用户名"
 
 DATA_FILE = "lottery_data.txt"
 
-def read_data():
-    if not os.path.exists(DATA_FILE):
-        return []
-    with open(DATA_FILE, "r", encoding="utf-8") as f:
-        return [l.strip() for l in f if l.strip()]
-
-def get_last_period():
-    lines = read_data()
-    if not lines:
-        return None
-    match = re.search(r"第:(\d+)期", lines[-1])
-    return int(match.group(1)) if match else None
-
-async def run():
-    lines = read_data()
-    last = get_last_period()
-
-    client = TelegramClient("github_session", API_ID, API_HASH)
-    await client.start()
-
-    chat = await client.get_entity(CHANNEL)
-    msg = await client.get_messages(chat, limit=1)
-    if not msg:
+async def main():
+    if not os.path.exists(SESSION_FILE):
+        print("未找到session文件")
         return
 
-    text = msg[0].text
-    matches = re.findall(r"第:(\d+)期.*?\n([\d\s]+)\n(.*?)\n(.*?)$", text, re.DOTALL)
-    if not matches:
-        return
+    client = TelegramClient(
+        "session",
+        API_ID,
+        API_HASH
+    )
 
-    period, nums, sx, color = matches[-1]
-    line = f"新澳门六合彩第:{period}期开奖结果: {nums} {sx} {color}"
+    try:
+        await client.start()
+        print("登录成功")
 
-    if not last or int(period) > last:
-        lines.append(line)
+        # 获取最新一条消息
+        messages = await client.get_messages(CHANNEL_USERNAME, limit=1)
+        if not messages:
+            print("频道内暂无消息")
+            return
+
+        msg = messages[0]
+        text = msg.text
+        print("获取到内容：")
+        print(text)
+
+        # 保存到文件
         with open(DATA_FILE, "w", encoding="utf-8") as f:
-            f.write("\n\n".join(lines))
+            f.write(text)
 
-    await client.disconnect()
+        print("已保存到", DATA_FILE)
+
+    except Exception as e:
+        print("错误:", e)
 
 if __name__ == "__main__":
-    asyncio.run(run())
+    asyncio.run(main())
