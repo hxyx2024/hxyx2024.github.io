@@ -14,20 +14,26 @@ MAX_KEEP = 60
 BEIJING_TZ = timezone(timedelta(hours=8))
 CLEAN_FLAG_FILE = ".last_clean_date"
 
-# 手动触发固定采集数量
+# 手动触发固定采集数量（确保这里写的是30）
 MANUAL_FETCH_LIMIT = 30
 
 # ================== 辅助函数 ==================
 def get_fetch_limit(is_manual):
     if is_manual:
+        print("手动触发模式：返回固定采集数量", MANUAL_FETCH_LIMIT)
         return MANUAL_FETCH_LIMIT
     now = datetime.now(BEIJING_TZ)
     hour = now.hour
     if 18 <= hour < 20:
-        return random.randint(1, 4)
+        limit = random.randint(1, 4)
+        print(f"定时触发（18-20点）：随机采集 {limit} 条")
+        return limit
     elif 20 <= hour < 21:
-        return random.randint(1, 5)
+        limit = random.randint(1, 5)
+        print(f"定时触发（20-21点）：随机采集 {limit} 条")
+        return limit
     else:
+        print("定时触发但不在采集时段，返回0")
         return 0
 
 def need_clean_today():
@@ -59,11 +65,12 @@ def is_complete_lottery(text):
     return True
 
 async def main():
-    # 直接通过 GitHub 环境变量判断是否为手动触发
+    # 判断手动触发：直接读取 GitHub 事件名
     event_name = os.environ.get("GITHUB_EVENT_NAME", "")
     is_manual = (event_name == "workflow_dispatch")
-    print(f"触发事件: {event_name}, 手动模式: {is_manual}")
+    print(f"GitHub 事件名: {event_name}, 是否手动触发: {is_manual}")
 
+    # 每天首次运行清空
     if need_clean_today():
         with open(OUT_FILE, "w", encoding="utf-8") as f:
             f.write("")
@@ -71,15 +78,17 @@ async def main():
 
     fetch_limit = get_fetch_limit(is_manual)
     if fetch_limit == 0:
-        print("⏰ 不在采集时段（18:00-21:00），且非手动触发，退出")
+        print("⏰ 不采集，退出")
         return
-    print(f"本次采集 {fetch_limit} 条")
+    print(f"本次实际采集数量: {fetch_limit} 条")
 
+    # 连接 Telegram
     client = TelegramClient("session", API_ID, API_HASH)
     await client.start()
     messages = await client.get_messages(CHANNEL, limit=fetch_limit)
     await client.disconnect()
 
+    # 过滤完整开奖
     new_data = []
     for msg in messages:
         if msg.text and "新澳门六合彩第" in msg.text:
@@ -91,10 +100,10 @@ async def main():
 
     new_data = sorted(new_data, key=get_period, reverse=True)
 
-    # 读取旧内容，过滤不完整记录
+    # 读取旧内容，并过滤不完整记录
     old_lines = []
     if os.path.exists(OUT_FILE):
-        with open(OUT_FILE, "r", encoding="utf-8") as f:
+        with open(OUT_FILE, "r", encoding="="utf-8") as f:
             content = f.read().strip()
         if content:
             candidates = content.split('\n\n')
@@ -105,6 +114,7 @@ async def main():
                 else:
                     print(f"⚠️ 丢弃旧文件中的不完整记录: {cand[:50]}...")
 
+    # 合并去重
     existing_periods = {get_period(line) for line in old_lines}
     all_lines = old_lines.copy()
     for line in new_data:
@@ -113,10 +123,12 @@ async def main():
             existing_periods.add(p)
             all_lines.append(line)
 
-    all_lines = sorted(all_lines, key=get_period)  # 升序（小→大）
+    # 升序排序，保留最新60期
+    all_lines = sorted(all_lines, key=get_period)
     if len(all_lines) > MAX_KEEP:
         all_lines = all_lines[-MAX_KEEP:]
 
+    # 写入文件
     with open(OUT_FILE, "w", encoding="utf-8") as f:
         f.write("\n\n".join(all_lines) + "\n")
 
