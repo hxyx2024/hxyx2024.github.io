@@ -14,7 +14,7 @@ MAX_KEEP = 60
 BEIJING_TZ = timezone(timedelta(hours=8))
 CLEAN_FLAG_FILE = ".last_clean_date"
 
-# 手动触发固定采集数量（确保这里写的是30）
+# 手动触发固定采集数量
 MANUAL_FETCH_LIMIT = 30
 
 # ================== 辅助函数 ==================
@@ -65,12 +65,10 @@ def is_complete_lottery(text):
     return True
 
 async def main():
-    # 判断手动触发：直接读取 GitHub 事件名
     event_name = os.environ.get("GITHUB_EVENT_NAME", "")
     is_manual = (event_name == "workflow_dispatch")
     print(f"GitHub 事件名: {event_name}, 是否手动触发: {is_manual}")
 
-    # 每天首次运行清空
     if need_clean_today():
         with open(OUT_FILE, "w", encoding="utf-8") as f:
             f.write("")
@@ -82,13 +80,11 @@ async def main():
         return
     print(f"本次实际采集数量: {fetch_limit} 条")
 
-    # 连接 Telegram
     client = TelegramClient("session", API_ID, API_HASH)
     await client.start()
     messages = await client.get_messages(CHANNEL, limit=fetch_limit)
     await client.disconnect()
 
-    # 过滤完整开奖
     new_data = []
     for msg in messages:
         if msg.text and "新澳门六合彩第" in msg.text:
@@ -100,10 +96,9 @@ async def main():
 
     new_data = sorted(new_data, key=get_period, reverse=True)
 
-    # 读取旧内容，并过滤不完整记录
     old_lines = []
     if os.path.exists(OUT_FILE):
-        with open(OUT_FILE, "r", encoding="="utf-8") as f:
+        with open(OUT_FILE, "r", encoding="utf-8") as f:
             content = f.read().strip()
         if content:
             candidates = content.split('\n\n')
@@ -114,7 +109,6 @@ async def main():
                 else:
                     print(f"⚠️ 丢弃旧文件中的不完整记录: {cand[:50]}...")
 
-    # 合并去重
     existing_periods = {get_period(line) for line in old_lines}
     all_lines = old_lines.copy()
     for line in new_data:
@@ -123,12 +117,10 @@ async def main():
             existing_periods.add(p)
             all_lines.append(line)
 
-    # 升序排序，保留最新60期
     all_lines = sorted(all_lines, key=get_period)
     if len(all_lines) > MAX_KEEP:
         all_lines = all_lines[-MAX_KEEP:]
 
-    # 写入文件
     with open(OUT_FILE, "w", encoding="utf-8") as f:
         f.write("\n\n".join(all_lines) + "\n")
 
