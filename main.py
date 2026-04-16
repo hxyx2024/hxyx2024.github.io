@@ -18,18 +18,16 @@ MAX_KEEP = 60
 BEIJING_TZ = timezone(timedelta(hours=8))
 CLEAN_FLAG_FILE = ".last_clean_date"
 
-MANUAL_FETCH_LIMIT = 30   # 手动触发固定采集30条
-MAX_RETRIES = 3           # 最大重试次数
-RETRY_DELAY = 5           # 初始重试延迟（秒）
+MANUAL_FETCH_LIMIT = 30
+MAX_RETRIES = 3
+RETRY_DELAY = 5
 
-# 邮件配置（可选）
 EMAIL_ADDRESS = os.environ.get("EMAIL_ADDRESS", "xmaec555@gmail.com")
-EMAIL_PASSWORD = os.environ.get("EMAIL_PASSWORD")  # 需要在 Secrets 中配置
+EMAIL_PASSWORD = os.environ.get("EMAIL_PASSWORD")
 SMTP_SERVER = "smtp.gmail.com"
 SMTP_PORT = 587
 
 def send_email(subject, body):
-    """发送邮件通知"""
     if not EMAIL_PASSWORD:
         print("未配置 EMAIL_PASSWORD，跳过邮件通知")
         return
@@ -39,7 +37,6 @@ def send_email(subject, body):
         msg["To"] = EMAIL_ADDRESS
         msg["Subject"] = subject
         msg.attach(MIMEText(body, "plain"))
-        
         server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
         server.starttls()
         server.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
@@ -91,7 +88,6 @@ def is_complete_lottery(text):
     return True
 
 async def fetch_messages_with_retry(client, limit):
-    """带重试的消息拉取，精确处理 FloodWait"""
     for attempt in range(MAX_RETRIES):
         try:
             msgs = await client.get_messages(CHANNEL, limit=limit)
@@ -112,7 +108,6 @@ async def fetch_messages_with_retry(client, limit):
     return []
 
 async def get_latest_period_from_channel(client):
-    """获取频道中最新一期的期号，用于智能跳过"""
     try:
         msg = await client.get_messages(CHANNEL, limit=1)
         if msg and msg[0].text and "新澳门六合彩第" in msg[0].text:
@@ -125,7 +120,6 @@ async def main():
     is_manual = (os.environ.get("GITHUB_EVENT_NAME") == "workflow_dispatch")
     print(f"事件: {os.environ.get('GITHUB_EVENT_NAME')}, 手动: {is_manual}")
 
-    # 手动触发时清空文件
     if is_manual:
         try:
             with open(OUT_FILE, "w", encoding="utf-8") as f:
@@ -135,7 +129,6 @@ async def main():
         except Exception as e:
             print(f"手动触发清空文件失败: {e}")
 
-    # 每日自动清空
     if not is_manual and need_clean_today():
         with open(OUT_FILE, "w", encoding="utf-8") as f:
             f.write("")
@@ -148,7 +141,6 @@ async def main():
         return
     print(f"本次采集 {limit} 条")
 
-    # 21:10 智能跳过逻辑
     if limit == 60 and not is_manual:
         existing_periods = []
         if os.path.exists(OUT_FILE):
@@ -161,7 +153,7 @@ async def main():
                         existing_periods.append(get_period(block))
         if len(existing_periods) >= MAX_KEEP:
             temp_client = TelegramClient("session", API_ID, API_HASH)
-            await temp_client.start(timeout=30)
+            await temp_client.start()
             latest_period = await get_latest_period_from_channel(temp_client)
             await temp_client.disconnect()
             if latest_period and existing_periods and max(existing_periods) >= latest_period:
@@ -173,7 +165,7 @@ async def main():
     client = None
     try:
         client = TelegramClient("session", API_ID, API_HASH)
-        await client.start(timeout=30)
+        await client.start()   # 移除 timeout 参数
         msgs = await fetch_messages_with_retry(client, limit)
         await client.disconnect()
     except Exception as e:
