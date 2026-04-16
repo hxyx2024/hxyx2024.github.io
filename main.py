@@ -2,71 +2,52 @@ from telethon import TelegramClient
 import asyncio
 import re
 import os
-import time
 
-API_ID = 36088286
-API_HASH = "7b78971ae31f48f666c2148c761cca41"
+API_ID = int(os.getenv("API_ID"))
+API_HASH = os.getenv("API_HASH")
 CHANNEL = "@douapi"
 
-DATA_FILE = "lottery_data_api.html"
+DATA_FILE = "lottery_data.txt"
 
-def get_lines():
+def read_data():
     if not os.path.exists(DATA_FILE):
         return []
-    try:
-        with open(DATA_FILE, "r", encoding="utf-8") as f:
-            return [l.strip() for l in f if l.strip()]
-    except:
-        return []
+    with open(DATA_FILE, "r", encoding="utf-8") as f:
+        return [l.strip() for l in f if l.strip()]
 
 def get_last_period():
-    lines = get_lines()
+    lines = read_data()
     if not lines:
         return None
-    m = re.search(r"第:(\d+)期", lines[-1])
-    return int(m.group(1)) if m else None
+    match = re.search(r"第:(\d+)期", lines[-1])
+    return int(match.group(1)) if match else None
 
-async def job():
-    try:
-        client = TelegramClient("session", API_ID, API_HASH)
-        await client.start()
+async def run():
+    lines = read_data()
+    last = get_last_period()
 
-        chat = await client.get_entity(CHANNEL)
-        msg = await client.get_messages(chat, limit=1)
-        if not msg or not msg[0].text:
-            print("未获取到消息")
-            return
+    client = TelegramClient("github_session", API_ID, API_HASH)
+    await client.start()
 
-        text = msg[0].text
-        pattern = re.compile(r"第:(\d+)期.*?\n([\d\s]+)\n(.*?)\n(.*?)$", re.DOTALL)
-        matches = pattern.findall(text)
-        if not matches:
-            print("未匹配到数据")
-            return
+    chat = await client.get_entity(CHANNEL)
+    msg = await client.get_messages(chat, limit=1)
+    if not msg:
+        return
 
-        period, nums, sx, color = matches[-1]
-        line = f"第:{period}期: {nums} | {sx} | {color}"
+    text = msg[0].text
+    matches = re.findall(r"第:(\d+)期.*?\n([\d\s]+)\n(.*?)\n(.*?)$", text, re.DOTALL)
+    if not matches:
+        return
 
-        lines = get_lines()
-        last = get_last_period()
+    period, nums, sx, color = matches[-1]
+    line = f"新澳门六合彩第:{period}期开奖结果: {nums} {sx} {color}"
 
-        if last is None or int(period) > last:
-            lines.append(line)
-            with open(DATA_FILE, "w", encoding="utf-8") as f:
-                f.write("\n".join(lines))
-            print(f"✅ 已保存最新期数: {period}")
-        else:
-            print(f"ℹ 已是最新: {period}")
+    if not last or int(period) > last:
+        lines.append(line)
+        with open(DATA_FILE, "w", encoding="utf-8") as f:
+            f.write("\n\n".join(lines))
 
-        await client.disconnect()
-    except Exception as e:
-        print("异常:", e)
-
-async def main():
-    while True:
-        await job()
-        print("等待60秒后重试...")
-        await asyncio.sleep(60)
+    await client.disconnect()
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    asyncio.run(run())
