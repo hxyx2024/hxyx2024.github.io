@@ -1,11 +1,11 @@
-from telethon import TelegramClient, sessions
-from telethon.errors import FloodWaitError
+from telethon import TelegramClient
 import asyncio
 import re
 import random
 import os
 from datetime import datetime, timezone, timedelta
 
+# ========== 从环境变量读取敏感信息 ==========
 API_ID = int(os.environ["API_ID"])
 API_HASH = os.environ["API_HASH"]
 CHANNEL = "douapi"
@@ -14,15 +14,7 @@ MAX_KEEP = 60
 BEIJING_TZ = timezone(timedelta(hours=8))
 CLEAN_FLAG_FILE = ".last_clean_date"
 
-MANUAL_FETCH_LIMIT = 30
-
-# ----- 功能修复：支持 StringSession（如果提供了环境变量）-----
-SESSION_STR = os.environ.get("TG_SESSION_STRING")
-if SESSION_STR:
-    client_creator = lambda: TelegramClient(sessions.StringSession(SESSION_STR), API_ID, API_HASH)
-else:
-    client_creator = lambda: TelegramClient("session", API_ID, API_HASH)
-# ---------------------------------------------------------
+MANUAL_FETCH_LIMIT = 30   # 手动触发固定采集30条
 
 def get_fetch_limit(is_manual):
     if is_manual:
@@ -63,85 +55,24 @@ def is_complete_lottery(text):
     return True
 
 async def main():
+    # 判断手动触发
     is_manual = (os.environ.get("GITHUB_EVENT_NAME") == "workflow_dispatch")
     print(f"事件: {os.environ.get('GITHUB_EVENT_NAME')}, 手动: {is_manual}")
-    print(f"北京时间: {datetime.now(BEIJING_TZ).strftime('%Y-%m-%d %H:%M:%S')}")
 
-    # ========== 手动触发分支 ==========
-    if is_manual:
-        with open(OUT_FILE, "w", encoding="utf-8") as f:
-            f.write("")
-        print("手动触发：已清空文件，本次将只写入拉取到的数据（需完整格式）")
-        need_clean_today()
-
-        limit = MANUAL_FETCH_LIMIT
-        print(f"本次采集 {limit} 条")
-
-        client = client_creator()
-        await client.start()
-        # ----- 功能修复：增加异常保护和重试 -----
-        try:
-            msgs = await client.get_messages(CHANNEL, limit=limit)
-        except FloodWaitError as e:
-            print(f"触发限流，等待 {e.seconds} 秒")
-            await asyncio.sleep(e.seconds)
-            msgs = await client.get_messages(CHANNEL, limit=limit)
-        except Exception as e:
-            print(f"拉取消息失败: {e}")
-            await client.disconnect()
-            return
-        # ------------------------------------
-        await client.disconnect()
-
-        new_data = []
-        for m in msgs:
-            if m.text and "新澳门六合彩第" in m.text:
-                txt = m.text.strip()
-                if is_complete_lottery(txt):
-                    new_data.append(txt)
-
-        unique = {}
-        for item in new_data:
-            p = get_period(item)
-            if p not in unique:
-                unique[p] = item
-        all_data = list(unique.values())
-        all_data.sort(key=get_period)
-
-        with open(OUT_FILE, "w", encoding="utf-8") as f:
-            f.write("\n\n".join(all_data))
-            if all_data:
-                f.write("\n")
-
-        print(f"手动触发完成，共写入 {len(all_data)} 期")
-        return
-
-    # ========== 自动触发原有逻辑（完全不变） ==========
     if need_clean_today():
         with open(OUT_FILE, "w", encoding="utf-8") as f:
             f.write("")
         print("今日首次运行，清空旧内容")
 
-    limit = get_fetch_limit(is_manual=False)
+    limit = get_fetch_limit(is_manual)
     if limit == 0:
-        print("不在采集时段，退出")
+        print("不在采集时段且非手动，退出")
         return
     print(f"本次采集 {limit} 条")
 
-    client = client_creator()
+    client = TelegramClient("session", API_ID, API_HASH)
     await client.start()
-    # ----- 功能修复：增加异常保护和重试 -----
-    try:
-        msgs = await client.get_messages(CHANNEL, limit=limit)
-    except FloodWaitError as e:
-        print(f"触发限流，等待 {e.seconds} 秒")
-        await asyncio.sleep(e.seconds)
-        msgs = await client.get_messages(CHANNEL, limit=limit)
-    except Exception as e:
-        print(f"拉取消息失败: {e}")
-        await client.disconnect()
-        return
-    # ------------------------------------
+    msgs = await client.get_messages(CHANNEL, limit=limit)
     await client.disconnect()
 
     new_data = []
@@ -153,6 +84,7 @@ async def main():
 
     new_data.sort(key=get_period, reverse=True)
 
+    # 读取旧文件，只保留完整记录
     old = []
     if os.path.exists(OUT_FILE):
         with open(OUT_FILE, "r", encoding="utf-8") as f:
@@ -171,7 +103,7 @@ async def main():
             exist_periods.add(p)
             all_data.append(line)
 
-    all_data.sort(key=get_period)
+    all_data.sort(key=get_period)   # 升序小→大
     if len(all_data) > MAX_KEEP:
         all_data = all_data[-MAX_KEEP:]
 
