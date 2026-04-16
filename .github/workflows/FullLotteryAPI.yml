@@ -1,0 +1,41 @@
+name: FullLotteryAPI
+
+on:
+  workflow_dispatch:
+  schedule:
+    # 北京时间 18:00-20:00 (UTC 10:00-12:00)
+    - cron: "3 10 * * *"
+    - cron: "17 10 * * *"
+    - cron: "29 10 * * *"
+    - cron: "44 10 * * *"
+    - cron: "56 10 * * *"
+    - cron: "8 11 * * *"
+    - cron: "22 11 * * *"
+    - cron: "37 11 * * *"
+    - cron: "51 11 * * *"
+    # 北京时间 20:00-21:00 (UTC 12:00-13:00)
+    - cron: "6 12 * * *"
+    - cron: "19 12 * * *"
+    - cron: "33 12 * * *"
+    - cron: "47 12 * * *"
+    - cron: "59 12 * * *"
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - run: pip install telethon
+      - run: python main.py
+      - name: Push changes
+        run: |
+          git config --global user.name "bot"
+          git config --global user.email "bot@github.com"
+          git add lottery_data_api.html .last_clean_date
+          git diff --cached --quiet || git commit -m "update lottery data"
+          git push
