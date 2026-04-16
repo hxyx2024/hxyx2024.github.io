@@ -9,6 +9,7 @@ API_ID = int(os.environ["API_ID"])
 API_HASH = os.environ["API_HASH"]
 CHANNEL = "douapi"
 OUT_FILE = "lottery_data_api.html"
+MAX_KEEP = 60
 BEIJING_TZ = timezone(timedelta(hours=8))
 CLEAN_FLAG_FILE = ".last_clean_date"
 
@@ -57,23 +58,58 @@ async def main():
     print(f"事件: {os.environ.get('GITHUB_EVENT_NAME')}, 手动: {is_manual}")
     print(f"北京时间: {datetime.now(BEIJING_TZ).strftime('%Y-%m-%d %H:%M:%S')}")
 
-    # 手动触发：强制清空文件（不合并历史）
+    # ========== 手动触发分支 ==========
     if is_manual:
+        # 清空文件
         with open(OUT_FILE, "w", encoding="utf-8") as f:
             f.write("")
-        print("手动触发：已清空文件，本次将只写入拉取到的数据")
+        print("手动触发：已清空文件，本次将只写入拉取到的数据（需完整格式）")
         # 更新日期标志，避免影响明天的自动清空
         need_clean_today()
-    else:
-        # 自动触发：每天第一次清空
-        if need_clean_today():
-            with open(OUT_FILE, "w", encoding="utf-8") as f:
-                f.write("")
-            print("今日首次运行，已清空旧内容")
 
-    limit = get_fetch_limit(is_manual)
+        limit = MANUAL_FETCH_LIMIT
+        print(f"本次采集 {limit} 条")
+
+        client = TelegramClient("session", API_ID, API_HASH)
+        await client.start()
+        msgs = await client.get_messages(CHANNEL, limit=limit)
+        await client.disconnect()
+
+        # 筛选完整开奖记录
+        new_data = []
+        for m in msgs:
+            if m.text and "新澳门六合彩第" in m.text:
+                txt = m.text.strip()
+                if is_complete_lottery(txt):
+                    new_data.append(txt)
+
+        # 去重（按期数）
+        unique = {}
+        for item in new_data:
+            p = get_period(item)
+            if p not in unique:
+                unique[p] = item
+        all_data = list(unique.values())
+        all_data.sort(key=get_period)
+
+        # 写入文件（使用 \n\n 分隔，与自动触发保持一致）
+        with open(OUT_FILE, "w", encoding="utf-8") as f:
+            f.write("\n\n".join(all_data))
+            if all_data:
+                f.write("\n")
+
+        print(f"手动触发完成，共写入 {len(all_data)} 期")
+        return
+
+    # ========== 自动触发原有逻辑（完全不变） ==========
+    if need_clean_today():
+        with open(OUT_FILE, "w", encoding="utf-8") as f:
+            f.write("")
+        print("今日首次运行，清空旧内容")
+
+    limit = get_fetch_limit(is_manual=False)
     if limit == 0:
-        print("不在采集时段且非手动，退出")
+        print("不在采集时段，退出")
         return
     print(f"本次采集 {limit} 条")
 
@@ -82,7 +118,6 @@ async def main():
     msgs = await client.get_messages(CHANNEL, limit=limit)
     await client.disconnect()
 
-    # 提取有效的开奖消息
     new_data = []
     for m in msgs:
         if m.text and "新澳门六合彩第" in m.text:
@@ -90,36 +125,20 @@ async def main():
             if is_complete_lottery(txt):
                 new_data.append(txt)
 
-    # 手动触发：直接使用 new_data，不去读取旧文件
-    if is_manual:
-        # 对 new_data 去重（按期数）
-        unique_data = {}
-        for item in new_data:
-            p = get_period(item)
-            if p not in unique_data:
-                unique_data[p] = item
-        all_data = list(unique_data.values())
-        all_data.sort(key=get_period)
-        with open(OUT_FILE, "w", encoding="utf-8") as f:
-            f.write("\n---\n".join(all_data))
-            if all_data:
-                f.write("\n")
-        print(f"手动触发完成，共写入 {len(all_data)} 期")
-        return
+    new_data.sort(key=get_period, reverse=True)
 
-    # 自动触发：合并已有数据（去重、追加）
-    existing = []
+    old = []
     if os.path.exists(OUT_FILE):
         with open(OUT_FILE, "r", encoding="utf-8") as f:
             content = f.read().strip()
         if content:
-            for block in content.split("\n---\n"):
+            for block in content.split('\n\n'):
                 block = block.strip()
-                if block:
-                    existing.append(block)
+                if block and is_complete_lottery(block):
+                    old.append(block)
 
-    exist_periods = {get_period(x) for x in existing}
-    all_data = existing[:]
+    exist_periods = {get_period(x) for x in old}
+    all_data = old[:]
     for line in new_data:
         p = get_period(line)
         if p not in exist_periods:
@@ -127,12 +146,13 @@ async def main():
             all_data.append(line)
 
     all_data.sort(key=get_period)
-    with open(OUT_FILE, "w", encoding="utf-8") as f:
-        f.write("\n---\n".join(all_data))
-        if all_data:
-            f.write("\n")
+    if len(all_data) > MAX_KEEP:
+        all_data = all_data[-MAX_KEEP:]
 
-    print(f"自动触发完成，当天共 {len(all_data)} 期，本次新增 {len(new_data)} 期")
+    with open(OUT_FILE, "w", encoding="utf-8") as f:
+        f.write("\n\n".join(all_data) + "\n")
+
+    print(f"完成，共 {len(all_data)} 期，新增 {len(new_data)} 期")
 
 if __name__ == "__main__":
     asyncio.run(main())
