@@ -14,11 +14,13 @@ MAX_KEEP = 60
 BEIJING_TZ = timezone(timedelta(hours=8))
 CLEAN_FLAG_FILE = ".last_clean_date"
 
+# 手动触发固定采集数量
+MANUAL_FETCH_LIMIT = 30
+
 # ================== 辅助函数 ==================
 def get_fetch_limit(is_manual):
-    """手动触发固定30条；定时触发按时间段随机"""
     if is_manual:
-        return 30
+        return MANUAL_FETCH_LIMIT
     now = datetime.now(BEIJING_TZ)
     hour = now.hour
     if 18 <= hour < 20:
@@ -45,32 +47,20 @@ def get_period(text):
     return int(m.group(1)) if m else 0
 
 def is_complete_lottery(text):
-    """
-    严格判断是否为完整开奖记录：
-    1. 按换行分割并过滤空行后至少4行
-    2. 第二行必须包含至少两个数字（用空格分隔）
-    3. 第三行必须包含至少一个生肖汉字
-    4. 第四行必须包含至少一个颜色符号（🟢🔴🔵）
-    """
     lines = [line.strip() for line in text.strip().split('\n') if line.strip()]
     if len(lines) < 4:
         return False
-    # 检查数字行（第二行）
     if not re.search(r'\d+\s+\d+', lines[1]):
         return False
-    # 检查生肖行（第三行）
     if not re.search(r'[鼠牛虎兔龍蛇馬羊猴雞狗豬]', lines[2]):
         return False
-    # 检查颜色行（第四行）
     if not re.search(r'[🟢🔴🔵]', lines[3]):
         return False
     return True
 
 async def main():
-    # 检查是否为手动触发
     is_manual = os.environ.get("MANUAL", "").lower() == "true"
 
-    # 每天首次运行清空
     if need_clean_today():
         with open(OUT_FILE, "w", encoding="utf-8") as f:
             f.write("")
@@ -82,13 +72,11 @@ async def main():
         return
     print(f"本次采集 {fetch_limit} 条")
 
-    # 连接 Telegram
     client = TelegramClient("session", API_ID, API_HASH)
     await client.start()
     messages = await client.get_messages(CHANNEL, limit=fetch_limit)
     await client.disconnect()
 
-    # 过滤出完整开奖消息（新采集）
     new_data = []
     for msg in messages:
         if msg.text and "新澳门六合彩第" in msg.text:
@@ -100,7 +88,7 @@ async def main():
 
     new_data = sorted(new_data, key=get_period, reverse=True)
 
-    # 读取旧内容，并过滤掉其中不完整的记录（防止旧数据污染）
+    # 读取旧内容，过滤不完整记录
     old_lines = []
     if os.path.exists(OUT_FILE):
         with open(OUT_FILE, "r", encoding="utf-8") as f:
@@ -114,7 +102,6 @@ async def main():
                 else:
                     print(f"⚠️ 丢弃旧文件中的不完整记录: {cand[:50]}...")
 
-    # 合并去重（按期号）
     existing_periods = {get_period(line) for line in old_lines}
     all_lines = old_lines.copy()
     for line in new_data:
@@ -123,12 +110,10 @@ async def main():
             existing_periods.add(p)
             all_lines.append(line)
 
-    # 升序排序，保留最新60期
-    all_lines = sorted(all_lines, key=get_period)  # 小→大
+    all_lines = sorted(all_lines, key=get_period)  # 升序（小→大）
     if len(all_lines) > MAX_KEEP:
         all_lines = all_lines[-MAX_KEEP:]
 
-    # 写入文件（每期空一行）
     with open(OUT_FILE, "w", encoding="utf-8") as f:
         f.write("\n\n".join(all_lines) + "\n")
 
