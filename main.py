@@ -17,8 +17,9 @@ OUT_FILE = "lottery_data_api.html"
 MAX_KEEP = 60
 BEIJING_TZ = timezone(timedelta(hours=8))
 CLEAN_FLAG_FILE = ".last_clean_date"
-AUTO_STOP_FILE = ".auto_stop_today"   # 自动触发无新数据时创建
+AUTO_STOP_FILE = ".auto_stop_today"
 
+CANDIDATE_LIMIT = 20      # 每次拉取候选消息数量
 RANDOM_MIN = 1
 RANDOM_MAX = 3
 
@@ -144,7 +145,7 @@ async def main():
     is_manual = (os.environ.get("GITHUB_EVENT_NAME") == "workflow_dispatch")
     print(f"事件: {os.environ.get('GITHUB_EVENT_NAME')}, 手动: {is_manual}")
 
-    # 每天首次运行清空数据，并清除自动停止标志
+    # 每天首次运行清空数据并清除自动停止标志
     if need_clean_today():
         with open(OUT_FILE, "w", encoding="utf-8") as f:
             f.write("")
@@ -152,7 +153,7 @@ async def main():
         clear_auto_stop()
         send_email("彩票采集 - 每日重置", "今日首次运行，已清空旧数据，清除停止标志")
 
-    # 自动触发时检查是否需要停止
+    # 自动触发时检查是否已被停止
     if not is_manual and is_auto_stopped_today():
         print("自动触发已停止（今日无新数据），跳过")
         return
@@ -162,37 +163,42 @@ async def main():
         client = TelegramClient("session", API_ID, API_HASH)
         await client.start()
 
-        # 获取频道最新期号
         channel_latest = await get_latest_period_from_channel(client)
-        # 获取本地最新期号
         local_latest = get_local_latest_period()
         print(f"本地最新期号: {local_latest}, 频道最新期号: {channel_latest}")
 
         if channel_latest <= local_latest:
             print("无新数据")
-            # 如果是自动触发，则设置停止标志（当天不再运行）
             if not is_manual:
                 set_auto_stop()
                 print("已设置自动停止标志，今天后续自动触发将跳过")
             return
 
-        # 有新数据：随机拉取 1~3 条
-        limit = random.randint(RANDOM_MIN, RANDOM_MAX)
-        print(f"本次随机拉取 {limit} 条")
-        msgs = await fetch_messages_with_retry(client, limit)
+        # 拉取候选消息（20条），从中提取所有有效开奖结果
+        msgs = await fetch_messages_with_retry(client, CANDIDATE_LIMIT)
+        if not msgs:
+            print("未获取到任何消息")
+            return
 
-        new_data = []
+        all_valid = []
         for m in msgs:
             if m.text and "新澳门六合彩第" in m.text:
                 txt = m.text.strip()
                 if is_complete_lottery(txt):
-                    new_data.append(txt)
+                    all_valid.append(txt)
 
-        if not new_data:
-            print("拉取的消息中没有有效开奖结果")
+        if not all_valid:
+            print("候选消息中没有有效开奖结果")
             return
 
-        # 去重
+        # 按期号降序排序（大期号在前）
+        all_valid.sort(key=get_period, reverse=True)
+        # 随机取 1~3 条作为本次新增
+        take = random.randint(RANDOM_MIN, RANDOM_MAX)
+        new_data = all_valid[:take]
+        print(f"从 {len(all_valid)} 条有效结果中，随机取 {take} 条（期号最大的前 {take} 条）")
+
+        # 去重（按期号）
         seen = set()
         unique_new = []
         for txt in new_data:
@@ -223,7 +229,7 @@ async def main():
                 all_data.append(txt)
                 new_added.append(p)
 
-        all_data.sort(key=get_period)
+        all_data.sort(key=get_period)   # 最终文件按期号升序（从小到大）
         if len(all_data) > MAX_KEEP:
             all_data = all_data[-MAX_KEEP:]
 
