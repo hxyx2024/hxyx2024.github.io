@@ -1,4 +1,5 @@
-from telethon import TelegramClient
+from telethon import TelegramClient, sessions
+from telethon.errors import FloodWaitError
 import asyncio
 import re
 import random
@@ -15,6 +16,14 @@ BEIJING_TZ = timezone(timedelta(hours=8))
 CLEAN_FLAG_FILE = ".last_clean_date"
 
 MANUAL_FETCH_LIMIT = 30   # 手动触发固定采集30条
+
+# ----- 功能修复1：支持 StringSession（如果环境变量提供了）-----
+SESSION_STR = os.environ.get("TG_SESSION_STRING")
+def create_client():
+    if SESSION_STR:
+        return TelegramClient(sessions.StringSession(SESSION_STR), API_ID, API_HASH)
+    return TelegramClient("session", API_ID, API_HASH)
+# ------------------------------------------------------------
 
 def get_fetch_limit(is_manual):
     if is_manual:
@@ -70,9 +79,16 @@ async def main():
         return
     print(f"本次采集 {limit} 条")
 
-    client = TelegramClient("session", API_ID, API_HASH)
+    client = create_client()
     await client.start()
-    msgs = await client.get_messages(CHANNEL, limit=limit)
+    # ----- 功能修复2：增加 FloodWait 处理 -----
+    try:
+        msgs = await client.get_messages(CHANNEL, limit=limit)
+    except FloodWaitError as e:
+        print(f"触发限流，等待 {e.seconds} 秒")
+        await asyncio.sleep(e.seconds)
+        msgs = await client.get_messages(CHANNEL, limit=limit)
+    # ----------------------------------------
     await client.disconnect()
 
     new_data = []
