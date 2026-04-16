@@ -145,8 +145,15 @@ async def main():
     is_manual = (os.environ.get("GITHUB_EVENT_NAME") == "workflow_dispatch")
     print(f"事件: {os.environ.get('GITHUB_EVENT_NAME')}, 手动: {is_manual}")
 
-    # 每天首次运行清空数据并清除自动停止标志
-    if need_clean_today():
+    # 手动触发：先清空文件
+    if is_manual:
+        with open(OUT_FILE, "w", encoding="utf-8") as f:
+            f.write("")
+        print("手动触发：已清空原数据")
+        send_email("彩票采集 - 手动触发", "手动触发，已清空数据，将拉取最新开奖结果")
+
+    # 自动触发：每天首次运行清空数据并清除自动停止标志
+    if not is_manual and need_clean_today():
         with open(OUT_FILE, "w", encoding="utf-8") as f:
             f.write("")
         print("今日首次运行，已清空原数据")
@@ -163,10 +170,13 @@ async def main():
         client = TelegramClient("session", API_ID, API_HASH)
         await client.start()
 
+        # 获取频道最新期号
         channel_latest = await get_latest_period_from_channel(client)
+        # 获取本地最新期号（手动触发已清空，所以 local_latest 为 0）
         local_latest = get_local_latest_period()
         print(f"本地最新期号: {local_latest}, 频道最新期号: {channel_latest}")
 
+        # 无新数据判断（手动触发时 local_latest 为 0，所以 channel_latest > 0 总是有数据，除非频道没有消息）
         if channel_latest <= local_latest:
             print("无新数据")
             if not is_manual:
@@ -207,7 +217,7 @@ async def main():
                 seen.add(p)
                 unique_new.append(txt)
 
-        # 读取现有数据
+        # 读取现有数据（手动触发时已清空，所以 old_data 为空）
         old_data = []
         if os.path.exists(OUT_FILE):
             with open(OUT_FILE, "r", encoding="utf-8") as f:
