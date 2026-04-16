@@ -1,16 +1,18 @@
-from telethon import TelegramClient
+from telethon import TelegramClient, events
+from telethon.sessions import StringSession
 import asyncio
 import re
 import os
 
-# ========== 你的配置已全部正确填写 ==========
+# ========== 你的配置 ==========
 API_ID = 36088286
 API_HASH = "7b78971ae31f48f666c2148c761cca41"
 CHANNEL = "@douapi"
 MAX_TOTAL = 60
-# ============================================
+# 登录字符串（第一次运行后会自动保存）
+STRING_SESSION = ""
+# ==============================
 
-# ✅ 已改成你要的文件名
 DATA_FILE = "lottery_data_api.html"
 COUNT_FILE = "count.txt"
 
@@ -45,8 +47,17 @@ async def main():
         print("已满60期，停止运行")
         return
 
-    async with TelegramClient("sess", API_ID, API_HASH) as client:
-        await client.start()
+    try:
+        if STRING_SESSION:
+            client = TelegramClient(StringSession(STRING_SESSION), API_ID, API_HASH)
+        else:
+            client = TelegramClient(StringSession(), API_ID, API_HASH)
+
+        await client.connect()
+        if not await client.is_user_authorized():
+            print("❌ 请在本地先登录一次获取 StringSession")
+            return
+
         chat = await client.get_entity(CHANNEL)
         msg = await client.get_messages(chat, limit=1)
         if not msg or not msg[0].message:
@@ -58,7 +69,11 @@ async def main():
         if not matches:
             return
 
-    # 第一次采集：清空旧数据
+    except Exception as e:
+        print(f"⚠️ 登录或采集异常: {e}")
+        return
+
+    # 第一次清空
     if count == 0:
         with open(DATA_FILE, "w", encoding="utf-8") as f:
             f.write("")
@@ -67,10 +82,8 @@ async def main():
     target_line = None
 
     if last_num is None:
-        # 第一次：取最新一期
         target_line = matches[-1].strip()
     else:
-        # 之后每次：期号 -1
         want_num = str(int(last_num) - 1)
         for line in reversed(matches):
             if want_num in line:
@@ -80,7 +93,6 @@ async def main():
     if not target_line:
         return
 
-    # 读取现有内容，新的一行加到最上面
     existing = []
     if os.path.exists(DATA_FILE):
         with open(DATA_FILE, encoding="utf-8") as f:
@@ -88,12 +100,11 @@ async def main():
 
     final_lines = [target_line] + existing
 
-    # 写入 lottery_data_api.html
     with open(DATA_FILE, "w", encoding="utf-8") as f:
         f.write("\n\n".join(final_lines))
 
     save_count(count + 1)
-    print(f"已采集 {count+1}/{MAX_TOTAL} 期")
+    print(f"✅ 已采集 {count+1}/{MAX_TOTAL} 期")
 
 if __name__ == "__main__":
     asyncio.run(main())
