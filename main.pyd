@@ -4,45 +4,56 @@ import re
 import random
 import os
 from datetime import datetime, timezone, timedelta
+import traceback
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
-# ================== 配置 ==================
-API_ID = 3608828
-API_HASH = "7b78971ae31f48f666c2148c761cca41"
+# ========== 配置 ==========
+API_ID = int(os.environ["API_ID"])
+API_HASH = os.environ["API_HASH"]
 CHANNEL = "douapi"
 OUT_FILE = "lottery_data_api.html"
 MAX_KEEP = 60
 BEIJING_TZ = timezone(timedelta(hours=8))
 CLEAN_FLAG_FILE = ".last_clean_date"
 
-# 手动触发固定采集数量
-MANUAL_FETCH_LIMIT = 30
+MANUAL_TARGET = 30
+MANUAL_FETCH_LIMIT = 500
 
-# ================== 辅助函数 ==================
-def get_fetch_limit(is_manual):
-    if is_manual:
-        print("手动触发模式：返回固定采集数量", MANUAL_FETCH_LIMIT)
-        return MANUAL_FETCH_LIMIT
-    now = datetime.now(BEIJING_TZ)
-    hour = now.hour
-    if 18 <= hour < 20:
-        limit = random.randint(1, 4)
-        print(f"定时触发（18-20点）：随机采集 {limit} 条")
-        return limit
-    elif 20 <= hour < 21:
-        limit = random.randint(1, 5)
-        print(f"定时触发（20-21点）：随机采集 {limit} 条")
-        return limit
-    else:
-        print("定时触发但不在采集时段，返回0")
-        return 0
+MAX_RETRIES = 3
+RETRY_DELAY = 5
+
+EMAIL_ADDRESS = os.environ.get("EMAIL_ADDRESS", "xmaec555@gmail.com")
+EMAIL_PASSWORD = os.environ.get("EMAIL_PASSWORD")
+SMTP_SERVER = "smtp.gmail.com"
+SMTP_PORT = 587
+
+def send_email(subject, body):
+    if not EMAIL_PASSWORD:
+        print("未配置 EMAIL_PASSWORD，跳过邮件通知")
+        return
+    try:
+        msg = MIMEMultipart()
+        msg["From"] = EMAIL_ADDRESS
+        msg["To"] = EMAIL_ADDRESS
+        msg["Subject"] = subject
+        msg.attach(MIMEText(body, "plain"))
+        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
+        server.starttls()
+        server.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
+        server.send_message(msg)
+        server.quit()
+        print(f"邮件通知已发送: {subject}")
+    except Exception as e:
+        print(f"发送邮件失败: {e}")
 
 def need_clean_today():
     today = datetime.now(BEIJING_TZ).strftime("%Y-%m-%d")
     if os.path.exists(CLEAN_FLAG_FILE):
         with open(CLEAN_FLAG_FILE, "r") as f:
-            last_clean = f.read().strip()
-        if last_clean == today:
-            return False
+            if f.read().strip() == today:
+                return False
     with open(CLEAN_FLAG_FILE, "w") as f:
         f.write(today)
     return True
@@ -53,7 +64,7 @@ def get_period(text):
     return int(m.group(1)) if m else 0
 
 def is_complete_lottery(text):
-    lines = [line.strip() for line in text.strip().split('\n') if line.strip()]
+    lines = [ln.strip() for ln in text.split('\n') if ln.strip()]
     if len(lines) < 4:
         return False
     if not re.search(r'\d+\s+\d+', lines[1]):
@@ -64,67 +75,207 @@ def is_complete_lottery(text):
         return False
     return True
 
-async def main():
-    event_name = os.environ.get("GITHUB_EVENT_NAME", "")
-    is_manual = (event_name == "workflow_dispatch")
-    print(f"GitHub 事件名: {event_name}, 是否手动触发: {is_manual}")
+async def fetch_messages_with_retry(client, limit):
+    for attempt in range(MAX_RETRIES):
+        try:
+            msgs = await client.get_messages(CHANNEL, limit=limit)
+            return msgs
+        except Exception as e:
+            error_type = type(e).__name__
+            print(f"拉取消息失败 (尝试 {attempt+1}/{MAX_RETRIES}): {error_type}: {e}")
+            if error_type == "FloodWaitError":
+                wait_time = getattr(e, 'seconds', RETRY_DELAY * (2 ** attempt))
+                print(f"触发限流，等待 {wait_time} 秒后重试...")
+                await asyncio.sleep(wait_time + 1)
+            else:
+                if attempt == MAX_RETRIES - 1:
+                    raise
+                wait_time = RETRY_DELAY * (2 ** attempt)
+                print(f"等待 {wait_time} 秒后重试...")
+                await asyncio.sleep(wait_time)
+    return []
 
+# ========== 手动触发（极简版） ==========
+async def manual_mode():
+    print("手动触发模式：开始")
+    # 1. 清空文件
+    with open(OUT_FILE, "w", encoding="utf-8") as f:
+        f.write("")
+    print("已清空原数据")
+
+    client = None
+    try:
+        client = TelegramClient("session", API_ID, API_HASH)
+        await client.start()
+        print(f"拉取最新 {MANUAL_FETCH_LIMIT} 条消息...")
+        msgs = await fetch_messages_with_retry(client, MANUAL_FETCH_LIMIT)
+        print(f"实际拉取到 {len(msgs)} 条消息")
+
+        valid = []
+        for m in msgs:
+            if m.text and "新澳门六合彩第" in m.text:
+                txt = m.text.strip()
+                if is_complete_lottery(txt):
+                    valid.append(txt)
+        print(f"有效开奖结果（未去重）: {len(valid)} 条")
+
+        # 去重
+        seen = set()
+        unique = []
+        for txt in valid:
+            p = get_period(txt)
+            if p not in seen:
+                seen.add(p)
+                unique.append(txt)
+        print(f"去重后有效期数: {len(unique)}")
+
+        # 按期号降序排序，取前30
+        unique.sort(key=get_period, reverse=True)
+        top = unique[:MANUAL_TARGET]
+        print(f"取前 {MANUAL_TARGET} 期，实际获取 {len(top)} 期")
+
+        # 升序排列写入
+        top.sort(key=get_period)
+        with open(OUT_FILE, "w", encoding="utf-8") as f:
+            f.write("\n\n".join(top) + "\n")
+        print(f"手动触发完成，共写入 {len(top)} 期")
+        send_email("彩票采集 - 手动完成", f"手动触发完成，共采集 {len(top)} 期（最新 {MANUAL_TARGET} 期）")
+    except Exception as e:
+        error_msg = f"手动触发失败: {type(e).__name__}: {e}"
+        print(error_msg)
+        traceback.print_exc()
+        send_email("彩票采集 - 错误", error_msg)
+    finally:
+        if client:
+            await client.disconnect()
+
+# ========== 自动触发（保持不变） ==========
+def get_auto_limit():
+    now = datetime.now(BEIJING_TZ)
+    hour = now.hour
+    minute = now.minute
+    if hour == 21 and minute == 10:
+        return 60
+    if 18 <= hour < 20:
+        return random.randint(3, 5)
+    if 20 <= hour < 21 or (hour == 21 and minute < 10):
+        return random.randint(3, 5)
+    return 0
+
+async def get_latest_period_from_channel(client):
+    try:
+        msg = await client.get_messages(CHANNEL, limit=1)
+        if msg and msg[0].text and "新澳门六合彩第" in msg[0].text:
+            return get_period(msg[0].text)
+    except Exception as e:
+        print(f"获取最新期号失败: {e}")
+    return 0
+
+async def auto_mode():
+    print("自动触发模式")
     if need_clean_today():
         with open(OUT_FILE, "w", encoding="utf-8") as f:
             f.write("")
-        print("🗑️ 今日首次运行，已清空旧内容")
+        print("今日首次运行，清空旧内容")
+        send_email("彩票采集 - 每日重置", "今日首次运行，已清空旧数据")
 
-    fetch_limit = get_fetch_limit(is_manual)
-    if fetch_limit == 0:
-        print("⏰ 不采集，退出")
+    limit = get_auto_limit()
+    if limit == 0:
+        print("不在采集时段，退出")
         return
-    print(f"本次实际采集数量: {fetch_limit} 条")
+    print(f"本次采集 {limit} 条")
 
-    client = TelegramClient("session", API_ID, API_HASH)
-    await client.start()
-    messages = await client.get_messages(CHANNEL, limit=fetch_limit)
-    await client.disconnect()
+    if limit == 60:
+        existing_periods = []
+        if os.path.exists(OUT_FILE):
+            with open(OUT_FILE, "r", encoding="utf-8") as f:
+                content = f.read().strip()
+            if content:
+                for block in content.split('\n\n'):
+                    block = block.strip()
+                    if block and is_complete_lottery(block):
+                        existing_periods.append(get_period(block))
+        if len(existing_periods) >= MAX_KEEP:
+            temp_client = TelegramClient("session", API_ID, API_HASH)
+            await temp_client.start()
+            latest_period = await get_latest_period_from_channel(temp_client)
+            await temp_client.disconnect()
+            if latest_period and existing_periods and max(existing_periods) >= latest_period:
+                msg = f"已有数据完整（最新期号 {max(existing_periods)} >= 频道最新 {latest_period}），跳过21:10全量采集"
+                print(msg)
+                send_email("彩票采集 - 智能跳过", msg)
+                return
+
+    client = None
+    try:
+        client = TelegramClient("session", API_ID, API_HASH)
+        await client.start()
+        msgs = await fetch_messages_with_retry(client, limit)
+        await client.disconnect()
+    except Exception as e:
+        error_msg = f"自动触发拉取失败: {type(e).__name__}: {e}"
+        print(error_msg)
+        traceback.print_exc()
+        send_email("彩票采集 - 错误", error_msg)
+        if client:
+            await client.disconnect()
+        return
 
     new_data = []
-    for msg in messages:
-        if msg.text and "新澳门六合彩第" in msg.text:
-            full = msg.text.strip()
-            if is_complete_lottery(full):
-                new_data.append(full)
-            else:
-                print(f"⚠️ 跳过不完整消息: {full[:60]}...")
+    for m in msgs:
+        if m.text and "新澳门六合彩第" in m.text:
+            txt = m.text.strip()
+            if is_complete_lottery(txt):
+                new_data.append(txt)
+    new_data.sort(key=get_period, reverse=True)
 
-    new_data = sorted(new_data, key=get_period, reverse=True)
-
-    old_lines = []
+    old = []
     if os.path.exists(OUT_FILE):
-        with open(OUT_FILE, "r", encoding="utf-8") as f:
-            content = f.read().strip()
-        if content:
-            candidates = content.split('\n\n')
-            for cand in candidates:
-                cand = cand.strip()
-                if cand and is_complete_lottery(cand):
-                    old_lines.append(cand)
-                else:
-                    print(f"⚠️ 丢弃旧文件中的不完整记录: {cand[:50]}...")
+        try:
+            with open(OUT_FILE, "r", encoding="utf-8") as f:
+                content = f.read().strip()
+            if content:
+                for block in content.split('\n\n'):
+                    block = block.strip()
+                    if block and is_complete_lottery(block):
+                        old.append(block)
+        except Exception as e:
+            print(f"读取旧文件失败: {e}")
 
-    existing_periods = {get_period(line) for line in old_lines}
-    all_lines = old_lines.copy()
+    exist_periods = {get_period(x) for x in old}
+    all_data = old[:]
+    new_added = []
     for line in new_data:
         p = get_period(line)
-        if p not in existing_periods:
-            existing_periods.add(p)
-            all_lines.append(line)
+        if p not in exist_periods:
+            exist_periods.add(p)
+            all_data.append(line)
+            new_added.append(p)
 
-    all_lines = sorted(all_lines, key=get_period)
-    if len(all_lines) > MAX_KEEP:
-        all_lines = all_lines[-MAX_KEEP:]
+    all_data.sort(key=get_period)
+    if len(all_data) > MAX_KEEP:
+        all_data = all_data[-MAX_KEEP:]
 
-    with open(OUT_FILE, "w", encoding="utf-8") as f:
-        f.write("\n\n".join(all_lines) + "\n")
+    try:
+        with open(OUT_FILE, "w", encoding="utf-8") as f:
+            f.write("\n\n".join(all_data) + "\n")
+        print(f"完成，共 {len(all_data)} 期，新增 {len(new_data)} 期，新增期号: {new_added}")
+        if limit == 60:
+            send_email("彩票采集 - 全量完成", f"21:10 全量采集完成，现有 {len(all_data)} 期，新增 {len(new_added)} 期")
+        elif new_added:
+            send_email("彩票采集 - 随机采集", f"随机采集完成，新增 {len(new_added)} 期，当前总期数 {len(all_data)}")
+    except Exception as e:
+        error_msg = f"写入文件失败: {e}"
+        print(error_msg)
+        send_email("彩票采集 - 错误", error_msg)
 
-    print(f"✅ 完成 | 共 {len(all_lines)} 期，本次新增 {len(new_data)} 期")
+async def main():
+    is_manual = (os.environ.get("GITHUB_EVENT_NAME") == "workflow_dispatch")
+    print(f"事件: {os.environ.get('GITHUB_EVENT_NAME')}, 手动: {is_manual}")
+    if is_manual:
+        await manual_mode()
+    else:
+        await auto_mode()
 
 if __name__ == "__main__":
     asyncio.run(main())
