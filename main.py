@@ -59,7 +59,10 @@ def is_complete_lottery(text):
     return True
 
 async def main():
-    is_manual = os.environ.get("MANUAL", "").lower() == "true"
+    # 直接通过 GitHub 环境变量判断是否为手动触发
+    event_name = os.environ.get("GITHUB_EVENT_NAME", "")
+    is_manual = (event_name == "workflow_dispatch")
+    print(f"触发事件: {event_name}, 手动模式: {is_manual}")
 
     if need_clean_today():
         with open(OUT_FILE, "w", encoding="utf-8") as f:
