@@ -1,24 +1,30 @@
 from telethon import TelegramClient
 import asyncio
-import os
+import socks
 
-# 你的 API
+# 你的信息
 API_ID = 36088286
 API_HASH = "7b78971ae31f48f666c2148c761cca41"
 
-# 强制指定 session 路径，解决权限问题
-SESSION_FILE = os.path.join(os.path.expanduser("~"), "Desktop", "my_session")
+# ✅ ✅ ✅ V2Ray 代理（必须写这里，系统代理无效）
+proxy = (socks.SOCKS5, "127.0.0.1", 10808)
 
 async def main():
-    print("正在启动登录（已修复权限问题）……")
-    client = TelegramClient(SESSION_FILE, API_ID, API_HASH)
-    await client.start()
-    print("✅ 登录成功！")
-    print("✅ my_session.session 已生成在桌面")
+    print("✅ 已启用 V2Ray 代理，正在登录...")
 
-if __name__ == "__main__":
-    try:
-        asyncio.run(main())
-    except Exception as e:
-        print("错误：", e)
-    input("按回车退出")
+    client = TelegramClient(
+        "session",
+        API_ID,
+        API_HASH,
+        proxy=proxy,  # 代理写死在这里
+        timeout=60
+    )
+
+    await client.start()
+    print("")
+    print("="*50)
+    print("✅ 登录成功！session.session 已生成")
+    print("="*50)
+
+asyncio.run(main())
+input("按回车退出")
