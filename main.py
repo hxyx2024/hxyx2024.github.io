@@ -2,81 +2,80 @@ from telethon import TelegramClient
 import asyncio
 import re
 
-# 配置
 API_ID = 3608828
 API_HASH = "7b78971ae31f48f666c2148c761cca41"
 CHANNEL = "douapi"
 OUT_FILE = "lottery_data_api.html"
 MAX_KEEP = 60
 
-# 匹配期数（兼容“第:数字期”或“第数字期”）
 period_pattern = re.compile(r"第[:\s]*(\d+)期")
 
 def get_period(text):
     match = period_pattern.search(text)
-    return int(match.group(1)) if match else 0
+    if match:
+        return int(match.group(1))
+    else:
+        # 调试：打印无法提取期数的消息开头
+        print(f"⚠️ 警告：无法提取期数 -> {text[:60]}")
+        return 0
 
 def is_complete_lottery(text):
-    """判断是否为完整开奖消息（至少4行）"""
     lines = text.strip().split('\n')
-    return len(lines) >= 4
+    # 过滤掉空行后计算有效行数
+    effective_lines = [line for line in lines if line.strip()]
+    return len(effective_lines) >= 4
 
 async def main():
-    # 首次运行清空旧内容
-    try:
-        with open(OUT_FILE, "r", encoding="utf-8") as f:
-            existing = f.read().strip()
-    except FileNotFoundError:
-        existing = ""
-
-    if not existing:
-        with open(OUT_FILE, "w", encoding="utf-8") as f:
-            f.write("")
-        print("🗑️ 首次运行，已清空旧内容")
-
-    # 连接 Telegram 并获取最新60条消息
+    # 直接覆盖写入，不读取旧文件（彻底清空）
     client = TelegramClient("session", API_ID, API_HASH)
     await client.start()
-    messages = await client.get_messages(CHANNEL, limit=60)
+    # 多取一些消息，确保能凑够60期完整记录（频道每天一期，取150条足够）
+    messages = await client.get_messages(CHANNEL, limit=150)
     await client.disconnect()
 
-    # 提取完整开奖信息（至少4行）
-    new_data = []
+    print(f"共获取 {len(messages)} 条消息")
+
+    complete_lotteries = []
     for msg in messages:
         if msg.text and "新澳门六合彩第" in msg.text:
             full_text = msg.text.strip()
             if is_complete_lottery(full_text):
-                new_data.append(full_text)
+                period = get_period(full_text)
+                if period > 0:
+                    complete_lotteries.append(full_text)
+                    print(f"✅ 有效期 {period}")
+                else:
+                    print(f"❌ 期号无效: {full_text[:50]}")
+            else:
+                print(f"❌ 不完整（行数不足）: {full_text[:50]}")
 
-    # 按期数降序排序（大期数在前，小期数在后）
-    new_data = sorted(new_data, key=lambda x: get_period(x), reverse=True)
+    print(f"完整且期号有效的消息数: {len(complete_lotteries)}")
 
-    # 读取旧内容
-    try:
-        with open(OUT_FILE, "r", encoding="utf-8") as f:
-            old_lines = [l.strip() for l in f if l.strip()]
-    except FileNotFoundError:
-        old_lines = []
+    if not complete_lotteries:
+        print("错误：没有采集到任何完整开奖消息，请检查频道名称或消息格式。")
+        return
 
-    # 合并 + 按期号去重
-    existing_periods = {get_period(line) for line in old_lines}
-    all_lines = old_lines.copy()
-    for line in new_data:
-        period = get_period(line)
-        if period not in existing_periods:
-            existing_periods.add(period)
-            all_lines.append(line)
+    # 按期数降序排序
+    complete_lotteries.sort(key=get_period, reverse=True)
 
-    # 再次降序排序 + 只保留最新60期（期数最大的60条）
-    all_lines = sorted(all_lines, key=lambda x: get_period(x), reverse=True)
-    if len(all_lines) > MAX_KEEP:
-        all_lines = all_lines[:MAX_KEEP]
+    # 按期号去重（保留第一次出现的，即期数大的在前）
+    seen = set()
+    unique = []
+    for item in complete_lotteries:
+        p = get_period(item)
+        if p not in seen:
+            seen.add(p)
+            unique.append(item)
 
-    # 写入文件（每期之间空一行）
+    # 只保留最新 MAX_KEEP 期
+    if len(unique) > MAX_KEEP:
+        unique = unique[:MAX_KEEP]
+
+    # 覆盖写入文件
     with open(OUT_FILE, "w", encoding="utf-8") as f:
-        f.write("\n\n".join(all_lines) + "\n")
+        f.write("\n\n".join(unique) + "\n")
 
-    print(f"✅ 采集完成 | 当前共 {len(all_lines)} 期（从大到小排列，保留最新60期）")
+    print(f"✅ 采集完成 | 共保存 {len(unique)} 期（已清空旧内容，从大到小排列）")
 
 if __name__ == "__main__":
     asyncio.run(main())
