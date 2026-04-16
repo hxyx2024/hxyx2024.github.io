@@ -16,10 +16,11 @@ CHANNEL = "douapi"
 OUT_FILE = "lottery_data_api.html"
 MAX_KEEP = 60
 BEIJING_TZ = timezone(timedelta(hours=8))
-CLEAN_FLAG_FILE = ".last_clean_date"
-AUTO_STOP_FILE = ".auto_stop_today"
+CLEAN_FLAG_FILE = ".last_clean_date"          # 自动触发每日清空标志
+AUTO_STOP_FILE = ".auto_stop_today"           # 自动触发无新数据停止标志
+MANUAL_CLEAN_FILE = ".manual_cleaned_today"   # 手动触发当日是否已清空标志
 
-CANDIDATE_LIMIT = 20      # 每次拉取候选消息数量
+CANDIDATE_LIMIT = 20
 RANDOM_MIN = 1
 RANDOM_MAX = 3
 
@@ -77,7 +78,19 @@ def set_auto_stop():
     with open(AUTO_STOP_FILE, "w") as f:
         f.write(today)
 
-period_pattern = re.compile(r"第[:\s]*(\d+)期")
+def is_manual_cleaned_today():
+    if not os.path.exists(MANUAL_CLEAN_FILE):
+        return False
+    with open(MANUAL_CLEAN_FILE, "r") as f:
+        date_str = f.read().strip()
+    return date_str == datetime.now(BEIJING_TZ).strftime("%Y-%m-%d")
+
+def set_manual_cleaned():
+    today = datetime.now(BEIJING_TZ).strftime("%Y-%m-%d")
+    with open(MANUAL_CLEAN_FILE, "w") as f:
+        f.write(today)
+
+period_pattern = re.compile(r"第[:\s]*(\d{7})期")
 def get_period(text):
     m = period_pattern.search(text)
     return int(m.group(1)) if m else 0
@@ -145,12 +158,16 @@ async def main():
     is_manual = (os.environ.get("GITHUB_EVENT_NAME") == "workflow_dispatch")
     print(f"事件: {os.environ.get('GITHUB_EVENT_NAME')}, 手动: {is_manual}")
 
-    # 手动触发：先清空文件
+    # 手动触发：仅在当天第一次手动运行时清空
     if is_manual:
-        with open(OUT_FILE, "w", encoding="utf-8") as f:
-            f.write("")
-        print("手动触发：已清空原数据")
-        send_email("彩票采集 - 手动触发", "手动触发，已清空数据，将拉取最新开奖结果")
+        if not is_manual_cleaned_today():
+            with open(OUT_FILE, "w", encoding="utf-8") as f:
+                f.write("")
+            set_manual_cleaned()
+            print("手动触发：当天首次，已清空原数据")
+            send_email("彩票采集 - 手动触发", "手动触发（首次），已清空数据，将拉取最新开奖结果")
+        else:
+            print("手动触发：当天非首次，不清空，仅增量拉取")
 
     # 自动触发：每天首次运行清空数据并清除自动停止标志
     if not is_manual and need_clean_today():
@@ -170,13 +187,10 @@ async def main():
         client = TelegramClient("session", API_ID, API_HASH)
         await client.start()
 
-        # 获取频道最新期号
         channel_latest = await get_latest_period_from_channel(client)
-        # 获取本地最新期号（手动触发已清空，所以 local_latest 为 0）
         local_latest = get_local_latest_period()
         print(f"本地最新期号: {local_latest}, 频道最新期号: {channel_latest}")
 
-        # 无新数据判断（手动触发时 local_latest 为 0，所以 channel_latest > 0 总是有数据，除非频道没有消息）
         if channel_latest <= local_latest:
             print("无新数据")
             if not is_manual:
@@ -184,12 +198,13 @@ async def main():
                 print("已设置自动停止标志，今天后续自动触发将跳过")
             return
 
-        # 拉取候选消息（20条），从中提取所有有效开奖结果
+        # 拉取候选消息
         msgs = await fetch_messages_with_retry(client, CANDIDATE_LIMIT)
         if not msgs:
             print("未获取到任何消息")
             return
 
+        # 提取所有有效开奖结果
         all_valid = []
         for m in msgs:
             if m.text and "新澳门六合彩第" in m.text:
@@ -201,14 +216,13 @@ async def main():
             print("候选消息中没有有效开奖结果")
             return
 
-        # 按期号降序排序（大期号在前）
+        # 按期号降序排序（大→小）
         all_valid.sort(key=get_period, reverse=True)
-        # 随机取 1~3 条作为本次新增
         take = random.randint(RANDOM_MIN, RANDOM_MAX)
         new_data = all_valid[:take]
         print(f"从 {len(all_valid)} 条有效结果中，随机取 {take} 条（期号最大的前 {take} 条）")
 
-        # 去重（按期号）
+        # 去重
         seen = set()
         unique_new = []
         for txt in new_data:
@@ -217,7 +231,7 @@ async def main():
                 seen.add(p)
                 unique_new.append(txt)
 
-        # 读取现有数据（手动触发时已清空，所以 old_data 为空）
+        # 读取现有数据
         old_data = []
         if os.path.exists(OUT_FILE):
             with open(OUT_FILE, "r", encoding="utf-8") as f:
@@ -239,7 +253,7 @@ async def main():
                 all_data.append(txt)
                 new_added.append(p)
 
-        all_data.sort(key=get_period)   # 最终文件按期号升序（从小到大）
+        all_data.sort(key=get_period)   # 升序
         if len(all_data) > MAX_KEEP:
             all_data = all_data[-MAX_KEEP:]
 
