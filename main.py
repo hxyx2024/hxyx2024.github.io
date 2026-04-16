@@ -4,25 +4,25 @@ import re
 import os
 from datetime import datetime
 
-# 你的配置
+# ========== 你的固定配置 ==========
 API_ID = 36088286
 API_HASH = "7b78971ae31f48f666c2148c761cca41"
 CHANNEL = "@douapi"
 MAX_TOTAL = 60
 DATA_FILE = "lottery_data_api.html"
 
-# 获取当前已采集行数
+# 获取当前所有行
 def get_lines():
     if not os.path.exists(DATA_FILE):
         return []
     try:
         with open(DATA_FILE, "r", encoding="utf-8") as f:
-            return [l.strip() for l in f if l.strip()]
+            return [line.strip() for line in f if line.strip()]
     except:
         return []
 
 # 获取最后一期（最大的数字）
-def get_last_num():
+def get_last_period():
     lines = get_lines()
     if not lines:
         return None
@@ -31,49 +31,56 @@ def get_last_num():
 
 async def main():
     now = datetime.now()
-    h = now.hour
+    hour = now.hour
     lines = get_lines()
     total = len(lines)
 
-    # 满60期直接停止
+    # 满60期自动停止
     if total >= MAX_TOTAL:
         print("✅ 已采满60期，自动停止")
         return
 
-    # 时间控制
-    is_18_20 = 18 <= h < 20
-    is_20_21 = 20 <= h < 21
+    # 时间范围
+    time_18_20 = 18 <= hour < 20
+    time_20_21 = 20 <= hour < 21
 
-    if not is_18_20 and not is_20_21:
+    if not time_18_20 and not time_20_21:
         print("当前不在采集时间段")
         return
 
-    # 18~20点 最多采30期
-    if is_18_20 and total >= 30:
-        print("✅ 18-20点已采满30期，等待20点后继续")
+    # 18~20点只采30期
+    if time_18_20 and total >= 30:
+        print("✅ 18-20点已采够30期，等待20点后")
         return
 
-    # 采集频道数据
+    # 开始采集
     try:
         client = TelegramClient("session", API_ID, API_HASH)
         await client.connect()
         chat = await client.get_entity(CHANNEL)
         msg = await client.get_messages(chat, limit=1)
+
         if not msg or not msg[0].text:
+            print("⚠️ 未获取到消息")
             return
+
         text = msg[0].text
         matches = re.findall(r"第:\d+期.*?$", text, re.MULTILINE)
         if not matches:
+            print("⚠️ 未匹配到数据")
             return
-    except:
+
+    except Exception as e:
+        print(f"异常：{e}")
         return
 
-    # 第一次采集清空
+    # 第一次运行清空
     if total == 0:
         lines = []
         print("🗑️ 首次采集，已清空旧数据")
 
-    last_num = get_last_num()
+    # 取上一期（期号 -1）
+    last_num = get_last_period()
     target = None
 
     if last_num is None:
@@ -86,10 +93,10 @@ async def main():
                 break
 
     if not target:
-        print("⚠️ 暂无新期数")
+        print("⚠️ 暂无新期数可采")
         return
 
-    # 新内容 + 旧内容（新的在最上面）
+    # 新内容 → 最上面
     new_lines = [target] + lines
 
     # 保存
