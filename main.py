@@ -3,15 +3,14 @@ import asyncio
 import re
 import os
 
+# 改成你自己的 API
 API_ID = 36088286
 API_HASH = "7b78971ae31f48f666c2148c761cca41"
 CHANNEL = "@douapi"
 
-# 国内机器用 V2Ray 代理（你是10808）
-PROXY = (socks.SOCKS5, "127.0.0.1", 10808)
-
 DATA_FILE = "lottery_data_api.html"
 
+# 读取已有数据
 def get_lines():
     if not os.path.exists(DATA_FILE):
         return []
@@ -21,6 +20,7 @@ def get_lines():
     except:
         return []
 
+# 获取最后一期
 def get_last_period():
     lines = get_lines()
     if not lines:
@@ -32,44 +32,46 @@ async def main():
     lines = get_lines()
     last = get_last_period()
 
-    client = TelegramClient("session", API_ID, API_HASH, proxy=PROXY)
-    await client.start()  # 这里会让你输入手机号+验证码
+    # 登录（服务器上第一次会提示输入手机号）
+    client = TelegramClient("session", API_ID, API_HASH)
+    await client.start()
 
+    # 获取最新一条消息
     chat = await client.get_entity(CHANNEL)
     msg = await client.get_messages(chat, limit=1)
-    if not msg:
-        print("无消息")
+    if not msg or not msg[0].text:
+        print("未获取到内容")
         return
 
     text = msg[0].text
-    pattern = re.compile(r"第:(\d+)期开奖结果:(.*?)\n([\d\s]+)\n(.*?)\n(.*)", re.DOTALL)
+
+    # 匹配你这种格式
+    pattern = re.compile(
+        r"第:(\d+)期开奖结果:\s*\n([\d\s]+)\n(.+)\n(.+)",
+        re.DOTALL
+    )
     matches = list(pattern.finditer(text))
-
-    target = None
-    if last is None:
-        target = matches[-1]
-    else:
-        for m in reversed(matches):
-            if int(m.group(1)) == last - 1:
-                target = m
-                break
-
-    if not target:
-        print("暂无新期数")
+    if not matches:
+        print("未匹配到开奖信息")
         return
 
+    # 找最新一期
+    target = matches[-1]
     period = target.group(1)
-    nums = target.group(3).strip()
-    sx = target.group(4).strip()
-    color = target.group(5).strip()
+    nums = target.group(2).strip()
+    sx = target.group(3).strip()
+    color = target.group(4).strip()
 
     line = f"新澳门六合彩第:{period}期开奖结果: {nums} {sx} {color}"
+
+    # 期数大的放最下面
     new_lines = lines + [line]
 
     with open(DATA_FILE, "w", encoding="utf-8") as f:
         f.write("\n\n".join(new_lines))
 
     print(f"✅ 采集成功：{period}期")
+    await client.disconnect()
 
 if __name__ == "__main__":
     asyncio.run(main())
