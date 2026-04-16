@@ -3,20 +3,8 @@ name: FullLotteryAPI
 on:
   workflow_dispatch:
   schedule:
-    - cron: "3 10 * * *"
-    - cron: "17 10 * * *"
-    - cron: "29 10 * * *"
-    - cron: "44 10 * * *"
-    - cron: "56 10 * * *"
-    - cron: "8 11 * * *"
-    - cron: "22 11 * * *"
-    - cron: "37 11 * * *"
-    - cron: "51 11 * * *"
-    - cron: "6 12 * * *"
-    - cron: "19 12 * * *"
-    - cron: "33 12 * * *"
-    - cron: "47 12 * * *"
-    - cron: "59 12 * * *"
+    - cron: "*/20 10-12 * * *"   # 北京时间 18:00-20:40 每20分钟一次，每次随机3~5条
+    - cron: "10 13 * * *"        # 北京时间 21:10 固定采集60条
 
 jobs:
   run:
@@ -24,24 +12,31 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-python@v6
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: "3.10"
       - run: pip install telethon
-      - name: Restore Telethon session
+
+      - name: Restore session from base64
         env:
-          SESSION_BASE64: ${{ secrets.TELETHON_SESSION }}
+          SESSION_BASE64: ${{ secrets.SESSION_BASE64 }}
         run: |
           if [ -n "$SESSION_BASE64" ]; then
             echo "$SESSION_BASE64" | base64 -d > session.session
           fi
+
       - name: Run script
+        env:
+          API_ID: ${{ secrets.API_ID }}
+          API_HASH: ${{ secrets.API_HASH }}
+          EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
         run: python main.py
+
       - name: Push changes
         run: |
           git config --global user.name "bot"
           git config --global user.email "bot@github.com"
-          git add lottery_data_api.html .last_clean_date
+          git add lottery_data_api.html
           git diff --cached --quiet || git commit -m "update lottery data"
           git push
