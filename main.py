@@ -14,15 +14,16 @@ API_ID = int(os.environ["API_ID"])
 API_HASH = os.environ["API_HASH"]
 CHANNEL = "douapi"
 OUT_FILE = "lottery_data_api.html"
-MAX_KEEP = 60                     # 自动触发时最多保留60期
+MAX_KEEP = 60
 BEIJING_TZ = timezone(timedelta(hours=8))
 CLEAN_FLAG_FILE = ".last_clean_date"
 
-# 手动触发配置
-MANUAL_TARGET = 30                # 手动触发目标期数
-MANUAL_FETCH_LIMIT = 500          # 手动触发拉取消息数量（确保覆盖30期）
+# 自动触发配置
+AUTO_RANDOM_MIN = 1
+AUTO_RANDOM_MAX = 3
+AUTO_FETCH_LIMIT_FULL = 60   # 全量拉取时最多拉取条数（手动拉取全部新数据时使用）
 
-# 自动触发重试配置
+# 重试配置
 MAX_RETRIES = 3
 RETRY_DELAY = 5
 
@@ -53,6 +54,7 @@ def send_email(subject, body):
         print(f"发送邮件失败: {e}")
 
 def need_clean_today():
+    """返回 True 表示今天是首次运行（需要清空）"""
     today = datetime.now(BEIJING_TZ).strftime("%Y-%m-%d")
     if os.path.exists(CLEAN_FLAG_FILE):
         with open(CLEAN_FLAG_FILE, "r") as f:
@@ -99,72 +101,6 @@ async def fetch_messages_with_retry(client, limit):
                 await asyncio.sleep(wait_time)
     return []
 
-# ========== 手动触发逻辑 ==========
-async def manual_mode():
-    """手动触发：清空文件，拉取最新的 MANUAL_TARGET 期开奖结果"""
-    print("手动触发模式")
-    # 清空原文件
-    with open(OUT_FILE, "w", encoding="utf-8") as f:
-        f.write("")
-    print("已清空原数据")
-    send_email("彩票采集 - 手动触发", f"手动触发，将采集最新的 {MANUAL_TARGET} 期")
-
-    client = None
-    try:
-        client = TelegramClient("session", API_ID, API_HASH)
-        await client.start()
-        # 拉取足够多的消息
-        msgs = await fetch_messages_with_retry(client, MANUAL_FETCH_LIMIT)
-        if not msgs:
-            print("未拉取到任何消息")
-            return
-        # 筛选有效开奖结果
-        valid = []
-        for m in msgs:
-            if m.text and "新澳门六合彩第" in m.text:
-                txt = m.text.strip()
-                if is_complete_lottery(txt):
-                    valid.append(txt)
-        # 去重（按期号）
-        seen = set()
-        unique = []
-        for txt in valid:
-            p = get_period(txt)
-            if p not in seen:
-                seen.add(p)
-                unique.append(txt)
-        # 按期号降序排序，取前 MANUAL_TARGET 条
-        unique.sort(key=get_period, reverse=True)
-        top = unique[:MANUAL_TARGET]
-        # 按期号升序写入（与原有格式一致）
-        top.sort(key=get_period)
-        with open(OUT_FILE, "w", encoding="utf-8") as f:
-            f.write("\n\n".join(top) + "\n")
-        print(f"手动触发完成，共写入 {len(top)} 期")
-        send_email("彩票采集 - 手动完成", f"手动触发完成，共采集 {len(top)} 期（最新 {MANUAL_TARGET} 期）")
-    except Exception as e:
-        error_msg = f"手动触发失败: {type(e).__name__}: {e}"
-        print(error_msg)
-        traceback.print_exc()
-        send_email("彩票采集 - 错误", error_msg)
-    finally:
-        if client:
-            await client.disconnect()
-
-# ========== 自动触发逻辑 ==========
-def get_auto_limit():
-    """根据当前时间返回自动采集条数"""
-    now = datetime.now(BEIJING_TZ)
-    hour = now.hour
-    minute = now.minute
-    if hour == 21 and minute == 10:
-        return 60
-    if 18 <= hour < 20:
-        return random.randint(3, 5)
-    if 20 <= hour < 21 or (hour == 21 and minute < 10):
-        return random.randint(3, 5)
-    return 0
-
 async def get_latest_period_from_channel(client):
     try:
         msg = await client.get_messages(CHANNEL, limit=1)
@@ -174,9 +110,163 @@ async def get_latest_period_from_channel(client):
         print(f"获取最新期号失败: {e}")
     return 0
 
+def get_local_latest_period():
+    """从本地文件中读取最新期号（最大值）"""
+    if not os.path.exists(OUT_FILE):
+        return 0
+    try:
+        with open(OUT_FILE, "r", encoding="utf-8") as f:
+            content = f.read().strip()
+        if not content:
+            return 0
+        periods = []
+        for block in content.split('\n\n'):
+            block = block.strip()
+            if block and is_complete_lottery(block):
+                periods.append(get_period(block))
+        return max(periods) if periods else 0
+    except Exception as e:
+        print(f"读取本地最新期号失败: {e}")
+        return 0
+
+# ========== 采集核心 ==========
+async def fetch_new_data(client, local_latest):
+    """
+    从频道拉取所有比 local_latest 更新的有效开奖结果。
+    返回列表（按期号升序），可能为空。
+    """
+    # 一次拉取较多消息（比如 200 条）覆盖新数据
+    limit = 200
+    msgs = await fetch_messages_with_retry(client, limit)
+    if not msgs:
+        return []
+    new_data = []
+    for m in msgs:
+        if m.text and "新澳门六合彩第" in m.text:
+            txt = m.text.strip()
+            if is_complete_lottery(txt):
+                p = get_period(txt)
+                if p > local_latest:
+                    new_data.append(txt)
+    # 去重（按期号）
+    seen = set()
+    unique = []
+    for txt in new_data:
+        p = get_period(txt)
+        if p not in seen:
+            seen.add(p)
+            unique.append(txt)
+    unique.sort(key=get_period)  # 升序
+    return unique
+
+async def fetch_random_messages(client, limit):
+    """拉取最新 limit 条消息，返回有效结果列表"""
+    msgs = await fetch_messages_with_retry(client, limit)
+    if not msgs:
+        return []
+    valid = []
+    for m in msgs:
+        if m.text and "新澳门六合彩第" in m.text:
+            txt = m.text.strip()
+            if is_complete_lottery(txt):
+                valid.append(txt)
+    # 去重
+    seen = set()
+    unique = []
+    for txt in valid:
+        p = get_period(txt)
+        if p not in seen:
+            seen.add(p)
+            unique.append(txt)
+    return unique
+
+# ========== 手动触发 ==========
+async def manual_mode():
+    print("手动触发模式")
+    # 检查是否需要清空
+    if need_clean_today():
+        with open(OUT_FILE, "w", encoding="utf-8") as f:
+            f.write("")
+        print("今日首次运行，已清空原数据")
+        send_email("彩票采集 - 手动触发", "手动触发且为今日首次运行，已清空数据")
+    else:
+        print("今日非首次运行，不清空，仅追加新数据")
+
+    client = None
+    try:
+        client = TelegramClient("session", API_ID, API_HASH)
+        await client.start()
+        # 获取本地最新期号
+        local_latest = get_local_latest_period()
+        print(f"本地最新期号: {local_latest}")
+        # 获取频道最新期号
+        channel_latest = await get_latest_period_from_channel(client)
+        print(f"频道最新期号: {channel_latest}")
+        if channel_latest <= local_latest:
+            print("无新数据，跳过")
+            send_email("彩票采集 - 手动跳过", f"无新数据 (本地最新{local_latest}, 频道最新{channel_latest})")
+            return
+        # 拉取所有新数据
+        new_data = await fetch_new_data(client, local_latest)
+        if not new_data:
+            print("未获取到新数据")
+            return
+        print(f"获取到新数据 {len(new_data)} 期")
+        # 读取现有数据
+        old_data = []
+        if os.path.exists(OUT_FILE) and not need_clean_today():  # 如果不是首次运行，则读取旧数据
+            with open(OUT_FILE, "r", encoding="utf-8") as f:
+                content = f.read().strip()
+            if content:
+                for block in content.split('\n\n'):
+                    block = block.strip()
+                    if block and is_complete_lottery(block):
+                        old_data.append(block)
+        # 合并去重
+        exist_periods = {get_period(x) for x in old_data}
+        all_data = old_data[:]
+        for txt in new_data:
+            p = get_period(txt)
+            if p not in exist_periods:
+                exist_periods.add(p)
+                all_data.append(txt)
+        all_data.sort(key=get_period)
+        if len(all_data) > MAX_KEEP:
+            all_data = all_data[-MAX_KEEP:]
+        with open(OUT_FILE, "w", encoding="utf-8") as f:
+            f.write("\n\n".join(all_data) + "\n")
+        print(f"手动触发完成，总期数 {len(all_data)}，新增 {len(new_data)} 期")
+        send_email("彩票采集 - 手动完成", f"手动触发完成，新增 {len(new_data)} 期，总期数 {len(all_data)}")
+    except Exception as e:
+        error_msg = f"手动触发失败: {type(e).__name__}: {e}"
+        print(error_msg)
+        traceback.print_exc()
+        send_email("彩票采集 - 错误", error_msg)
+    finally:
+        if client:
+            await client.disconnect()
+
+# ========== 自动触发 ==========
+def is_auto_time():
+    """判断当前时间是否在采集时段（北京时间 18:00-21:10）"""
+    now = datetime.now(BEIJING_TZ)
+    hour = now.hour
+    minute = now.minute
+    # 18:00 - 21:10 之间（不包括 21:10 本身）
+    if hour == 21 and minute >= 10:
+        return False
+    if hour >= 18 and hour < 21:
+        return True
+    if hour == 21 and minute < 10:
+        return True
+    return False
+
 async def auto_mode():
-    """自动触发：根据时段采集，去重合并，保留最近 MAX_KEEP 期"""
     print("自动触发模式")
+    if not is_auto_time():
+        print("不在采集时段 (18:00-21:10 北京时间)，退出")
+        return
+
     # 每日首次清空
     if need_clean_today():
         with open(OUT_FILE, "w", encoding="utf-8") as f:
@@ -184,15 +274,26 @@ async def auto_mode():
         print("今日首次运行，清空旧内容")
         send_email("彩票采集 - 每日重置", "今日首次运行，已清空旧数据")
 
-    limit = get_auto_limit()
-    if limit == 0:
-        print("不在采集时段，退出")
-        return
-    print(f"本次采集 {limit} 条")
-
-    # 21:10 智能跳过
-    if limit == 60:
-        existing_periods = []
+    client = None
+    try:
+        client = TelegramClient("session", API_ID, API_HASH)
+        await client.start()
+        # 检查是否有新数据
+        local_latest = get_local_latest_period()
+        channel_latest = await get_latest_period_from_channel(client)
+        print(f"本地最新期号: {local_latest}, 频道最新期号: {channel_latest}")
+        if channel_latest <= local_latest:
+            print("无新数据，跳过")
+            return
+        # 随机拉取 1-3 条最新消息
+        limit = random.randint(AUTO_RANDOM_MIN, AUTO_RANDOM_MAX)
+        print(f"本次随机拉取 {limit} 条")
+        new_data = await fetch_random_messages(client, limit)
+        if not new_data:
+            print("未获取到有效数据")
+            return
+        # 读取现有数据
+        old_data = []
         if os.path.exists(OUT_FILE):
             with open(OUT_FILE, "r", encoding="utf-8") as f:
                 content = f.read().strip()
@@ -200,84 +301,34 @@ async def auto_mode():
                 for block in content.split('\n\n'):
                     block = block.strip()
                     if block and is_complete_lottery(block):
-                        existing_periods.append(get_period(block))
-        if len(existing_periods) >= MAX_KEEP:
-            temp_client = TelegramClient("session", API_ID, API_HASH)
-            await temp_client.start()
-            latest_period = await get_latest_period_from_channel(temp_client)
-            await temp_client.disconnect()
-            if latest_period and existing_periods and max(existing_periods) >= latest_period:
-                msg = f"已有数据完整（最新期号 {max(existing_periods)} >= 频道最新 {latest_period}），跳过21:10全量采集"
-                print(msg)
-                send_email("彩票采集 - 智能跳过", msg)
-                return
-
-    client = None
-    try:
-        client = TelegramClient("session", API_ID, API_HASH)
-        await client.start()
-        msgs = await fetch_messages_with_retry(client, limit)
-        await client.disconnect()
+                        old_data.append(block)
+        # 合并去重
+        exist_periods = {get_period(x) for x in old_data}
+        all_data = old_data[:]
+        new_added = []
+        for txt in new_data:
+            p = get_period(txt)
+            if p not in exist_periods:
+                exist_periods.add(p)
+                all_data.append(txt)
+                new_added.append(p)
+        all_data.sort(key=get_period)
+        if len(all_data) > MAX_KEEP:
+            all_data = all_data[-MAX_KEEP:]
+        with open(OUT_FILE, "w", encoding="utf-8") as f:
+            f.write("\n\n".join(all_data) + "\n")
+        print(f"自动触发完成，总期数 {len(all_data)}，新增 {len(new_added)} 期")
+        if new_added:
+            send_email("彩票采集 - 自动采集", f"自动采集完成，新增 {len(new_added)} 期，当前总期数 {len(all_data)}")
     except Exception as e:
-        error_msg = f"自动触发拉取失败: {type(e).__name__}: {e}"
+        error_msg = f"自动触发失败: {type(e).__name__}: {e}"
         print(error_msg)
         traceback.print_exc()
         send_email("彩票采集 - 错误", error_msg)
+    finally:
         if client:
             await client.disconnect()
-        return
 
-    # 提取新数据
-    new_data = []
-    for m in msgs:
-        if m.text and "新澳门六合彩第" in m.text:
-            txt = m.text.strip()
-            if is_complete_lottery(txt):
-                new_data.append(txt)
-    new_data.sort(key=get_period, reverse=True)
-
-    # 读取旧数据
-    old = []
-    if os.path.exists(OUT_FILE):
-        try:
-            with open(OUT_FILE, "r", encoding="utf-8") as f:
-                content = f.read().strip()
-            if content:
-                for block in content.split('\n\n'):
-                    block = block.strip()
-                    if block and is_complete_lottery(block):
-                        old.append(block)
-        except Exception as e:
-            print(f"读取旧文件失败: {e}")
-
-    exist_periods = {get_period(x) for x in old}
-    all_data = old[:]
-    new_added = []
-    for line in new_data:
-        p = get_period(line)
-        if p not in exist_periods:
-            exist_periods.add(p)
-            all_data.append(line)
-            new_added.append(p)
-
-    all_data.sort(key=get_period)
-    if len(all_data) > MAX_KEEP:
-        all_data = all_data[-MAX_KEEP:]
-
-    try:
-        with open(OUT_FILE, "w", encoding="utf-8") as f:
-            f.write("\n\n".join(all_data) + "\n")
-        print(f"完成，共 {len(all_data)} 期，新增 {len(new_data)} 期，新增期号: {new_added}")
-        if limit == 60:
-            send_email("彩票采集 - 全量完成", f"21:10 全量采集完成，现有 {len(all_data)} 期，新增 {len(new_added)} 期")
-        elif new_added:
-            send_email("彩票采集 - 随机采集", f"随机采集完成，新增 {len(new_added)} 期，当前总期数 {len(all_data)}")
-    except Exception as e:
-        error_msg = f"写入文件失败: {e}"
-        print(error_msg)
-        send_email("彩票采集 - 错误", error_msg)
-
-# ========== 主入口 ==========
 async def main():
     is_manual = (os.environ.get("GITHUB_EVENT_NAME") == "workflow_dispatch")
     print(f"事件: {os.environ.get('GITHUB_EVENT_NAME')}, 手动: {is_manual}")
