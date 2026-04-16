@@ -3,7 +3,7 @@ name: FullLotteryAPI
 on:
   workflow_dispatch:
   schedule:
-    - cron: "*/10 10-13 * * *"   # 每10分钟一次，UTC 10:00-13:59 对应北京时间 18:00-21:59，但代码内会进一步过滤时段
+    - cron: "*/10 10-13 * * *"   # 每10分钟一次，UTC 10:00-13:59（北京时间18:00-21:59）
 
 jobs:
   run:
