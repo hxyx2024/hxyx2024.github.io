@@ -3,7 +3,6 @@ name: FullLotteryAPI
 on:
   workflow_dispatch:
   schedule:
-    # 北京时间 18:00-20:00 (UTC 10:00-12:00)
     - cron: "3 10 * * *"
     - cron: "17 10 * * *"
     - cron: "29 10 * * *"
@@ -13,7 +12,6 @@ on:
     - cron: "22 11 * * *"
     - cron: "37 11 * * *"
     - cron: "51 11 * * *"
-    # 北京时间 20:00-21:00 (UTC 12:00-13:00)
     - cron: "6 12 * * *"
     - cron: "19 12 * * *"
     - cron: "33 12 * * *"
