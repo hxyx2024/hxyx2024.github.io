@@ -1,6 +1,7 @@
 version: '3'
+
 services:
-  bot:
+  lottery:
     image: python:3.10-slim
     working_dir: /app
     volumes:
@@ -9,10 +10,10 @@ services:
       - /bin/sh
       - -c
       - |
-        pip install telethon pysocks
+        pip install telethon
         python main.py
     environment:
       - TZ=Asia/Shanghai
     tty: true
     stdin_open: true
-    network_mode: host
+    restart: always
