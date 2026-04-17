@@ -24,44 +24,51 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 1
           persist-credentials: false
 
-      - uses: actions/setup-python@v5
+      - name: Setup Python
+        uses: actions/setup-python@v5
         with:
           python-version: "3.10"
 
-      - run: pip install telethon
+      - name: Install telethon
+        run: pip install telethon
 
-      - name: Restore session
+      - name: Restore Telegram session
         env:
           SESSION_BASE64: ${{ secrets.SESSION_BASE64 }}
         run: |
-          if [ -n "$SESSION_BASE64" ]; then
-            echo "$SESSION_BASE64" | base64 -d > session.session
-          fi
+          echo "$SESSION_BASE64" | base64 -d > session.session
 
-      - name: Run script
+      - name: Run main script
         env:
           API_ID: ${{ secrets.API_ID }}
           API_HASH: ${{ secrets.API_HASH }}
         run: python main.py
 
-      # ==========================================
-      # 下面这段是【强制覆盖文件】绝对不会假成功！
-      # ==========================================
-      - name: Force commit & push
+      - name: Force push to remote
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           
+          # 自动获取当前分支名（兼容 main 或 master）
+          BRANCH=$(git rev-parse --abbrev-ref HEAD)
+          echo "当前分支: $BRANCH"
+          
+          # 强制添加文件
           git add --force lottery_data_api.html
-          git add .last_clean_date
+          git add .last_clean_date 2>/dev/null || true
           
-          git commit -m "FORCE UPDATE: refresh lottery data" --allow-empty
+          # 提交（允许空提交，确保总有新提交）
+          git commit -m "FORCE UPDATE: $(date -u)" --allow-empty
           
-          git push --force https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git HEAD:main
+          # 使用 GITHUB_TOKEN 强制推送
+          git push --force https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git HEAD:$BRANCH
+          
+          echo "✅ 强制推送完成，远程文件已更新"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
