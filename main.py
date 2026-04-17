@@ -5,19 +5,15 @@ import traceback
 from telethon import TelegramClient
 from datetime import datetime, timezone, timedelta
 
-# ========== 配置 ==========
 API_ID = int(os.environ["API_ID"])
 API_HASH = os.environ["API_HASH"]
 CHANNEL = "douapi"
-OUT_FILE = "lottery_data_api.html"
+OUT_FILE = os.path.abspath("lottery_data_api.html")   # 使用绝对路径，避免路径混淆
 MAX_KEEP = 60
 BEIJING_TZ = timezone(timedelta(hours=8))
 CLEAN_FLAG_FILE = ".last_clean_date"
-
-# 每次拉取最近的消息数量（固定4条）
 INIT_FETCH_LIMIT = 4
 
-# ========== 工具函数 ==========
 period_pattern = re.compile(r"第[:\s]*(\d{7})期")
 
 def get_period(text):
@@ -48,7 +44,6 @@ def get_local_data():
     seen = set()
     for b in blocks:
         b = b.strip()
-        # 忽略时间戳注释块
         if b.startswith('<!--'):
             continue
         if not b or not is_complete_lottery(b):
@@ -83,28 +78,25 @@ async def fetch_recent_messages(client, limit):
 async def main():
     is_manual = (os.environ.get("GITHUB_EVENT_NAME") == "workflow_dispatch")
     print(f"触发方式: {'手动' if is_manual else '自动'}")
-
-    # 已取消时间限制，任何时间都继续执行
+    print(f"当前工作目录: {os.getcwd()}")
+    print(f"目标文件路径: {OUT_FILE}")
 
     # 清空逻辑
     if is_manual:
         with open(OUT_FILE, 'w', encoding='utf-8') as f:
             f.write('')
         print("手动触发：已清空数据文件")
-        if os.path.exists(OUT_FILE):
-            print(f"清空验证：文件大小 = {os.path.getsize(OUT_FILE)} 字节 (应为0)")
+        print(f"清空验证：文件大小 = {os.path.getsize(OUT_FILE)} 字节 (应为0)")
     else:
         if need_auto_clean_today():
             with open(OUT_FILE, 'w', encoding='utf-8') as f:
                 f.write('')
             print("自动触发：今日首次运行，已清空数据文件")
-            if os.path.exists(OUT_FILE):
-                print(f"清空验证：文件大小 = {os.path.getsize(OUT_FILE)} 字节 (应为0)")
+            print(f"清空验证：文件大小 = {os.path.getsize(OUT_FILE)} 字节 (应为0)")
         else:
             print("自动触发：今日已清空过，不再清空")
 
     client = await TelegramClient("session", API_ID, API_HASH).start()
-
     try:
         local_data = get_local_data()
         local_periods = {get_period(b) for b in local_data}
@@ -138,9 +130,7 @@ async def main():
         if len(sorted_blocks) > MAX_KEEP:
             sorted_blocks = sorted_blocks[-MAX_KEEP:]
 
-        # 准备文件内容
         content = "\n\n".join(sorted_blocks) + "\n"
-        # 手动触发时添加时间戳注释，确保每次内容唯一，强制 Git 提交
         if is_manual:
             timestamp = datetime.now(BEIJING_TZ).strftime("%Y-%m-%d %H:%M:%S")
             content += f"<!-- 手动更新于 {timestamp} (北京时间) -->\n"
@@ -148,10 +138,12 @@ async def main():
         with open(OUT_FILE, 'w', encoding='utf-8') as f:
             f.write(content)
 
-        print(f"✅ 写入完成，文件总期数: {len(sorted_blocks)} (最多保留最近 {MAX_KEEP} 期)")
-        final_size = os.path.getsize(OUT_FILE)
-        print(f"最终文件大小: {final_size} 字节")
-
+        # 最终自检：重新读取文件，确认内容非空且包含最新期号
+        with open(OUT_FILE, 'r', encoding='utf-8') as f:
+            written = f.read()
+        if not written.strip():
+            raise RuntimeError("警告：写入后文件为空！")
+        print(f"✅ 写入完成，文件总期数: {len(sorted_blocks)}，文件大小: {os.path.getsize(OUT_FILE)} 字节")
     except Exception as e:
         print(f"❌ 错误: {e}")
         traceback.print_exc()
