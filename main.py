@@ -14,11 +14,8 @@ MAX_KEEP = 60
 BEIJING_TZ = timezone(timedelta(hours=8))
 CLEAN_FLAG_FILE = ".last_clean_date"
 
-MAX_TAKE = 999             # 全部拉取（不限制数量）
-INIT_FETCH_LIMIT = 4       # 每次拉取最近 4 条消息
-
-# ========== 初始化客户端（与原代码完全相同）==========
-client = TelegramClient("session", API_ID, API_HASH)
+# 每次拉取最近的消息数量（固定4条）
+INIT_FETCH_LIMIT = 4
 
 # ========== 工具函数 ==========
 period_pattern = re.compile(r"第[:\s]*(\d{7})期")
@@ -40,6 +37,7 @@ def is_complete_lottery(text):
     return True
 
 def get_local_data():
+    """读取本地文件，返回去重且升序的有效开奖列表"""
     if not os.path.exists(OUT_FILE):
         return []
     with open(OUT_FILE, 'r', encoding='utf-8') as f:
@@ -58,6 +56,7 @@ def get_local_data():
             seen.add(p)
             valid.append(b)
     valid.sort(key=get_period)
+    # 若发现异常，自动修复写回
     if len(valid) != len(blocks):
         print(f"⚠️ 本地文件异常，已自动修复（原 {len(blocks)} 块 → {len(valid)} 块）")
         with open(OUT_FILE, 'w', encoding='utf-8') as f:
@@ -83,16 +82,21 @@ def is_auto_time():
         return False
     return True
 
-async def fetch_recent_messages(tele_client, limit):
+async def fetch_recent_messages(client, limit):
+    """
+    拉取最近 limit 条消息，返回有效开奖文本列表（按消息ID升序，旧→新）
+    """
     valid = []
-    async for msg in tele_client.iter_messages(CHANNEL, limit=limit):
+    async for msg in client.iter_messages(CHANNEL, limit=limit):
         if msg.text and "新澳门六合彩第" in msg.text:
             txt = msg.text.strip()
             if is_complete_lottery(txt):
                 valid.append((msg.id, txt))
+    # 按ID升序，保留原始时间顺序（旧的在前，新的在后）
     valid.sort(key=lambda x: x[0])
     return [txt for _, txt in valid]
 
+# ========== 主逻辑 ==========
 async def main():
     is_manual = (os.environ.get("GITHUB_EVENT_NAME") == "workflow_dispatch")
     print(f"触发方式: {'手动' if is_manual else '自动'}")
@@ -101,18 +105,21 @@ async def main():
         print("不在自动触发时段 (18:00-21:20 北京时间)，退出")
         return
 
+    # 自动每日清空：清空数据文件
     if not is_manual and need_auto_clean_today():
         with open(OUT_FILE, 'w', encoding='utf-8') as f:
             f.write('')
         print("今日首次自动运行，已清空数据文件")
 
-    await client.start()
+    client = await TelegramClient("session", API_ID, API_HASH).start()
 
     try:
+        # 1. 读取本地数据
         local_data = get_local_data()
         local_periods = {get_period(b) for b in local_data}
         print(f"本地数据: {len(local_data)} 期")
 
+        # 2. 拉取最近的消息中的有效开奖
         all_valid = await fetch_recent_messages(client, INIT_FETCH_LIMIT)
         print(f"从最近 {INIT_FETCH_LIMIT} 条消息中提取到 {len(all_valid)} 条有效开奖")
 
@@ -120,6 +127,7 @@ async def main():
             print("未拉取到任何有效开奖，退出")
             return
 
+        # 3. 过滤出本地没有的期号（保持原有顺序，旧→新）
         new_periods = []
         for txt in all_valid:
             p = get_period(txt)
@@ -131,13 +139,15 @@ async def main():
             print("无新期号，退出")
             return
 
-        selected = new_periods   # 全部拉取
+        # 4. 全部拉取（不限制数量）
+        selected = new_periods
         print(f"本次选取 {len(selected)} 期，完整内容如下：")
         for idx, txt in enumerate(selected, 1):
             print(f"--- 第 {idx} 条 ---")
             print(txt)
             print()
 
+        # 5. 合并、去重、排序、保留最近 MAX_KEEP 期
         all_blocks = local_data + selected
         unique = {}
         for b in all_blocks:
