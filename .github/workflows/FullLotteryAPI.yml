@@ -45,10 +45,8 @@ jobs:
           API_HASH: ${{ secrets.API_HASH }}
         run: python main.py
 
-      # ✅ 这是唯一能解决你 128 错误的最终代码
-      - name: GitHub Push
+      - name: Commit & Push
         uses: ad-m/github-push-action@master
         with:
           branch: main
-          directory: .
-          force: true
+          force: false
