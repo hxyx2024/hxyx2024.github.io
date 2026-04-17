@@ -1,7 +1,6 @@
 import os
 import asyncio
 import re
-import traceback
 from telethon import TelegramClient
 from datetime import datetime, timezone, timedelta
 
@@ -12,9 +11,9 @@ OUT_FILE = "lottery_data_api.html"
 MAX_KEEP = 60
 BEIJING_TZ = timezone(timedelta(hours=8))
 CLEAN_FLAG_FILE = ".last_clean_date"
-INIT_FETCH_LIMIT = 4
+LIMIT = 4
 
-period_pattern = re.compile(r"第[:\s]*(\d{7})期")
+period_pattern = re.compile(r"新澳门六合彩第[:\s]*(\d{7})期")
 
 def get_period(text):
     m = period_pattern.search(text)
@@ -52,7 +51,7 @@ def get_local_data():
         if p and p not in seen:
             seen.add(p)
             valid.append(b)
-    valid.sort(key=get_period)
+    valid.sort(key=get_period)  # 升序
     return valid
 
 def need_auto_clean_today():
@@ -65,90 +64,65 @@ def need_auto_clean_today():
         f.write(today)
     return True
 
-async def fetch_recent_messages(client, limit):
-    """只取最新的 N 条有效开奖（绝对可靠）"""
+async def fetch_recent_messages(client):
     valid = []
-    messages = await client.get_messages(CHANNEL, limit=limit)
-    messages = reversed(messages)
-    for msg in messages:
+    messages = await client.get_messages(CHANNEL, limit=LIMIT)
+    for msg in reversed(messages):  # 从旧到新
         if msg.text and "第" in msg.text:
             txt = msg.text.strip()
             if is_complete_lottery(txt):
                 valid.append(txt)
-                if len(valid) >= limit:
+                if len(valid) >= LIMIT:
                     break
     return valid
 
 async def main():
     is_manual = (os.environ.get("GITHUB_EVENT_NAME") == "workflow_dispatch")
-    print(f"触发方式: {'手动' if is_manual else '自动'}")
+    print(f"{'手动' if is_manual else '自动'}触发")
 
+    # 清空文件
     if is_manual:
-        with open(OUT_FILE, 'w', encoding='utf-8') as f:
-            f.write('')
-        print("手动触发：已清空数据文件")
-        print(f"清空验证：文件大小 = {os.path.getsize(OUT_FILE)} 字节")
-    else:
-        if need_auto_clean_today():
-            with open(OUT_FILE, 'w', encoding='utf-8') as f:
-                f.write('')
-            print("自动触发：今日首次运行，已清空数据文件")
-            print(f"清空验证：文件大小 = {os.path.getsize(OUT_FILE)} 字节")
-        else:
-            print("自动触发：今日已清空过，不再清空")
+        open(OUT_FILE, 'w').close()
+        print("已清空文件")
+    elif need_auto_clean_today():
+        open(OUT_FILE, 'w').close()
+        print("今日首次运行，已清空文件")
 
     client = await TelegramClient("session", API_ID, API_HASH).start()
     try:
-        # 手动模式完全不读取本地旧数据
-        if is_manual:
-            local_data = []
-            print("手动模式：忽略所有本地旧数据")
-        else:
-            local_data = get_local_data()
-            print(f"自动模式：本地已有 {len(local_data)} 期")
-
+        # 手动模式不使用旧数据
+        local_data = [] if is_manual else get_local_data()
         local_periods = {get_period(b) for b in local_data}
 
-        all_valid = await fetch_recent_messages(client, INIT_FETCH_LIMIT)
-        print(f"从最近 {INIT_FETCH_LIMIT} 条消息中提取到 {len(all_valid)} 条有效开奖")
+        all_valid = await fetch_recent_messages(client)
+        print(f"获取到 {len(all_valid)} 条有效开奖")
 
         if not all_valid:
-            print("未拉取到任何有效开奖，退出")
             return
 
-        new_periods = []
-        for txt in all_valid:
-            p = get_period(txt)
-            if p and p not in local_periods:
-                new_periods.append(txt)
-        print(f"新期号数量: {len(new_periods)}")
-
+        # 新期号
+        new_periods = [txt for txt in all_valid if get_period(txt) not in local_periods]
         if not new_periods:
-            print("无新期号，退出")
+            print("无新期号")
             return
 
+        # 合并、去重、升序
         all_blocks = local_data + new_periods
-        unique = {}
-        for b in all_blocks:
-            p = get_period(b)
-            if p:
-                unique[p] = b
-        sorted_blocks = [unique[p] for p in sorted(unique.keys())]
+        unique = {get_period(b): b for b in all_blocks}  # 按期号去重
+        sorted_blocks = [unique[p] for p in sorted(unique.keys())]  # 升序
         if len(sorted_blocks) > MAX_KEEP:
             sorted_blocks = sorted_blocks[-MAX_KEEP:]
 
+        # 构建文件内容
         content = "\n\n".join(sorted_blocks) + "\n"
         if is_manual:
-            timestamp = datetime.now(BEIJING_TZ).strftime("%Y-%m-%d %H:%M:%S")
-            content += f"<!-- 手动更新于 {timestamp} (北京时间) -->\n"
+            ts = datetime.now(BEIJING_TZ).strftime("%Y-%m-%d %H:%M:%S")
+            content += f"<!-- 手动更新于 {ts} -->\n"
 
         with open(OUT_FILE, 'w', encoding='utf-8') as f:
             f.write(content)
 
-        print(f"✅ 写入完成，文件总期数: {len(sorted_blocks)}，文件大小: {os.path.getsize(OUT_FILE)} 字节")
-    except Exception as e:
-        print(f"❌ 错误: {e}")
-        traceback.print_exc()
+        print(f"写入完成，共 {len(sorted_blocks)} 期")
     finally:
         await client.disconnect()
 
