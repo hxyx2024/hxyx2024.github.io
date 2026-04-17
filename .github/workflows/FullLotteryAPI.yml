@@ -3,7 +3,7 @@ name: FullLotteryAPI
 on:
   workflow_dispatch:
   schedule:
-    - cron: "*/10 10-13 * * *"
+    - cron: "*/10 10-13 * * *"   # UTC 10:00-13:59（北京时间18:00-21:59），代码内会限制21:20停止
 
 jobs:
   run:
@@ -29,13 +29,12 @@ jobs:
         env:
           API_ID: ${{ secrets.API_ID }}
           API_HASH: ${{ secrets.API_HASH }}
-          EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
         run: python main.py
 
       - name: Push changes
         run: |
           git config --global user.name "bot"
           git config --global user.email "bot@github.com"
-          git add lottery_data_api.html
+          git add lottery_data_api.html .fetched_periods.txt
           git diff --cached --quiet || git commit -m "update lottery data"
           git push
