@@ -34,7 +34,7 @@ jobs:
 
       - run: pip install telethon
 
-      - name: Restore Telegram session
+      - name: Restore session
         env:
           SESSION_BASE64: ${{ secrets.SESSION_BASE64 }}
         run: |
@@ -42,27 +42,20 @@ jobs:
             echo "$SESSION_BASE64" | base64 -d > session.session
           fi
 
-      - name: Run main script
+      - name: Run script
         env:
           API_ID: ${{ secrets.API_ID }}
           API_HASH: ${{ secrets.API_HASH }}
         run: python main.py
 
-      # ========== 暴力覆盖远程文件 ==========
-      - name: Force replace remote file
+      # 👇 下面这段是修好的【真正能保存文件】的代码
+      - name: Commit and push
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          BRANCH=$(git rev-parse --abbrev-ref HEAD)
-          
-          # 强制添加文件（即使被 .gitignore 忽略）
-          git add -f lottery_data_api.html
-          git add -f .last_clean_date 2>/dev/null || true
-          
-          # 无论如何都提交（允许空提交）
-          git commit -m "Manual force update at $(date -u)" || git commit --allow-empty -m "Force sync"
-          
-          # 强制推送到远程，彻底覆盖
-          git push --force origin $BRANCH
-          
-          echo "✅ 强制推送完成，远程文件已替换"
+          git add lottery_data_api.html
+          git add .last_clean_date
+          git commit -m "Update lottery data" || true
+          git push origin HEAD:main
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
