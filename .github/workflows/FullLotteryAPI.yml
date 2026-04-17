@@ -26,7 +26,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 1
+          fetch-depth: 0          # 需要完整历史用于强制推送
 
       - uses: actions/setup-python@v5
         with:
@@ -45,8 +45,26 @@ jobs:
           API_HASH: ${{ secrets.API_HASH }}
         run: python main.py
 
-      - name: Commit & Push
-        uses: ad-m/github-push-action@master
+      # 使用官方推荐的 github-push-action 强制推送
+      - name: Push changes
+        uses: ad-m/github-push-action@v0.8.0
         with:
-          branch: main
-          force: false
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch: ${{ github.ref_name }}
+          force: true
+          force_with_lease: true
+          # 允许空提交（确保推送总是发生）
+          # 但该 action 默认不会创建空提交，所以我们需要先手动提交
+      - name: Commit changes (if any)
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add --force lottery_data_api.html
+          git add .last_clean_date 2>/dev/null || true
+          git commit -m "Update lottery data $(date -u)" --allow-empty
+      - name: Push using official action
+        uses: ad-m/github-push-action@v0.8.0
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch: ${{ github.ref_name }}
+          force: true
