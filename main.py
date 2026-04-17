@@ -13,7 +13,7 @@ BEIJING_TZ = timezone(timedelta(hours=8))
 CLEAN_FLAG_FILE = ".last_clean_date"
 LIMIT = 4
 
-period_pattern = re.compile(r"新澳门六合彩第[:\s]*(\d{7})期")
+period_pattern = re.compile(r"第[:\s]*(\d{7})期")
 
 def get_period(text):
     m = period_pattern.search(text)
@@ -51,7 +51,7 @@ def get_local_data():
         if p and p not in seen:
             seen.add(p)
             valid.append(b)
-    valid.sort(key=get_period)  # 升序
+    valid.sort(key=get_period)
     return valid
 
 def need_auto_clean_today():
@@ -65,22 +65,24 @@ def need_auto_clean_today():
     return True
 
 async def fetch_recent_messages(client):
+    """强制从服务器获取最新消息，不使用缓存"""
     valid = []
-    messages = await client.get_messages(CHANNEL, limit=LIMIT)
-    for msg in reversed(messages):  # 从旧到新
+    # 使用 iter_messages，wait_time=0 避免延迟，不设置 offset_id 强制从最新开始
+    async for msg in client.iter_messages(CHANNEL, limit=LIMIT, wait_time=0):
         if msg.text and "第" in msg.text:
             txt = msg.text.strip()
             if is_complete_lottery(txt):
                 valid.append(txt)
                 if len(valid) >= LIMIT:
                     break
+    # 倒序，使顺序从旧到新（与之前逻辑一致）
+    valid = valid[::-1]
     return valid
 
 async def main():
     is_manual = (os.environ.get("GITHUB_EVENT_NAME") == "workflow_dispatch")
     print(f"{'手动' if is_manual else '自动'}触发")
 
-    # 清空文件
     if is_manual:
         open(OUT_FILE, 'w').close()
         print("已清空文件")
@@ -89,8 +91,10 @@ async def main():
         print("今日首次运行，已清空文件")
 
     client = await TelegramClient("session", API_ID, API_HASH).start()
+    # 强制刷新会话，确保连接有效
+    await client.get_me()
+    
     try:
-        # 手动模式不使用旧数据
         local_data = [] if is_manual else get_local_data()
         local_periods = {get_period(b) for b in local_data}
 
@@ -100,20 +104,17 @@ async def main():
         if not all_valid:
             return
 
-        # 新期号
         new_periods = [txt for txt in all_valid if get_period(txt) not in local_periods]
         if not new_periods:
             print("无新期号")
             return
 
-        # 合并、去重、升序
         all_blocks = local_data + new_periods
-        unique = {get_period(b): b for b in all_blocks}  # 按期号去重
-        sorted_blocks = [unique[p] for p in sorted(unique.keys())]  # 升序
+        unique = {get_period(b): b for b in all_blocks}
+        sorted_blocks = [unique[p] for p in sorted(unique.keys())]
         if len(sorted_blocks) > MAX_KEEP:
             sorted_blocks = sorted_blocks[-MAX_KEEP:]
 
-        # 构建文件内容
         content = "\n\n".join(sorted_blocks) + "\n"
         if is_manual:
             ts = datetime.now(BEIJING_TZ).strftime("%Y-%m-%d %H:%M:%S")
