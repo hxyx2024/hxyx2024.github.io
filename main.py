@@ -48,7 +48,7 @@ def get_local_data():
     seen = set()
     for b in blocks:
         b = b.strip()
-        # 过滤掉可能的时间戳注释块（以 <!-- 开头）
+        # 忽略时间戳注释块
         if b.startswith('<!--'):
             continue
         if not b or not is_complete_lottery(b):
