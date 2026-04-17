@@ -58,6 +58,7 @@ def get_local_data():
     return valid
 
 def need_auto_clean_today():
+    """检查今日是否已经清空过（仅用于自动运行）"""
     today = datetime.now(BEIJING_TZ).strftime("%Y-%m-%d")
     if os.path.exists(CLEAN_FLAG_FILE):
         with open(CLEAN_FLAG_FILE, 'r') as f:
@@ -65,15 +66,6 @@ def need_auto_clean_today():
                 return False
     with open(CLEAN_FLAG_FILE, 'w') as f:
         f.write(today)
-    return True
-
-def is_auto_time():
-    now = datetime.now(BEIJING_TZ)
-    hour, minute = now.hour, now.minute
-    if hour < 18 or hour > 21:
-        return False
-    if hour == 21 and minute >= 20:
-        return False
     return True
 
 async def fetch_recent_messages(client, limit):
@@ -90,24 +82,32 @@ async def main():
     is_manual = (os.environ.get("GITHUB_EVENT_NAME") == "workflow_dispatch")
     print(f"触发方式: {'手动' if is_manual else '自动'}")
 
-    # 手动运行不受时间限制
-    if not is_manual:
-        if not is_auto_time():
-            print("不在自动触发时段 (18:00-21:20 北京时间)，退出")
-            return
+    # ========== 取消时间限制：任何时间都继续执行 ==========
+    # 原时间检查代码已删除
 
-    # 清空逻辑：
-    # 手动运行：每次清空
-    # 自动运行：每日首次清空（通过 need_auto_clean_today 控制）
+    # 清空逻辑 + 验证
     if is_manual:
         with open(OUT_FILE, 'w', encoding='utf-8') as f:
             f.write('')
-        print("手动运行：已清空数据文件")
+        print("手动触发：已清空数据文件")
+        # 验证清空是否成功
+        if os.path.exists(OUT_FILE):
+            size = os.path.getsize(OUT_FILE)
+            print(f"清空验证：{OUT_FILE} 文件大小 = {size} 字节 (应为0)")
+        else:
+            print("清空验证：文件不存在")
     else:
         if need_auto_clean_today():
             with open(OUT_FILE, 'w', encoding='utf-8') as f:
                 f.write('')
-            print("自动运行：今日首次，已清空数据文件")
+            print("自动触发：今日首次运行，已清空数据文件")
+            if os.path.exists(OUT_FILE):
+                size = os.path.getsize(OUT_FILE)
+                print(f"清空验证：{OUT_FILE} 文件大小 = {size} 字节 (应为0)")
+            else:
+                print("清空验证：文件不存在")
+        else:
+            print("自动触发：今日已清空过，不再清空")
 
     client = await TelegramClient("session", API_ID, API_HASH).start()
 
@@ -123,7 +123,6 @@ async def main():
             print("未拉取到任何有效开奖，退出")
             return
 
-        # 过滤出新期号
         new_periods = []
         for txt in all_valid:
             p = get_period(txt)
@@ -135,7 +134,6 @@ async def main():
             print("无新期号，退出")
             return
 
-        # 合并所有数据
         all_blocks = local_data + new_periods
         unique = {}
         for b in all_blocks:
@@ -150,6 +148,9 @@ async def main():
             f.write("\n\n".join(sorted_blocks) + "\n")
 
         print(f"✅ 写入完成，文件总期数: {len(sorted_blocks)} (最多保留最近 {MAX_KEEP} 期)")
+        # 最终验证文件大小
+        final_size = os.path.getsize(OUT_FILE)
+        print(f"最终文件大小: {final_size} 字节")
 
     except Exception as e:
         print(f"❌ 错误: {e}")
