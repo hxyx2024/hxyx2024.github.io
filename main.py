@@ -16,11 +16,11 @@ BEIJING_TZ = timezone(timedelta(hours=8))
 CLEAN_FLAG_FILE = ".last_clean_date"
 AUTO_STOP_FILE = ".auto_stop_today"
 
-CANDIDATE_POOL_SIZE = 10
-MAX_TAKE = 3
-FETCH_LIMIT = 200
+CANDIDATE_POOL_SIZE = 10   # 固定候选池大小
+MAX_TAKE = 3               # 单次最大采集条数
+FETCH_LIMIT = 200          # 拉取消息数量
 
-# ========== 工具函数（与之前一致） ==========
+# ========== 工具函数 ==========
 period_pattern = re.compile(r"第[:\s]*(\d{7})期")
 
 def get_period(text):
@@ -95,12 +95,11 @@ async def main():
     is_manual = (os.environ.get("GITHUB_EVENT_NAME") == "workflow_dispatch")
     print(f"触发方式: {'手动' if is_manual else '自动'}")
 
-    # 自动时段限制
     if not is_manual and not is_auto_time():
         print("不在自动触发时段 (18:00-21:20 北京时间)，退出")
         return
 
-    # 每日清空 —— 仅自动触发执行
+    # 每日清空（仅自动）
     if not is_manual and need_clean_today():
         with open(OUT_FILE, 'w', encoding='utf-8') as f:
             f.write('')
@@ -108,7 +107,6 @@ async def main():
             os.remove(AUTO_STOP_FILE)
         print("今日首次自动运行，已清空数据及自动停止标记")
 
-    # 自动停止检查
     if not is_manual and is_auto_stopped_today():
         print("自动触发已停止（今日无新数据）")
         return
@@ -119,10 +117,10 @@ async def main():
         local_data = get_local_data()
         local_periods = {get_period(b) for b in local_data}
         is_first_run = (len(local_data) == 0)
-        print(f"是否首次运行: {is_first_run}，本地已有 {len(local_data)} 期")
+        print(f"本地数据: {len(local_data)} 期，首次运行: {is_first_run}")
 
         all_valid = await get_recent_valid_messages(client, limit=FETCH_LIMIT)
-        print(f"最近 {FETCH_LIMIT} 条消息中找到 {len(all_valid)} 期有效开奖")
+        print(f"有效开奖总数: {len(all_valid)}")
 
         if not all_valid:
             print("无有效开奖消息")
@@ -130,33 +128,39 @@ async def main():
                 set_auto_stop()
             return
 
+        # ===== 强制候选池切片 =====
         top_n = all_valid[:CANDIDATE_POOL_SIZE]
-        print(f"截取最新 {CANDIDATE_POOL_SIZE} 条作为候选池，实际长度 {len(top_n)}")
+        print(f"候选池实际长度: {len(top_n)} (期望 ≤ {CANDIDATE_POOL_SIZE})")
+        if len(top_n) > CANDIDATE_POOL_SIZE:
+            raise RuntimeError(f"候选池长度异常: {len(top_n)} > {CANDIDATE_POOL_SIZE}")
 
+        # ===== 选取逻辑 =====
         if is_first_run:
             take = random.randint(1, MAX_TAKE)
             take = min(take, len(top_n))
-            selected = top_n[:take]
-            print(f"首次运行，从最新 {CANDIDATE_POOL_SIZE} 条中取最近 {take} 期")
+            selected = top_n[:take]   # 关键切片，只取前 take 条
+            print(f"首次运行，取候选池前 {take} 条")
         else:
             candidates = [msg for msg in top_n if get_period(msg) not in local_periods]
-            print(f"最新 {CANDIDATE_POOL_SIZE} 期中本地缺失的有 {len(candidates)} 期")
+            print(f"过滤后剩余候选: {len(candidates)}")
             if not candidates:
-                print("候选池中无新期号")
+                print("无新期号")
                 if not is_manual:
                     set_auto_stop()
                 return
             take = random.randint(1, MAX_TAKE)
             take = min(take, len(candidates))
             selected = random.sample(candidates, take)
-            print(f"从剩余候选中随机抽取 {take} 期")
+            print(f"后续运行，随机抽取 {take} 条")
 
+        # ===== 最终数量校验 =====
         if len(selected) > MAX_TAKE:
-            raise RuntimeError(f"严重错误：选取了 {len(selected)} 条数据，超过限制 {MAX_TAKE}！")
+            raise RuntimeError(f"选取数量超限: {len(selected)} > {MAX_TAKE}")
 
         selected_periods = [get_period(m) for m in selected]
         print(f"选中期号: {selected_periods}")
 
+        # ===== 合并去重写入 =====
         all_blocks = local_data + selected
         unique = {}
         for block in all_blocks:
@@ -171,13 +175,13 @@ async def main():
         with open(OUT_FILE, 'w', encoding='utf-8') as f:
             f.write("\n\n".join(sorted_blocks) + "\n")
 
-        print(f"更新完成，文件共 {len(sorted_blocks)} 期")
+        print(f"写入完成，文件总期数: {len(sorted_blocks)}")
 
         if not is_manual:
             clear_auto_stop()
 
     except Exception as e:
-        print(f"错误: {e}")
+        print(f"严重错误: {e}")
         traceback.print_exc()
     finally:
         await client.disconnect()
