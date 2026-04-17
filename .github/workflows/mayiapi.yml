@@ -45,7 +45,8 @@ jobs:
         run: |
           git config --global user.name "bot"
           git config --global user.email "bot@github.com"
-          git add lottery_data_api.html .last_clean_date
+          git add lottery_data_api.html
+          if [ -f .last_clean_date ]; then git add .last_clean_date; fi
           if [ -f .auto_stop_today ]; then git add .auto_stop_today; fi
           git diff --cached --quiet || git commit -m "update"
           git push
