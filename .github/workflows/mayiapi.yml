@@ -54,4 +54,5 @@ jobs:
           git add lottery_data_api.html
           if [ -f .last_clean_date ]; then git add .last_clean_date; fi
           git diff --cached --quiet || git commit -m "update lottery data"
+          git pull --rebase origin main
           git push
