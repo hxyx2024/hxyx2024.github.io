@@ -8,7 +8,7 @@ from datetime import datetime, timezone, timedelta
 API_ID = int(os.environ["API_ID"])
 API_HASH = os.environ["API_HASH"]
 CHANNEL = "douapi"
-OUT_FILE = "lottery_data_api.html"
+OUT_FILE = os.path.abspath("lottery_data_api.html")   # 绝对路径，避免混淆
 MAX_KEEP = 60
 BEIJING_TZ = timezone(timedelta(hours=8))
 CLEAN_FLAG_FILE = ".last_clean_date"
@@ -67,29 +67,35 @@ def need_auto_clean_today():
 
 async def fetch_recent_messages(client, limit):
     valid = []
-    async for msg in client.iter_messages(CHANNEL, limit=limit):
-        if msg.text and "新澳门六合彩第" in msg.text:
+    messages = await client.get_messages(CHANNEL, limit=limit)
+    for msg in messages:
+        if msg.text and "第" in msg.text:
             txt = msg.text.strip()
             if is_complete_lottery(txt):
-                valid.append((msg.id, txt))
-    valid.sort(key=lambda x: x[0])
-    return [txt for _, txt in valid]
+                valid.append(txt)
+    # 倒序：最新的在最后（方便后续按时间顺序合并）
+    valid = valid[::-1]
+    return valid
 
 async def main():
     is_manual = (os.environ.get("GITHUB_EVENT_NAME") == "workflow_dispatch")
     print(f"触发方式: {'手动' if is_manual else '自动'}")
+    print(f"当前工作目录: {os.getcwd()}")
+    print(f"目标文件路径: {OUT_FILE}")
 
     if is_manual:
+        # 手动模式：每次清空文件
         with open(OUT_FILE, 'w', encoding='utf-8') as f:
             f.write('')
         print("手动触发：已清空数据文件")
-        print(f"清空验证：文件大小 = {os.path.getsize(OUT_FILE)} 字节")
+        print(f"清空验证：文件大小 = {os.path.getsize(OUT_FILE)} 字节 (应为0)")
     else:
+        # 自动模式：每日首次清空
         if need_auto_clean_today():
             with open(OUT_FILE, 'w', encoding='utf-8') as f:
                 f.write('')
             print("自动触发：今日首次运行，已清空数据文件")
-            print(f"清空验证：文件大小 = {os.path.getsize(OUT_FILE)} 字节")
+            print(f"清空验证：文件大小 = {os.path.getsize(OUT_FILE)} 字节 (应为0)")
         else:
             print("自动触发：今日已清空过，不再清空")
 
@@ -127,6 +133,7 @@ async def main():
         if len(sorted_blocks) > MAX_KEEP:
             sorted_blocks = sorted_blocks[-MAX_KEEP:]
 
+        # 构建文件内容
         content = "\n\n".join(sorted_blocks) + "\n"
         if is_manual:
             timestamp = datetime.now(BEIJING_TZ).strftime("%Y-%m-%d %H:%M:%S")
@@ -135,6 +142,11 @@ async def main():
         with open(OUT_FILE, 'w', encoding='utf-8') as f:
             f.write(content)
 
+        # 最终自检
+        with open(OUT_FILE, 'r', encoding='utf-8') as f:
+            written = f.read()
+        if not written.strip():
+            raise RuntimeError("写入后文件为空！")
         print(f"✅ 写入完成，文件总期数: {len(sorted_blocks)}，文件大小: {os.path.getsize(OUT_FILE)} 字节")
     except Exception as e:
         print(f"❌ 错误: {e}")
