@@ -2,7 +2,6 @@ name: Lottery Data Fetcher
 
 on:
   schedule:
-    # 北京时间 18:00–21:59 每10分钟一次
     - cron: '*/10 10-13 * * *'
   workflow_dispatch:
 
@@ -28,6 +27,5 @@ jobs:
         env:
           API_ID: ${{ secrets.API_ID }}
           API_HASH: ${{ secrets.API_HASH }}
-          SESSION_STRING: ${{ secrets.SESSION_STRING }}
           GITHUB_EVENT_NAME: ${{ github.event_name }}
-        run: python main.py   # 改为 main.py
+        run: python main.py
