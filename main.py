@@ -8,7 +8,7 @@ from datetime import datetime, timezone, timedelta
 API_ID = int(os.environ["API_ID"])
 API_HASH = os.environ["API_HASH"]
 CHANNEL = "douapi"
-OUT_FILE = os.path.abspath("lottery_data_api.html")   # 使用绝对路径，避免路径混淆
+OUT_FILE = "lottery_data_api.html"
 MAX_KEEP = 60
 BEIJING_TZ = timezone(timedelta(hours=8))
 CLEAN_FLAG_FILE = ".last_clean_date"
@@ -78,21 +78,18 @@ async def fetch_recent_messages(client, limit):
 async def main():
     is_manual = (os.environ.get("GITHUB_EVENT_NAME") == "workflow_dispatch")
     print(f"触发方式: {'手动' if is_manual else '自动'}")
-    print(f"当前工作目录: {os.getcwd()}")
-    print(f"目标文件路径: {OUT_FILE}")
 
-    # 清空逻辑
     if is_manual:
         with open(OUT_FILE, 'w', encoding='utf-8') as f:
             f.write('')
         print("手动触发：已清空数据文件")
-        print(f"清空验证：文件大小 = {os.path.getsize(OUT_FILE)} 字节 (应为0)")
+        print(f"清空验证：文件大小 = {os.path.getsize(OUT_FILE)} 字节")
     else:
         if need_auto_clean_today():
             with open(OUT_FILE, 'w', encoding='utf-8') as f:
                 f.write('')
             print("自动触发：今日首次运行，已清空数据文件")
-            print(f"清空验证：文件大小 = {os.path.getsize(OUT_FILE)} 字节 (应为0)")
+            print(f"清空验证：文件大小 = {os.path.getsize(OUT_FILE)} 字节")
         else:
             print("自动触发：今日已清空过，不再清空")
 
@@ -138,11 +135,6 @@ async def main():
         with open(OUT_FILE, 'w', encoding='utf-8') as f:
             f.write(content)
 
-        # 最终自检：重新读取文件，确认内容非空且包含最新期号
-        with open(OUT_FILE, 'r', encoding='utf-8') as f:
-            written = f.read()
-        if not written.strip():
-            raise RuntimeError("警告：写入后文件为空！")
         print(f"✅ 写入完成，文件总期数: {len(sorted_blocks)}，文件大小: {os.path.getsize(OUT_FILE)} 字节")
     except Exception as e:
         print(f"❌ 错误: {e}")
