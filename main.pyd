@@ -6,7 +6,7 @@ import traceback
 from telethon import TelegramClient
 from datetime import datetime, timezone, timedelta
 
-# ========== 硬配置（请勿修改） ==========
+# ========== 配置 ==========
 API_ID = int(os.environ["API_ID"])
 API_HASH = os.environ["API_HASH"]
 CHANNEL = "douapi"
@@ -16,9 +16,9 @@ BEIJING_TZ = timezone(timedelta(hours=8))
 CLEAN_FLAG_FILE = ".last_clean_date"
 AUTO_STOP_FILE = ".auto_stop_today"
 
-CANDIDATE_POOL_SIZE = 10   # 候选池固定 10 条
-MAX_TAKE = 3               # 每次最多采集 3 条
-FETCH_LIMIT = 200          # 拉取最近消息条数
+CANDIDATE_POOL_SIZE = 10   # 固定候选池大小
+MAX_TAKE = 3               # 单次最大采集条数
+FETCH_LIMIT = 200          # 拉取消息数量
 
 # ========== 工具函数 ==========
 period_pattern = re.compile(r"第[:\s]*(\d{7})期")
@@ -90,12 +90,11 @@ async def get_recent_valid_messages(client, limit=FETCH_LIMIT):
                 valid.append(txt)
     return valid
 
-# ========== 主逻辑（防御加强） ==========
+# ========== 主逻辑 ==========
 async def main():
     is_manual = (os.environ.get("GITHUB_EVENT_NAME") == "workflow_dispatch")
     print(f"触发方式: {'手动' if is_manual else '自动'}")
 
-    # 自动时段限制
     if not is_manual and not is_auto_time():
         print("不在自动触发时段 (18:00-21:20 北京时间)，退出")
         return
@@ -108,7 +107,6 @@ async def main():
             os.remove(AUTO_STOP_FILE)
         print("今日首次自动运行，已清空数据及自动停止标记")
 
-    # 自动停止检查
     if not is_manual and is_auto_stopped_today():
         print("自动触发已停止（今日无新数据）")
         return
@@ -119,11 +117,10 @@ async def main():
         local_data = get_local_data()
         local_periods = {get_period(b) for b in local_data}
         is_first_run = (len(local_data) == 0)
-        print(f"本地数据: {len(local_data)} 期，是否首次运行: {is_first_run}")
+        print(f"本地数据: {len(local_data)} 期，首次运行: {is_first_run}")
 
-        # 1. 拉取并筛选有效开奖
         all_valid = await get_recent_valid_messages(client, limit=FETCH_LIMIT)
-        print(f"拉取 {FETCH_LIMIT} 条消息，有效开奖总数: {len(all_valid)}")
+        print(f"有效开奖总数: {len(all_valid)}")
 
         if not all_valid:
             print("无有效开奖消息")
@@ -131,21 +128,21 @@ async def main():
                 set_auto_stop()
             return
 
-        # 2. 强制截取候选池（防御点1）
+        # ===== 强制候选池切片 =====
         top_n = all_valid[:CANDIDATE_POOL_SIZE]
-        print(f"候选池大小: {len(top_n)} (预期最大 {CANDIDATE_POOL_SIZE})")
+        print(f"候选池实际长度: {len(top_n)} (期望 ≤ {CANDIDATE_POOL_SIZE})")
         if len(top_n) > CANDIDATE_POOL_SIZE:
-            raise RuntimeError(f"候选池截取失败！长度 {len(top_n)} > {CANDIDATE_POOL_SIZE}")
+            raise RuntimeError(f"候选池长度异常: {len(top_n)} > {CANDIDATE_POOL_SIZE}")
 
-        # 3. 选取逻辑
+        # ===== 选取逻辑 =====
         if is_first_run:
             take = random.randint(1, MAX_TAKE)
             take = min(take, len(top_n))
-            selected = top_n[:take]   # 强制切片，只取前 take 条
-            print(f"首次运行，从候选池前 {take} 条中选取")
+            selected = top_n[:take]   # 关键切片，只取前 take 条
+            print(f"首次运行，取候选池前 {take} 条")
         else:
             candidates = [msg for msg in top_n if get_period(msg) not in local_periods]
-            print(f"过滤本地后剩余候选: {len(candidates)} 条")
+            print(f"过滤后剩余候选: {len(candidates)}")
             if not candidates:
                 print("无新期号")
                 if not is_manual:
@@ -154,16 +151,16 @@ async def main():
             take = random.randint(1, MAX_TAKE)
             take = min(take, len(candidates))
             selected = random.sample(candidates, take)
-            print(f"后续运行，从候选中随机抽取 {take} 条")
+            print(f"后续运行，随机抽取 {take} 条")
 
-        # 防御点2：最终选取条数不能超过 MAX_TAKE
+        # ===== 最终数量校验 =====
         if len(selected) > MAX_TAKE:
-            raise RuntimeError(f"选取数量异常！实际 {len(selected)} > 限制 {MAX_TAKE}")
+            raise RuntimeError(f"选取数量超限: {len(selected)} > {MAX_TAKE}")
 
         selected_periods = [get_period(m) for m in selected]
-        print(f"最终选中期号: {selected_periods}")
+        print(f"选中期号: {selected_periods}")
 
-        # 4. 合并、去重、排序、保留
+        # ===== 合并去重写入 =====
         all_blocks = local_data + selected
         unique = {}
         for block in all_blocks:
@@ -186,7 +183,6 @@ async def main():
     except Exception as e:
         print(f"严重错误: {e}")
         traceback.print_exc()
-        # 自动触发时若出错，不设置停止标记，以便下次重试
     finally:
         await client.disconnect()
 
