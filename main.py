@@ -139,5 +139,35 @@ async def main():
             return
 
         # 全部拉取（不限制数量）
-        selected = new_periods   # 取全部新期号
-        print(f"本次选取 {len(selected)} 期，完整内容如下：
+        selected = new_periods
+        print(f"本次选取 {len(selected)} 期，完整内容如下：")
+        for idx, txt in enumerate(selected, 1):
+            print(f"--- 第 {idx} 条 ---")
+            print(txt)
+            print()
+
+        # 合并、去重、排序、保留最近 MAX_KEEP 期
+        all_blocks = local_data + selected
+        unique = {}
+        for b in all_blocks:
+            p = get_period(b)
+            if p:
+                unique[p] = b
+
+        sorted_blocks = [unique[p] for p in sorted(unique.keys())]
+        if len(sorted_blocks) > MAX_KEEP:
+            sorted_blocks = sorted_blocks[-MAX_KEEP:]
+
+        with open(OUT_FILE, 'w', encoding='utf-8') as f:
+            f.write("\n\n".join(sorted_blocks) + "\n")
+
+        print(f"✅ 写入完成，文件总期数: {len(sorted_blocks)}")
+
+    except Exception as e:
+        print(f"❌ 错误: {e}")
+        traceback.print_exc()
+    finally:
+        await client.disconnect()
+
+if __name__ == "__main__":
+    asyncio.run(main())
