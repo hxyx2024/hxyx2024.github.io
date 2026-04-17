@@ -54,9 +54,22 @@ jobs:
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          
+          # 获取当前分支名（自动适配 main/master）
+          BRANCH=$(git rev-parse --abbrev-ref HEAD)
+          echo "Current branch: $BRANCH"
+          
+          # 添加所有变更文件
           git add lottery_data_api.html
-          if [ -f .last_clean_date ]; then git add .last_clean_date; fi
-          # 注意：不再使用 last_msg_id.json，所以不需要添加
-          git diff --cached --quiet || git commit -m "update lottery data"
-          git pull --rebase origin main
-          git push
+          [ -f .last_clean_date ] && git add .last_clean_date
+          
+          # 如果有变更则提交并推送
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "update lottery data (manual: ${{ github.event_name == 'workflow_dispatch' }})"
+            # 拉取远程最新代码并合并（避免冲突）
+            git pull origin $BRANCH --no-rebase
+            # 推送到远程
+            git push origin $BRANCH
+          fi
