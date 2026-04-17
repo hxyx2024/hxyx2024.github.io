@@ -14,16 +14,15 @@ CHANNEL = "douapi"
 OUT_FILE = "lottery_data_api.html"
 MAX_KEEP = 60
 BEIJING_TZ = timezone(timedelta(hours=8))
-CLEAN_FLAG_FILE = ".last_clean_date"
 LAST_ID_FILE = "last_msg_id.json"
 
-CANDIDATE_POOL_SIZE = 10   # 候选池最新10条（按期号）
+CANDIDATE_POOL_SIZE = 10
 MIN_TAKE = 3
 MAX_TAKE = 6
 INIT_FETCH_LIMIT = 200
 
 # ========== 工具函数 ==========
-period_pattern = re.compile(r"新澳门六合彩第[:\s]*(\d{7})期")
+period_pattern = re.compile(r"第[:\s]*(\d{7})期")
 
 def get_period(text):
     m = period_pattern.search(text)
@@ -55,10 +54,6 @@ def save_last_id(msg_id):
     with open(LAST_ID_FILE, 'w') as f:
         json.dump({'last_msg_id': msg_id}, f)
 
-def reset_last_id():
-    if os.path.exists(LAST_ID_FILE):
-        os.remove(LAST_ID_FILE)
-
 def get_local_data():
     if not os.path.exists(OUT_FILE):
         return []
@@ -80,16 +75,6 @@ def get_local_data():
     valid.sort(key=get_period)
     return valid
 
-def need_auto_clean_today():
-    today = datetime.now(BEIJING_TZ).strftime("%Y-%m-%d")
-    if os.path.exists(CLEAN_FLAG_FILE):
-        with open(CLEAN_FLAG_FILE, 'r') as f:
-            if f.read().strip() == today:
-                return False
-    with open(CLEAN_FLAG_FILE, 'w') as f:
-        f.write(today)
-    return True
-
 def is_auto_time():
     now = datetime.now(BEIJING_TZ)
     hour, minute = now.hour, now.minute
@@ -100,7 +85,6 @@ def is_auto_time():
     return True
 
 async def fetch_messages_since(client, min_id):
-    """拉取 min_id 之后的消息，返回有效开奖列表（按期号降序）和最大消息ID"""
     valid = []  # (msg_id, text, period)
     if min_id == 0:
         async for msg in client.iter_messages(CHANNEL, limit=INIT_FETCH_LIMIT):
@@ -118,8 +102,7 @@ async def fetch_messages_since(client, min_id):
                     period = get_period(txt)
                     if period:
                         valid.append((msg.id, txt, period))
-    # 按期号降序排序（期号大的在前）
-    valid.sort(key=lambda x: x[2], reverse=True)
+    valid.sort(key=lambda x: x[2], reverse=True)  # 按期号降序
     max_id = max([v[0] for v in valid]) if valid else None
     return [v[1] for v in valid], max_id
 
@@ -127,17 +110,9 @@ async def main():
     is_manual = (os.environ.get("GITHUB_EVENT_NAME") == "workflow_dispatch")
     print(f"触发方式: {'手动' if is_manual else '自动'}")
 
-    # 自动运行时检查时间段
     if not is_manual and not is_auto_time():
         print("不在自动触发时段 (18:00-21:20 北京时间)，退出")
         return
-
-    # 清空逻辑：手动和自动都使用每日首次清空
-    if need_auto_clean_today():
-        with open(OUT_FILE, 'w', encoding='utf-8') as f:
-            f.write('')
-        reset_last_id()
-        print("今日首次运行，已清空数据文件并重置 last_msg_id")
 
     client = await TelegramClient("session", API_ID, API_HASH).start()
 
@@ -161,7 +136,6 @@ async def main():
                 save_last_id(max_new_id)
             return
 
-        # 候选池：最新10条（按期号）
         top_n = all_valid[:CANDIDATE_POOL_SIZE]
         print(f"候选池长度: {len(top_n)}，期号: {[get_period(m) for m in top_n]}")
 
@@ -176,7 +150,6 @@ async def main():
                 save_last_id(max_new_id)
             return
 
-        # 合并历史，去重，保留最近60期
         all_blocks = local_data + selected
         unique = {}
         for b in all_blocks:
