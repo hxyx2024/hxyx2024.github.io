@@ -1,62 +1,42 @@
-name: FullLotteryAPI
+name: Lottery Data Fetcher
 
 on:
-  workflow_dispatch:
   schedule:
-    - cron: "3 10 * * *"    # 北京时间 18:03
-    - cron: "17 10 * * *"   # 北京时间 18:17
-    - cron: "29 10 * * *"   # 北京时间 18:29
-    - cron: "44 10 * * *"   # 北京时间 18:44
-    - cron: "56 10 * * *"   # 北京时间 18:56
-    - cron: "8 11 * * *"    # 北京时间 19:08
-    - cron: "22 11 * * *"   # 北京时间 19:22
-    - cron: "37 11 * * *"   # 北京时间 19:37
-    - cron: "51 11 * * *"   # 北京时间 19:51
-    - cron: "6 12 * * *"    # 北京时间 20:06
-    - cron: "19 12 * * *"   # 北京时间 20:19
-    - cron: "33 12 * * *"   # 北京时间 20:33
-    - cron: "47 12 * * *"   # 北京时间 20:47
-    - cron: "59 12 * * *"   # 北京时间 20:59
+    # 每10分钟运行一次（北京时间 18:00-21:20 对应 UTC 10:00-13:20）
+    # 为了覆盖整个时段，设置从 UTC 10:00 到 13:20 的每10分钟触发
+    - cron: '*/10 10-13 * * *'
+    # 确保 13:20 之后停止，但 cron 无法精确到 20 分，所以多几次也无妨，代码会自己判断时间
+  workflow_dispatch:   # 允许手动触发
 
 jobs:
-  run:
+  fetch:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
 
     steps:
-      - name: Checkout repository
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Python
+      - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.10"
+          python-version: '3.10'
+
+      - name: Cache Telethon session
+        uses: actions/cache@v4
+        with:
+          path: session.session
+          key: telethon-session-${{ runner.os }}-${{ hashFiles('session.session') }}
+          restore-keys: |
+            telethon-session-${{ runner.os }}-
 
       - name: Install dependencies
-        run: pip install telethon
-
-      - name: Restore Telegram session
-        env:
-          SESSION_BASE64: ${{ secrets.SESSION_BASE64 }}
         run: |
-          if [ -n "$SESSION_BASE64" ]; then
-            echo "$SESSION_BASE64" | base64 -d > session.session
-          fi
+          python -m pip install --upgrade pip
+          pip install telethon
 
-      - name: Run main script
+      - name: Run lottery script
         env:
           API_ID: ${{ secrets.API_ID }}
           API_HASH: ${{ secrets.API_HASH }}
-        run: python main.py
-
-      - name: Commit and push changes
-        run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add lottery_data_api.html
-          if [ -f .last_clean_date ]; then git add .last_clean_date; fi
-          if [ -f last_msg_id.json ]; then git add last_msg_id.json; fi
-          git diff --cached --quiet || git commit -m "update lottery data"
-          git pull --rebase origin main
-          git push
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+        run: python lottery.py   # 请将脚本文件名改为实际文件名
