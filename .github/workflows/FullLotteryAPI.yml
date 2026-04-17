@@ -23,61 +23,44 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # 获取完整历史，避免强制推送问题
-
-      - name: Setup Python
-        uses: actions/setup-python@v5
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
         with:
           python-version: "3.10"
-
-      - name: Install dependencies
-        run: pip install telethon
-
-      - name: Restore Telegram session
+      - run: pip install telethon
+      - name: Restore session
         env:
           SESSION_BASE64: ${{ secrets.SESSION_BASE64 }}
         run: |
           if [ -n "$SESSION_BASE64" ]; then
             echo "$SESSION_BASE64" | base64 -d > session.session
           fi
-
-      - name: Run main script
+      - name: Run script
         env:
           API_ID: ${{ secrets.API_ID }}
           API_HASH: ${{ secrets.API_HASH }}
         run: python main.py
-
-      - name: Commit and push changes (force for manual)
+      - name: Force push (manual) or normal push (auto)
         run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
           BRANCH=$(git rev-parse --abbrev-ref HEAD)
-          echo "Current branch: $BRANCH"
-          
-          # 添加文件
-          git add lottery_data_api.html
-          [ -f .last_clean_date ] && git add .last_clean_date
-          
-          # 判断是否手动触发
+          git add -f lottery_data_api.html
+          [ -f .last_clean_date ] && git add -f .last_clean_date
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "手动触发：强制推送更新"
-            # 强制提交（允许空提交也可以，但为了确保覆盖，直接 commit 并 force push）
-            git commit -m "force update lottery data (manual run)" || echo "No changes to commit, but forcing push anyway"
-            # 强制推送（使用 --force-with-lease 更安全）
-            git push --force-with-lease origin $BRANCH
+            echo "手动模式：强制推送覆盖远程文件"
+            git commit -m "force update lottery data $(date -u)" || git commit --allow-empty -m "force sync"
+            git push --force origin $BRANCH
           else
-            echo "自动触发：正常推送"
-            if git diff --cached --quiet; then
-              echo "No changes to commit"
-            else
-              git commit -m "update lottery data (auto)"
+            echo "自动模式：正常推送"
+            if ! git diff --cached --quiet; then
+              git commit -m "auto update lottery data"
               git pull --rebase origin $BRANCH
               git push origin $BRANCH
+            else
+              echo "无变化，跳过提交"
             fi
           fi
