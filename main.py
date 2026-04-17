@@ -13,11 +13,11 @@ CHANNEL = "douapi"
 OUT_FILE = "lottery_data_api.html"
 MAX_KEEP = 60
 BEIJING_TZ = timezone(timedelta(hours=8))
-FETCHED_FILE = ".fetched_periods.txt"   # 已采集期号
-CLEAN_FLAG_FILE = ".last_clean_date"    # 每日清空标志
-AUTO_STOP_FILE = ".auto_stop_today"     # 自动触发停止标志
+FETCHED_FILE = ".fetched_periods.txt"
+CLEAN_FLAG_FILE = ".last_clean_date"
+AUTO_STOP_FILE = ".auto_stop_today"
 
-PAGE_LIMIT = 100          # 每次分页拉取消息数量
+PAGE_LIMIT = 100          # 仅用于兼容，实际使用 iter_messages 不分页
 MAX_RETRIES = 3
 RETRY_DELAY = 5
 RANDOM_MIN = 1
@@ -40,35 +40,28 @@ def is_complete_lottery(text):
         return False
     return True
 
-async def fetch_messages_with_retry(client, limit, offset_id=0):
-    for attempt in range(MAX_RETRIES):
-        try:
-            return await client.get_messages(CHANNEL, limit=limit, offset_id=offset_id)
-        except Exception as e:
-            if attempt == MAX_RETRIES-1:
-                raise
-            await asyncio.sleep(RETRY_DELAY * (2**attempt))
-    return []
+async def fetch_messages_with_retry(client, limit):
+    # 此函数不再使用，保留仅为兼容
+    pass
 
 async def get_all_valid_messages(client):
-    """分页拉取所有有效开奖结果，返回 {期号: 完整文本} 字典"""
+    """使用 iter_messages 自动分页拉取所有消息，提取有效开奖结果"""
     result = {}
-    last_id = 0
-    while True:
-        msgs = await fetch_messages_with_retry(client, PAGE_LIMIT, offset_id=last_id)
-        if not msgs:
-            break
-        for m in msgs:
-            if m.text and "新澳门六合彩第" in m.text:
-                txt = m.text.strip()
-                if is_complete_lottery(txt):
-                    p = get_period(txt)
-                    if p not in result:
-                        result[p] = txt
-        last_id = msgs[-1].id
-        if len(msgs) < PAGE_LIMIT:
-            break
-        await asyncio.sleep(0.5)  # 避免限流
+    count = 0
+    print("开始拉取所有消息...")
+    async for msg in client.iter_messages(CHANNEL, limit=None):
+        if msg.text and "新澳门六合彩第" in msg.text:
+            txt = msg.text.strip()
+            if is_complete_lottery(txt):
+                p = get_period(txt)
+                if p not in result:
+                    result[p] = txt
+                    count += 1
+                    if count % 50 == 0:
+                        print(f"已拉取 {count} 期有效数据...")
+        # 避免限流，适当延时
+        await asyncio.sleep(0.02)
+    print(f"总共拉取 {len(result)} 期有效数据")
     return result
 
 def load_fetched_periods():
@@ -124,7 +117,6 @@ def is_auto_time():
     now = datetime.now(BEIJING_TZ)
     hour = now.hour
     minute = now.minute
-    # 18:00-21:20 之间（包含21:20不采集）
     if hour < 18 or hour > 21:
         return False
     if hour == 21 and minute >= 20:
@@ -160,7 +152,6 @@ async def main():
         await client.start()
 
         # 获取频道所有有效开奖结果
-        print("正在拉取频道所有有效开奖结果...")
         all_periods_dict = await get_all_valid_messages(client)
         all_periods = set(all_periods_dict.keys())
         print(f"频道共 {len(all_periods)} 期有效数据")
