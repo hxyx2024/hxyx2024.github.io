@@ -10,7 +10,7 @@ API_ID = int(os.environ["API_ID"])
 API_HASH = os.environ["API_HASH"]
 CHANNEL = "douapi"
 OUT_FILE = "lottery_data_api.html"
-MAX_KEEP = 60                     # 保留最近 60 期
+MAX_KEEP = 60                     # 最多保留60期
 BEIJING_TZ = timezone(timedelta(hours=8))
 CLEAN_FLAG_FILE = ".last_clean_date"
 
@@ -37,7 +37,7 @@ def is_complete_lottery(text):
     return True
 
 def get_local_data():
-    """读取本地文件，返回去重且升序的有效开奖列表"""
+    """读取本地文件，返回去重且升序的有效开奖列表（不自动修复，不打印警告）"""
     if not os.path.exists(OUT_FILE):
         return []
     with open(OUT_FILE, 'r', encoding='utf-8') as f:
@@ -56,11 +56,6 @@ def get_local_data():
             seen.add(p)
             valid.append(b)
     valid.sort(key=get_period)
-    # 若发现异常，自动修复写回
-    if len(valid) != len(blocks):
-        print(f"⚠️ 本地文件异常，已自动修复（原 {len(blocks)} 块 → {len(valid)} 块）")
-        with open(OUT_FILE, 'w', encoding='utf-8') as f:
-            f.write("\n\n".join(valid) + "\n")
     return valid
 
 def need_auto_clean_today():
@@ -83,16 +78,14 @@ def is_auto_time():
     return True
 
 async def fetch_recent_messages(client, limit):
-    """
-    拉取最近 limit 条消息，返回有效开奖文本列表（按消息ID升序，旧→新）
-    """
+    """拉取最近 limit 条消息，返回有效开奖文本列表（按消息ID升序）"""
     valid = []
     async for msg in client.iter_messages(CHANNEL, limit=limit):
         if msg.text and "新澳门六合彩第" in msg.text:
             txt = msg.text.strip()
             if is_complete_lottery(txt):
                 valid.append((msg.id, txt))
-    valid.sort(key=lambda x: x[0])
+    valid.sort(key=lambda x: x[0])   # 升序
     return [txt for _, txt in valid]
 
 async def main():
@@ -103,14 +96,12 @@ async def main():
         print("不在自动触发时段 (18:00-21:20 北京时间)，退出")
         return
 
-    # 自动每日清空：清空数据文件（注意：这里清空会丢失历史，如果你不想清空，可以注释掉）
-    # 原代码会在每日首次自动运行时清空文件，重置累积。如果你希望累积到60条而不是每日清空，可以移除这段。
-    # 根据你的需求“累积到60条”，通常不应每日清空。但原代码有清空逻辑，我保留但你可以选择删除。
-    if not is_manual and need_auto_clean_today():
-        with open(OUT_FILE, 'w', encoding='utf-8') as f:
-            f.write('')
-        print("今日首次自动运行，已清空数据文件")
-        # 注意：清空后本地数据变为空，后续会重新累积。如果你不希望清空，请删除或注释上面几行。
+    # 注意：不再每日清空文件，让数据一直累积直到超过 MAX_KEEP
+    # 如果你希望每天重置，可以取消下面代码的注释
+    # if not is_manual and need_auto_clean_today():
+    #     with open(OUT_FILE, 'w', encoding='utf-8') as f:
+    #         f.write('')
+    #     print("今日首次自动运行，已清空数据文件")
 
     client = await TelegramClient("session", API_ID, API_HASH).start()
 
@@ -140,27 +131,18 @@ async def main():
             print("无新期号，退出")
             return
 
-        # 4. 全部新期号追加到本地数据中
-        print(f"本次新增 {len(new_periods)} 期，完整内容如下：")
-        for idx, txt in enumerate(new_periods, 1):
-            print(f"--- 第 {idx} 条 ---")
-            print(txt)
-            print()
-
+        # 4. 合并所有数据
         all_blocks = local_data + new_periods
-        # 去重并按期号排序
         unique = {}
         for b in all_blocks:
             p = get_period(b)
             if p:
                 unique[p] = b
-
         sorted_blocks = [unique[p] for p in sorted(unique.keys())]
-        # 只保留最近 MAX_KEEP 期（即期号最大的 MAX_KEEP 条）
         if len(sorted_blocks) > MAX_KEEP:
             sorted_blocks = sorted_blocks[-MAX_KEEP:]
 
-        # 写回文件
+        # 5. 写回文件（覆盖写以实现排序和截断，但数据是累积的）
         with open(OUT_FILE, 'w', encoding='utf-8') as f:
             f.write("\n\n".join(sorted_blocks) + "\n")
 
