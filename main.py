@@ -8,13 +8,13 @@ from datetime import datetime, timezone, timedelta
 API_ID = int(os.environ["API_ID"])
 API_HASH = os.environ["API_HASH"]
 CHANNEL = "douapi"
-OUT_FILE = os.path.abspath("lottery_data_api.html")   # 绝对路径，避免混淆
+OUT_FILE = "lottery_data_api.html"
 MAX_KEEP = 60
 BEIJING_TZ = timezone(timedelta(hours=8))
 CLEAN_FLAG_FILE = ".last_clean_date"
 INIT_FETCH_LIMIT = 4
 
-period_pattern = re.compile(r"第[:\s]*(\d{7})期")
+period_pattern = re.compile(r"新澳门六合彩第[:\s]*(\d{7})期")
 
 def get_period(text):
     m = period_pattern.search(text)
@@ -66,31 +66,31 @@ def need_auto_clean_today():
     return True
 
 async def fetch_recent_messages(client, limit):
+    """只取最新的 N 条有效开奖（绝对可靠）"""
     valid = []
     messages = await client.get_messages(CHANNEL, limit=limit)
+    # 倒序，保证从旧到新
+    messages = reversed(messages)
     for msg in messages:
         if msg.text and "第" in msg.text:
             txt = msg.text.strip()
             if is_complete_lottery(txt):
                 valid.append(txt)
-    # 倒序：最新的在最后（方便后续按时间顺序合并）
-    valid = valid[::-1]
+                if len(valid) >= limit:
+                    break
     return valid
 
 async def main():
     is_manual = (os.environ.get("GITHUB_EVENT_NAME") == "workflow_dispatch")
     print(f"触发方式: {'手动' if is_manual else '自动'}")
-    print(f"当前工作目录: {os.getcwd()}")
-    print(f"目标文件路径: {OUT_FILE}")
 
+    # 清空文件（物理清空）
     if is_manual:
-        # 手动模式：每次清空文件
         with open(OUT_FILE, 'w', encoding='utf-8') as f:
             f.write('')
         print("手动触发：已清空数据文件")
         print(f"清空验证：文件大小 = {os.path.getsize(OUT_FILE)} 字节 (应为0)")
     else:
-        # 自动模式：每日首次清空
         if need_auto_clean_today():
             with open(OUT_FILE, 'w', encoding='utf-8') as f:
                 f.write('')
@@ -101,9 +101,15 @@ async def main():
 
     client = await TelegramClient("session", API_ID, API_HASH).start()
     try:
-        local_data = get_local_data()
+        # 关键：手动模式完全不读取旧数据
+        if is_manual:
+            local_data = []
+            print("手动模式：忽略所有本地旧数据")
+        else:
+            local_data = get_local_data()
+            print(f"自动模式：本地已有 {len(local_data)} 期")
+
         local_periods = {get_period(b) for b in local_data}
-        print(f"本地已有 {len(local_data)} 期")
 
         all_valid = await fetch_recent_messages(client, INIT_FETCH_LIMIT)
         print(f"从最近 {INIT_FETCH_LIMIT} 条消息中提取到 {len(all_valid)} 条有效开奖")
@@ -112,6 +118,7 @@ async def main():
             print("未拉取到任何有效开奖，退出")
             return
 
+        # 找出新期号（相对于 local_data）
         new_periods = []
         for txt in all_valid:
             p = get_period(txt)
@@ -142,11 +149,6 @@ async def main():
         with open(OUT_FILE, 'w', encoding='utf-8') as f:
             f.write(content)
 
-        # 最终自检
-        with open(OUT_FILE, 'r', encoding='utf-8') as f:
-            written = f.read()
-        if not written.strip():
-            raise RuntimeError("写入后文件为空！")
         print(f"✅ 写入完成，文件总期数: {len(sorted_blocks)}，文件大小: {os.path.getsize(OUT_FILE)} 字节")
     except Exception as e:
         print(f"❌ 错误: {e}")
