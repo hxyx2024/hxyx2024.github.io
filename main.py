@@ -6,7 +6,6 @@ import traceback
 from telethon import TelegramClient
 from datetime import datetime, timezone, timedelta
 
-# ========== 配置 ==========
 API_ID = int(os.environ["API_ID"])
 API_HASH = os.environ["API_HASH"]
 CHANNEL = "douapi"
@@ -16,7 +15,6 @@ BEIJING_TZ = timezone(timedelta(hours=8))
 CLEAN_FLAG_FILE = ".last_clean_date"
 AUTO_STOP_FILE = ".auto_stop_today"
 
-# ========== 工具函数 ==========
 period_pattern = re.compile(r"第[:\s]*(\d{7})期")
 
 def get_period(text):
@@ -55,7 +53,6 @@ def need_clean_today():
     return True
 
 def is_auto_time():
-    """判断当前时间是否在自动触发时段（北京时间18:00-21:20）"""
     now = datetime.now(BEIJING_TZ)
     hour, minute = now.hour, now.minute
     if hour < 18 or hour > 21:
@@ -79,7 +76,6 @@ def clear_auto_stop():
         os.remove(AUTO_STOP_FILE)
 
 async def get_recent_valid_messages(client, limit=200):
-    """获取最近 limit 条消息中的有效开奖文本（降序）"""
     valid = []
     async for msg in client.iter_messages(CHANNEL, limit=limit):
         if msg.text and "新澳门六合彩第" in msg.text:
@@ -88,17 +84,14 @@ async def get_recent_valid_messages(client, limit=200):
                 valid.append(txt)
     return valid
 
-# ========== 主逻辑 ==========
 async def main():
     is_manual = (os.environ.get("GITHUB_EVENT_NAME") == "workflow_dispatch")
     print(f"触发方式: {'手动' if is_manual else '自动'}")
 
-    # 自动触发时段检查
     if not is_manual and not is_auto_time():
         print("不在自动触发时段 (18:00-21:20 北京时间)，退出")
         return
 
-    # 每日首次运行清空数据
     if need_clean_today():
         with open(OUT_FILE, 'w', encoding='utf-8') as f:
             f.write('')
@@ -106,7 +99,6 @@ async def main():
             os.remove(AUTO_STOP_FILE)
         print("每日首次运行，已清空数据及自动停止标记")
 
-    # 自动停止检查
     if not is_manual and is_auto_stopped_today():
         print("自动触发已停止（今日无新数据）")
         return
@@ -117,9 +109,8 @@ async def main():
         local_data = get_local_data()
         local_periods = {get_period(b) for b in local_data}
         is_first_run = (len(local_data) == 0)
-        print(f"是否首次运行: {is_first_run}")
+        print(f"是否首次运行: {is_first_run}，本地已有 {len(local_data)} 期")
 
-        # 1. 拉取频道最近 200 条消息中的有效开奖（降序）
         all_valid = await get_recent_valid_messages(client, limit=200)
         print(f"最近消息中找到 {len(all_valid)} 期有效开奖")
 
@@ -129,16 +120,14 @@ async def main():
                 set_auto_stop()
             return
 
-        # 2. 取最新 10 条作为候选池
         top10 = all_valid[:10]
-        print(f"截取最新 10 条作为候选池")
+        print(f"截取最新 10 条作为候选池，实际长度 {len(top10)}")
 
-        # 3. 根据是否首次运行决定选取策略
         if is_first_run:
             take = random.randint(1, 3)
             take = min(take, len(top10))
             selected = top10[:take]
-            print(f"首次运行，从最新10条中取最近 {take} 期")
+            print(f"首次运行，从最新10条中取最近 {take} 期，实际取到 {len(selected)} 期")
         else:
             candidates = [msg for msg in top10 if get_period(msg) not in local_periods]
             print(f"最新10期中本地缺失的有 {len(candidates)} 期")
@@ -150,12 +139,11 @@ async def main():
             take = random.randint(1, 3)
             take = min(take, len(candidates))
             selected = random.sample(candidates, take)
-            print(f"从剩余候选中随机抽取 {take} 期")
+            print(f"从剩余候选中随机抽取 {take} 期，实际取到 {len(selected)} 期")
 
         selected_periods = [get_period(m) for m in selected]
         print(f"选中期号: {selected_periods}")
 
-        # 4. 合并、去重、排序、保留最近 60 期
         all_blocks = local_data + selected
         unique = {}
         for block in all_blocks:
@@ -172,7 +160,6 @@ async def main():
 
         print(f"更新完成，文件共 {len(sorted_blocks)} 期")
 
-        # 清除自动停止标记（因为本次成功采集了新数据）
         if not is_manual:
             clear_auto_stop()
 
