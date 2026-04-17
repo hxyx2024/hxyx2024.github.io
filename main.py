@@ -58,7 +58,6 @@ def get_local_data():
     return valid
 
 def need_auto_clean_today():
-    """检查今日是否已经清空过（仅用于自动运行）"""
     today = datetime.now(BEIJING_TZ).strftime("%Y-%m-%d")
     if os.path.exists(CLEAN_FLAG_FILE):
         with open(CLEAN_FLAG_FILE, 'r') as f:
@@ -91,22 +90,24 @@ async def main():
     is_manual = (os.environ.get("GITHUB_EVENT_NAME") == "workflow_dispatch")
     print(f"触发方式: {'手动' if is_manual else '自动'}")
 
-    if not is_manual and not is_auto_time():
-        print("不在自动触发时段 (18:00-21:20 北京时间)，退出")
-        return
+    # 手动运行不受时间限制
+    if not is_manual:
+        if not is_auto_time():
+            print("不在自动触发时段 (18:00-21:20 北京时间)，退出")
+            return
 
     # 清空逻辑：
-    # 手动触发：每次运行都清空文件
-    # 自动触发：每日首次运行清空（通过 need_auto_clean_today 控制）
+    # 手动运行：每次清空
+    # 自动运行：每日首次清空（通过 need_auto_clean_today 控制）
     if is_manual:
         with open(OUT_FILE, 'w', encoding='utf-8') as f:
             f.write('')
-        print("手动触发：已清空数据文件")
+        print("手动运行：已清空数据文件")
     else:
         if need_auto_clean_today():
             with open(OUT_FILE, 'w', encoding='utf-8') as f:
                 f.write('')
-            print("自动触发：今日首次运行，已清空数据文件")
+            print("自动运行：今日首次，已清空数据文件")
 
     client = await TelegramClient("session", API_ID, API_HASH).start()
 
@@ -122,6 +123,7 @@ async def main():
             print("未拉取到任何有效开奖，退出")
             return
 
+        # 过滤出新期号
         new_periods = []
         for txt in all_valid:
             p = get_period(txt)
@@ -133,6 +135,7 @@ async def main():
             print("无新期号，退出")
             return
 
+        # 合并所有数据
         all_blocks = local_data + new_periods
         unique = {}
         for b in all_blocks:
