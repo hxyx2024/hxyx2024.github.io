@@ -2,7 +2,7 @@ import os
 import asyncio
 import re
 import traceback
-from telethon import TelegramClient, sessions
+from telethon import TelegramClient
 from datetime import datetime, timezone, timedelta
 
 # ========== 配置 ==========
@@ -17,14 +17,8 @@ CLEAN_FLAG_FILE = ".last_clean_date"
 MAX_TAKE = 999             # 全部拉取（不限制数量）
 INIT_FETCH_LIMIT = 4       # 每次拉取最近 4 条消息
 
-# ========== 初始化客户端（支持 StringSession）==========
-SESSION_STRING = os.environ.get("SESSION_STRING")
-if SESSION_STRING:
-    client = TelegramClient(sessions.StringSession(SESSION_STRING), API_ID, API_HASH)
-    print("使用 StringSession 登录")
-else:
-    client = TelegramClient("session", API_ID, API_HASH)
-    print("使用本地文件 session.session 登录")
+# ========== 初始化客户端（与原代码完全相同）==========
+client = TelegramClient("session", API_ID, API_HASH)
 
 # ========== 工具函数 ==========
 period_pattern = re.compile(r"第[:\s]*(\d{7})期")
@@ -126,7 +120,6 @@ async def main():
             print("未拉取到任何有效开奖，退出")
             return
 
-        # 过滤出新期号
         new_periods = []
         for txt in all_valid:
             p = get_period(txt)
@@ -138,15 +131,13 @@ async def main():
             print("无新期号，退出")
             return
 
-        # 全部拉取（不限制数量）
-        selected = new_periods
+        selected = new_periods   # 全部拉取
         print(f"本次选取 {len(selected)} 期，完整内容如下：")
         for idx, txt in enumerate(selected, 1):
             print(f"--- 第 {idx} 条 ---")
             print(txt)
             print()
 
-        # 合并、去重、排序、保留最近 MAX_KEEP 期
         all_blocks = local_data + selected
         unique = {}
         for b in all_blocks:
