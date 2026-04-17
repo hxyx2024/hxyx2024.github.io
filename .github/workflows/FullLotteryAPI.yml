@@ -3,20 +3,15 @@ name: FullLotteryAPI
 on:
   workflow_dispatch:
   schedule:
-    - cron: "3 10 * * *"
-    - cron: "17 10 * * *"
-    - cron: "29 10 * * *"
-    - cron: "44 10 * * *"
-    - cron: "56 10 * * *"
-    - cron: "8 11 * * *"
-    - cron: "22 11 * * *"
-    - cron: "37 11 * * *"
-    - cron: "51 11 * * *"
-    - cron: "6 12 * * *"
-    - cron: "19 12 * * *"
-    - cron: "33 12 * * *"
-    - cron: "47 12 * * *"
-    - cron: "59 12 * * *"
+    - cron: "0 10 * * *"   # 18:00
+    - cron: "20 10 * * *"  # 18:20
+    - cron: "40 10 * * *"  # 18:40
+    - cron: "0 11 * * *"   # 19:00
+    - cron: "20 11 * * *"  # 19:20
+    - cron: "40 11 * * *"  # 19:40
+    - cron: "0 12 * * *"   # 20:00
+    - cron: "20 12 * * *"  # 20:20
+    - cron: "40 12 * * *"  # 20:40
 
 jobs:
   run:
@@ -26,43 +21,28 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0          # 需要完整历史用于强制推送
-
+          fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
           python-version: "3.10"
-
       - run: pip install telethon
-
       - name: Restore session
         env:
           SESSION_BASE64: ${{ secrets.SESSION_BASE64 }}
         run: echo "$SESSION_BASE64" | base64 -d > session.session
-
       - name: Run script
         env:
           API_ID: ${{ secrets.API_ID }}
           API_HASH: ${{ secrets.API_HASH }}
         run: python main.py
-
-      # 使用官方推荐的 github-push-action 强制推送
-      - name: Push changes
-        uses: ad-m/github-push-action@v0.8.0
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          branch: ${{ github.ref_name }}
-          force: true
-          force_with_lease: true
-          # 允许空提交（确保推送总是发生）
-          # 但该 action 默认不会创建空提交，所以我们需要先手动提交
-      - name: Commit changes (if any)
+      - name: Commit changes
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add --force lottery_data_api.html
           git add .last_clean_date 2>/dev/null || true
-          git commit -m "Update lottery data $(date -u)" --allow-empty
-      - name: Push using official action
+          git commit -m "Update $(date -u)" --allow-empty
+      - name: Push
         uses: ad-m/github-push-action@v0.8.0
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
