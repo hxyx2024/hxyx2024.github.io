@@ -57,9 +57,8 @@ jobs:
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add lottery_data_api.html
           if [ -f .last_clean_date ]; then git add .last_clean_date; fi
-          if [ -f last_msg_id.json ]; then git add last_msg_id.json; fi
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            git commit -m "manual update: force replace files" || true
+            git commit -m "manual update: force replace" || true
             git push --force origin HEAD:main
           else
             git diff --cached --quiet || git commit -m "auto update lottery data"
