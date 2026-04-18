@@ -14,12 +14,12 @@ CHANNEL = "douapi"
 OUT_FILE = "lottery_data_api.html"
 MAX_KEEP = 60
 BEIJING_TZ = timezone(timedelta(hours=8))
-LAST_ID_FILE = "last_msg_id.json"
 
+# 每次拉取最近的消息数量（不再增量）
+FETCH_LIMIT = 200
 CANDIDATE_POOL_SIZE = 10
 MIN_TAKE = 3
 MAX_TAKE = 6
-INIT_FETCH_LIMIT = 200
 
 # ========== 工具函数 ==========
 period_pattern = re.compile(r"第[:\s]*(\d{7})期")
@@ -39,20 +39,6 @@ def is_complete_lottery(text):
     if not re.search(r'[🟢🔴🔵]', lines[3]):
         return False
     return True
-
-def load_last_id():
-    if os.path.exists(LAST_ID_FILE):
-        try:
-            with open(LAST_ID_FILE, 'r') as f:
-                data = json.load(f)
-                return data.get('last_msg_id', 0)
-        except:
-            return 0
-    return 0
-
-def save_last_id(msg_id):
-    with open(LAST_ID_FILE, 'w') as f:
-        json.dump({'last_msg_id': msg_id}, f)
 
 def get_local_data():
     if not os.path.exists(OUT_FILE):
@@ -84,27 +70,19 @@ def is_auto_time():
         return False
     return True
 
-async def fetch_messages_since(client, min_id):
-    valid = []  # (msg_id, text, period)
-    if min_id == 0:
-        async for msg in client.iter_messages(CHANNEL, limit=INIT_FETCH_LIMIT):
-            if msg.text and "新澳门六合彩第" in msg.text:
-                txt = msg.text.strip()
-                if is_complete_lottery(txt):
-                    period = get_period(txt)
-                    if period:
-                        valid.append((msg.id, txt, period))
-    else:
-        async for msg in client.iter_messages(CHANNEL, min_id=min_id):
-            if msg.text and "新澳门六合彩第" in msg.text:
-                txt = msg.text.strip()
-                if is_complete_lottery(txt):
-                    period = get_period(txt)
-                    if period:
-                        valid.append((msg.id, txt, period))
-    valid.sort(key=lambda x: x[2], reverse=True)  # 按期号降序
-    max_id = max([v[0] for v in valid]) if valid else None
-    return [v[1] for v in valid], max_id
+async def fetch_recent_messages(client, limit):
+    """拉取最近 limit 条消息，返回有效开奖列表（按期号降序）"""
+    items = []  # (period, text)
+    async for msg in client.iter_messages(CHANNEL, limit=limit):
+        if msg.text and "新澳门六合彩第" in msg.text:
+            txt = msg.text.strip()
+            if is_complete_lottery(txt):
+                period = get_period(txt)
+                if period:
+                    items.append((period, txt))
+    # 按期号降序排序（期号大的在前）
+    items.sort(key=lambda x: x[0], reverse=True)
+    return [txt for _, txt in items]
 
 async def main():
     is_manual = (os.environ.get("GITHUB_EVENT_NAME") == "workflow_dispatch")
@@ -121,22 +99,23 @@ async def main():
         local_periods = {get_period(b) for b in local_data}
         print(f"本地已有 {len(local_data)} 期")
 
-        last_id = load_last_id()
-        print(f"上次处理的消息ID: {last_id}")
-
-        all_valid, max_new_id = await fetch_messages_since(client, last_id)
-        print(f"本次拉取到 {len(all_valid)} 条新有效开奖（按期号降序）")
-
-        if max_new_id:
-            print(f"最新消息ID: {max_new_id}")
+        all_valid = await fetch_recent_messages(client, FETCH_LIMIT)
+        print(f"从最近 {FETCH_LIMIT} 条消息中提取到 {len(all_valid)} 条有效开奖（按期号降序）")
 
         if not all_valid:
-            print("无新增有效开奖，退出")
-            if max_new_id:
-                save_last_id(max_new_id)
+            print("未拉取到任何有效开奖，退出")
             return
 
-        top_n = all_valid[:CANDIDATE_POOL_SIZE]
+        # 过滤出本地没有的新期号
+        new_periods = [txt for txt in all_valid if get_period(txt) not in local_periods]
+        print(f"新期号数量: {len(new_periods)}")
+
+        if not new_periods:
+            print("无新期号，退出")
+            return
+
+        # 候选池：取最新10条（按期号降序，即前10条）
+        top_n = new_periods[:CANDIDATE_POOL_SIZE]
         print(f"候选池长度: {len(top_n)}，期号: {[get_period(m) for m in top_n]}")
 
         take = random.randint(MIN_TAKE, MAX_TAKE)
@@ -146,10 +125,9 @@ async def main():
 
         if not selected:
             print("未选中任何期号，退出")
-            if max_new_id:
-                save_last_id(max_new_id)
             return
 
+        # 合并历史，去重，保留最近60期
         all_blocks = local_data + selected
         unique = {}
         for b in all_blocks:
@@ -164,9 +142,6 @@ async def main():
             f.write("\n\n".join(sorted_blocks) + "\n")
 
         print(f"✅ 写入完成，文件总期数: {len(sorted_blocks)}")
-
-        if max_new_id:
-            save_last_id(max_new_id)
 
     except Exception as e:
         print(f"❌ 错误: {e}")
