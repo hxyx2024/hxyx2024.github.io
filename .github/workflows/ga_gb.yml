@@ -2,7 +2,7 @@ name: Fetch GA/GB and Default Rules
 
 on:
   schedule:
-    - cron: '*/1 * * * *'   # 每分钟运行一次
+    - cron: '*/59 * * * *'   # 每分钟运行一次
   workflow_dispatch:
 
 jobs:
