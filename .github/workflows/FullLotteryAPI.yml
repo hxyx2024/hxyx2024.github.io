@@ -1,8 +1,8 @@
-name: FullLotteryAPI
+name: Full Lottery API
 
 on:
   schedule:
-    - cron: '0 18-21 * * *'   # 北京时间 2:00-5:00 对应 UTC 18-21点，可根据需要调整
+    - cron: '0 13 * * *'   # 北京时间每天21:00
   workflow_dispatch:
 
 jobs:
@@ -19,11 +19,11 @@ jobs:
       - name: Install dependencies
         run: pip install telethon
 
-      - name: Run lottery bot
+      - name: Run lottery script
         env:
           API_ID: ${{ secrets.API_ID }}
           API_HASH: ${{ secrets.API_HASH }}
-        run: python lottery_bot.py
+        run: python main.py
 
       - name: Commit and push changes
         run: |
