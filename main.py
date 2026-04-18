@@ -88,12 +88,12 @@ async def fetch_recent_messages(client, limit):
                 period = get_period(txt)
                 if period:
                     items.append((period, txt))
-    items.sort(key=lambda x: x[0], reverse=True)  # 按期号降序
+    items.sort(key=lambda x: x[0], reverse=True)
     return [txt for _, txt in items]
 
 def clean_state_files():
-    """清空所有状态文件"""
-    state_files = [".last_clean_date", "ga_gb_state.json", "last_msg_id.json", "default_rules_state.json"]
+    """清空状态文件（但保留 .last_clean_date，避免重复清空）"""
+    state_files = ["ga_gb_state.json", "last_msg_id.json", "default_rules_state.json"]
     for sf in state_files:
         if os.path.exists(sf):
             os.remove(sf)
@@ -103,7 +103,6 @@ async def main():
     is_manual = (os.environ.get("GITHUB_EVENT_NAME") == "workflow_dispatch")
     print(f"触发方式: {'手动' if is_manual else '自动'}")
 
-    # 自动运行时检查时间段
     if not is_manual and not is_auto_time():
         print("不在自动触发时段 (18:00-21:20 北京时间)，退出")
         return
@@ -111,16 +110,12 @@ async def main():
     client = await TelegramClient("session", API_ID, API_HASH).start()
 
     try:
-        # 每日首次清空（无论手动还是自动）
         if need_auto_clean_today():
-            # 清空数据文件
             with open(OUT_FILE, 'w', encoding='utf-8') as f:
                 f.write('')
             print("今日首次运行，已清空数据文件")
-            # 清空所有状态文件
             clean_state_files()
 
-        # 读取本地已有数据（清空后可能为空）
         local_data = get_local_data()
         local_periods = {get_period(b) for b in local_data}
         print(f"本地已有 {len(local_data)} 期")
@@ -132,7 +127,6 @@ async def main():
             print("未拉取到任何有效开奖，退出")
             return
 
-        # 筛选出新期号
         new_periods = [txt for txt in all_valid if get_period(txt) not in local_periods]
         print(f"新期号数量: {len(new_periods)}")
 
@@ -140,7 +134,6 @@ async def main():
             print("无新期号，退出")
             return
 
-        # 随机抽取3-6条（从最新10条中）
         pool = new_periods[:CANDIDATE_POOL_SIZE]
         take = random.randint(MIN_TAKE, MAX_TAKE)
         take = min(take, len(pool))
@@ -150,7 +143,6 @@ async def main():
         selected = random.sample(pool, take)
         print(f"抽取 {take} 期，期号: {[get_period(t) for t in selected]}")
 
-        # 合并历史，保留最近60期
         all_blocks = local_data + selected
         unique = {}
         for b in all_blocks:
