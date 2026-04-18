@@ -93,6 +93,7 @@ async def fetch_recent_messages(client, limit):
 
 def clean_state_files():
     """清空状态文件（但保留 .last_clean_date，避免重复清空）"""
+    # 修改：删除了 ".last_clean_date"
     state_files = ["ga_gb_state.json", "last_msg_id.json", "default_rules_state.json"]
     for sf in state_files:
         if os.path.exists(sf):
