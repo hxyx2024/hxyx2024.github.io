@@ -91,10 +91,19 @@ async def fetch_recent_messages(client, limit):
     items.sort(key=lambda x: x[0], reverse=True)  # 按期号降序
     return [txt for _, txt in items]
 
+def clean_state_files():
+    """清空所有状态文件"""
+    state_files = [".last_clean_date", "ga_gb_state.json", "last_msg_id.json", "default_rules_state.json"]
+    for sf in state_files:
+        if os.path.exists(sf):
+            os.remove(sf)
+            print(f"已删除状态文件 {sf}")
+
 async def main():
     is_manual = (os.environ.get("GITHUB_EVENT_NAME") == "workflow_dispatch")
     print(f"触发方式: {'手动' if is_manual else '自动'}")
 
+    # 自动运行时检查时间段
     if not is_manual and not is_auto_time():
         print("不在自动触发时段 (18:00-21:20 北京时间)，退出")
         return
@@ -102,6 +111,16 @@ async def main():
     client = await TelegramClient("session", API_ID, API_HASH).start()
 
     try:
+        # 每日首次清空（无论手动还是自动）
+        if need_auto_clean_today():
+            # 清空数据文件
+            with open(OUT_FILE, 'w', encoding='utf-8') as f:
+                f.write('')
+            print("今日首次运行，已清空数据文件")
+            # 清空所有状态文件
+            clean_state_files()
+
+        # 读取本地已有数据（清空后可能为空）
         local_data = get_local_data()
         local_periods = {get_period(b) for b in local_data}
         print(f"本地已有 {len(local_data)} 期")
@@ -113,6 +132,7 @@ async def main():
             print("未拉取到任何有效开奖，退出")
             return
 
+        # 筛选出新期号
         new_periods = [txt for txt in all_valid if get_period(txt) not in local_periods]
         print(f"新期号数量: {len(new_periods)}")
 
@@ -120,19 +140,8 @@ async def main():
             print("无新期号，退出")
             return
 
-        # 自动首次运行：清空，取最新3期
-        if not is_manual and need_auto_clean_today():
-            print("自动首次运行：清空文件，取最新3期")
-            take = min(3, len(new_periods))
-            selected = new_periods[:take]
-            with open(OUT_FILE, 'w', encoding='utf-8') as f:
-                f.write("\n\n".join(selected) + "\n")
-            print(f"✅ 写入完成，共 {len(selected)} 期")
-            return
-
-        # 手动运行 或 自动非首次：一次候选池抽取（从最新10条中随机3-6条）
-        print("执行一次候选池抽取")
-        pool = new_periods[:CANDIDATE_POOL_SIZE]   # 最新10条
+        # 随机抽取3-6条（从最新10条中）
+        pool = new_periods[:CANDIDATE_POOL_SIZE]
         take = random.randint(MIN_TAKE, MAX_TAKE)
         take = min(take, len(pool))
         if take == 0:
