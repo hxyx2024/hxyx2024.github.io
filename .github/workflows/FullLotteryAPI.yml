@@ -19,6 +19,17 @@ jobs:
       - name: Install dependencies
         run: pip install telethon
 
+      - name: Restore session file from secret
+        env:
+          SESSION_BASE64: ${{ secrets.SESSION_BASE64 }}
+        run: |
+          if [ -n "$SESSION_BASE64" ]; then
+            echo "$SESSION_BASE64" | base64 -d > session.session
+            echo "Session file restored."
+          else
+            echo "No session secret found, will attempt interactive login (will fail)."
+          fi
+
       - name: Run lottery script
         env:
           API_ID: ${{ secrets.API_ID }}
