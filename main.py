@@ -21,7 +21,7 @@ MIN_TAKE = 3
 MAX_TAKE = 6
 
 # ========== 工具函数 ==========
-period_pattern = re.compile(r"第[:\s]*(\d{7})期")
+period_pattern = re.compile(r"新澳门六合彩第[:\s]*(\d{7})期")
 
 def get_period(text):
     m = period_pattern.search(text)
@@ -95,7 +95,6 @@ async def main():
     is_manual = (os.environ.get("GITHUB_EVENT_NAME") == "workflow_dispatch")
     print(f"触发方式: {'手动' if is_manual else '自动'}")
 
-    # 自动运行时检查时间段
     if not is_manual and not is_auto_time():
         print("不在自动触发时段 (18:00-21:20 北京时间)，退出")
         return
@@ -103,12 +102,10 @@ async def main():
     client = await TelegramClient("session", API_ID, API_HASH).start()
 
     try:
-        # 读取本地已有数据
         local_data = get_local_data()
         local_periods = {get_period(b) for b in local_data}
         print(f"本地已有 {len(local_data)} 期")
 
-        # 拉取最近 FETCH_LIMIT 条消息
         all_valid = await fetch_recent_messages(client, FETCH_LIMIT)
         print(f"从最近 {FETCH_LIMIT} 条消息中提取到 {len(all_valid)} 条有效开奖（按期号降序）")
 
@@ -116,7 +113,6 @@ async def main():
             print("未拉取到任何有效开奖，退出")
             return
 
-        # 筛选出新期号
         new_periods = [txt for txt in all_valid if get_period(txt) not in local_periods]
         print(f"新期号数量: {len(new_periods)}")
 
@@ -124,63 +120,41 @@ async def main():
             print("无新期号，退出")
             return
 
-        # 自动运行且今日首次 -> 清空文件，只取最新3期
+        # 自动首次运行：清空，取最新3期
         if not is_manual and need_auto_clean_today():
-            print("自动运行：今日首次，清空文件并只取最新3期")
-            # 取最新3期（new_periods 已是降序，前3条即最新）
+            print("自动首次运行：清空文件，取最新3期")
             take = min(3, len(new_periods))
             selected = new_periods[:take]
-            # 直接写入，不循环
             with open(OUT_FILE, 'w', encoding='utf-8') as f:
                 f.write("\n\n".join(selected) + "\n")
             print(f"✅ 写入完成，共 {len(selected)} 期")
-            # 注意：不更新 last_clean_date 已在 need_auto_clean_today 中更新
             return
 
-        # 手动运行 或 自动非首次 -> 循环抽取
-        print("进入循环抽取模式")
-        current_data = local_data.copy()
-        current_periods = local_periods.copy()
-        remaining = new_periods[:]   # 剩余新期号（降序）
+        # 手动运行 或 自动非首次：一次候选池抽取（从最新10条中随机3-6条）
+        print("执行一次候选池抽取")
+        pool = new_periods[:CANDIDATE_POOL_SIZE]   # 最新10条
+        take = random.randint(MIN_TAKE, MAX_TAKE)
+        take = min(take, len(pool))
+        if take == 0:
+            print("候选池为空，退出")
+            return
+        selected = random.sample(pool, take)
+        print(f"抽取 {take} 期，期号: {[get_period(t) for t in selected]}")
 
-        while remaining and len(current_data) < MAX_KEEP:
-            pool = remaining[:CANDIDATE_POOL_SIZE]
-            if not pool:
-                break
+        # 合并历史，保留最近60期
+        all_blocks = local_data + selected
+        unique = {}
+        for b in all_blocks:
+            p = get_period(b)
+            if p:
+                unique[p] = b
+        sorted_blocks = [unique[p] for p in sorted(unique.keys())]
+        if len(sorted_blocks) > MAX_KEEP:
+            sorted_blocks = sorted_blocks[-MAX_KEEP:]
 
-            max_can_take = MAX_KEEP - len(current_data)
-            take = random.randint(MIN_TAKE, MAX_TAKE)
-            take = min(take, len(pool), max_can_take)
-            if take == 0:
-                break
-
-            selected = random.sample(pool, take)
-            for txt in selected:
-                p = get_period(txt)
-                if p not in current_periods:
-                    current_periods.add(p)
-                    current_data.append(txt)
-
-            # 从剩余列表中移除已选中的
-            remaining = [txt for txt in remaining if txt not in selected]
-
-            # 如果超出60期，截断
-            if len(current_data) > MAX_KEEP:
-                current_data.sort(key=get_period)
-                current_data = current_data[-MAX_KEEP:]
-                current_periods = {get_period(b) for b in current_data}
-
-            print(f"本轮抽取 {take} 期，当前文件期数: {len(current_data)}")
-
-            if len(current_data) >= MAX_KEEP:
-                print("文件已达60期上限，停止")
-                break
-
-        # 最终写回文件
-        current_data.sort(key=get_period)   # 升序保存
         with open(OUT_FILE, 'w', encoding='utf-8') as f:
-            f.write("\n\n".join(current_data) + "\n")
-        print(f"✅ 写入完成，文件总期数: {len(current_data)}")
+            f.write("\n\n".join(sorted_blocks) + "\n")
+        print(f"✅ 写入完成，文件总期数: {len(sorted_blocks)}")
 
     except Exception as e:
         print(f"❌ 错误: {e}")
