@@ -7,23 +7,33 @@ from telethon import TelegramClient
 API_ID = int(os.environ["API_ID"])
 API_HASH = os.environ["API_HASH"]
 CHANNEL = "douapi"
-FETCH_LIMIT = 500          # 拉取足够多的消息，确保覆盖60期以上
+FETCH_LIMIT = 500
 OUTPUT_FILE = "gab_summary.html"
 
-# 匹配期号：支持 "新澳门六合彩第:2026050期" 或 "新澳门第:2026050期" 等
-PERIOD_RE = re.compile(r"新澳门(?:六合彩)?第[:\s]*(\d{7})期")
+# 严格匹配：新澳门六合彩第:2026050期（必须包含“六合彩”）
+PERIOD_RE = re.compile(r"新澳门六合彩第[:\s]*(\d{7})期")
 
 def extract_period(text):
     m = PERIOD_RE.search(text)
     return int(m.group(1)) if m else 0
 
-def extract_numbers_from_line(line):
-    """从一行文本中提取所有数字（1-49），返回列表"""
+def is_valid_number_line(line):
+    """检查一行是否为恰好7个数字（1-49），且只包含数字和空格"""
+    line = line.strip()
+    if not line:
+        return False
+    if re.search(r'[^0-9\s]', line):
+        return False
     nums = re.findall(r'\d+', line)
-    return [int(n) for n in nums if 1 <= int(n) <= 49]
+    if len(nums) != 7:
+        return False
+    for n in nums:
+        num = int(n)
+        if num < 1 or num > 49:
+            return False
+    return True
 
 async def fetch_lotteries(client, limit):
-    """拉取消息，返回列表 [(period, [7个数字]), ...] 按期号降序，去重"""
     period_map = {}
     async for msg in client.iter_messages(CHANNEL, limit=limit):
         if not msg.text:
@@ -32,37 +42,34 @@ async def fetch_lotteries(client, limit):
         if not txt:
             continue
         
-        # 提取期号
         period = extract_period(txt)
         if period == 0:
             continue
         
-        # 如果期号已存在，跳过（去重）
         if period in period_map:
             continue
         
-        # 在消息中寻找包含至少7个数字的行（开奖数字）
+        # 在消息中寻找恰好7个数字的行
         lines = txt.split('\n')
         numbers = None
         for line in lines:
-            line = line.strip()
-            if not line:
-                continue
-            nums = extract_numbers_from_line(line)
-            if len(nums) >= 7:
-                # 只取前7个数字
-                numbers = nums[:7]
-                break
-        if numbers is None or len(numbers) != 7:
-            print(f"⚠️ 期号 {period} 未能提取到7个数字，跳过")
+            if is_valid_number_line(line):
+                nums = [int(n) for n in re.findall(r'\d+', line)]
+                if len(nums) == 7:
+                    numbers = nums
+                    break
+        if numbers is None:
+            print(f"⚠️ 期号 {period} 未找到恰好7个数字的行，跳过")
             continue
         
         period_map[period] = numbers
         print(f"✅ 采集到期号 {period}，数字 {numbers}")
     
-    # 按期号降序排序
     items = sorted(period_map.items(), key=lambda x: x[0], reverse=True)
-    print(f"共采集到 {len(items)} 期，期号范围 {items[-1][0]} ~ {items[0][0]}")
+    if items:
+        print(f"共采集到 {len(items)} 期，期号范围 {items[-1][0]} ~ {items[0][0]}")
+    else:
+        print("未采集到任何期数")
     return [(period, nums) for period, nums in items]
 
 def generate_plain_text(lotteries):
@@ -86,7 +93,6 @@ def generate_plain_text(lotteries):
     for period, nums in latest_30:
         gb_numbers.extend(nums)
     
-    # 随机排序（如果不需要随机，可注释下面两行）
     random.shuffle(ga_numbers)
     random.shuffle(gb_numbers)
     
