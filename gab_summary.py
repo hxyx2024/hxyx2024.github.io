@@ -39,7 +39,8 @@ def parse_numbers(text):
     return [int(n) for n in nums[:7]]
 
 async def fetch_lotteries(client, limit):
-    items = []
+    # 使用字典按期号去重，保留第一次遇到的消息
+    period_map = {}
     async for msg in client.iter_messages(CHANNEL, limit=limit):
         if not msg.text:
             continue
@@ -52,9 +53,12 @@ async def fetch_lotteries(client, limit):
         numbers = parse_numbers(txt)
         if len(numbers) != 7:
             continue
-        items.append((period, numbers))
-    items.sort(key=lambda x: x[0], reverse=True)
-    return items
+        # 如果期号已存在，跳过（只保留最先采集到的）
+        if period not in period_map:
+            period_map[period] = numbers
+    # 转换为列表并按期号降序排序
+    items = sorted(period_map.items(), key=lambda x: x[0], reverse=True)
+    return [(period, nums) for period, nums in items]
 
 def generate_plain_text(lotteries):
     if not lotteries:
@@ -64,29 +68,22 @@ def generate_plain_text(lotteries):
     latest_10 = lotteries[:10]
     latest_30 = lotteries[:30]
     
-    # 顶部期号 = 最新60期中的最新一期实际期号+1
     top_period = latest_60[0][0] + 1 if latest_60 else 0
     
-    # 收集GA数字
     ga_numbers = []
-    # 最新10期的前6个数字和全部7个数字
     for period, nums in latest_10:
-        ga_numbers.extend(nums[:6])   # 前6个
-        ga_numbers.extend(nums)       # 全部7个
-    # 最新60期的最后1个数字
+        ga_numbers.extend(nums[:6])
+        ga_numbers.extend(nums)
     for period, nums in latest_60:
         ga_numbers.append(nums[-1])
     
-    # 收集GB数字：最新30期的全部7个数字
     gb_numbers = []
     for period, nums in latest_30:
         gb_numbers.extend(nums)
     
-    # 随机排序
     random.shuffle(ga_numbers)
     random.shuffle(gb_numbers)
     
-    # 格式化为空格分隔的字符串
     ga_line = " ".join(str(n) for n in ga_numbers)
     gb_line = " ".join(str(n) for n in gb_numbers)
     
