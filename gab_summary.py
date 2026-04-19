@@ -1,6 +1,7 @@
 import os
 import asyncio
 import re
+import random
 from telethon import TelegramClient
 
 API_ID = int(os.environ["API_ID"])
@@ -55,7 +56,7 @@ async def fetch_lotteries(client, limit):
     items.sort(key=lambda x: x[0], reverse=True)
     return items
 
-def generate_html(lotteries):
+def generate_plain_text(lotteries):
     if not lotteries:
         return "暂无数据"
     
@@ -63,27 +64,41 @@ def generate_html(lotteries):
     latest_10 = lotteries[:10]
     latest_30 = lotteries[:30]
     
+    # 顶部期号 = 最新60期中的最新一期实际期号+1
     top_period = latest_60[0][0] + 1 if latest_60 else 0
-    lines = [f"新澳彩第: {top_period}期", "GA", ""]
     
+    # 收集GA数字
+    ga_numbers = []
+    # 最新10期的前6个数字和全部7个数字
     for period, nums in latest_10:
-        first6 = " ".join(str(n) for n in nums[:6])
-        all7 = " ".join(str(n) for n in nums)
-        lines.append(f"{first6}  {all7}")
-    lines.append("")
-    
+        ga_numbers.extend(nums[:6])   # 前6个
+        ga_numbers.extend(nums)       # 全部7个
+    # 最新60期的最后1个数字
     for period, nums in latest_60:
-        lines.append(str(nums[-1]))
-    lines.append("")
-    lines.append("...................")
-    lines.append("")
+        ga_numbers.append(nums[-1])
     
+    # 收集GB数字：最新30期的全部7个数字
+    gb_numbers = []
     for period, nums in latest_30:
-        lines.append(" ".join(str(n) for n in nums))
+        gb_numbers.extend(nums)
     
-    content = "\n".join(lines)
-    # 生成极简 HTML，只保留 <pre> 标签，无样式
-    return f"<!DOCTYPE html>\n<html>\n<body>\n<pre>\n{content}\n</pre>\n</body>\n</html>"
+    # 随机排序
+    random.shuffle(ga_numbers)
+    random.shuffle(gb_numbers)
+    
+    # 格式化为空格分隔的字符串
+    ga_line = " ".join(str(n) for n in ga_numbers)
+    gb_line = " ".join(str(n) for n in gb_numbers)
+    
+    lines = [
+        f"新澳门第:{top_period}期",
+        "G · A",
+        ga_line,
+        "...........",
+        "G · B",
+        gb_line
+    ]
+    return "\n".join(lines)
 
 async def main():
     client = await TelegramClient("session", API_ID, API_HASH).start()
@@ -92,9 +107,9 @@ async def main():
         if not lotteries:
             print("未拉取到任何有效开奖数据")
             return
-        html = generate_html(lotteries)
+        plain_text = generate_plain_text(lotteries)
         with open(OUTPUT_FILE, 'w', encoding='utf-8') as f:
-            f.write(html)
+            f.write(plain_text)
         print(f"✅ 已生成 {OUTPUT_FILE}")
     except Exception as e:
         print(f"❌ 错误: {e}")
