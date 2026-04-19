@@ -92,7 +92,7 @@ async def fetch_recent_messages(client, limit):
     return [txt for _, txt in items]
 
 def clean_state_files():
-    """清空所有状态文件（但不删除 .last_clean_date，以免重复清空）"""
+    """清空状态文件（但保留 .last_clean_date）"""
     state_files = ["ga_gb_state.json", "last_msg_id.json", "default_rules_state.json"]
     for sf in state_files:
         if os.path.exists(sf):
@@ -110,24 +110,25 @@ async def main():
     client = await TelegramClient("session", API_ID, API_HASH).start()
 
     try:
-        # 判断是否首次运行（今天第一次）
         is_first_run = need_auto_clean_today()
         if is_first_run:
-            # 清空数据文件
             with open(OUT_FILE, 'w', encoding='utf-8') as f:
                 f.write('')
             print("今日首次运行，已清空数据文件")
             clean_state_files()
 
-        # 读取本地已有数据（清空后可能为空）
         local_data = get_local_data()
         local_periods = {get_period(b) for b in local_data}
         print(f"本地已有 {len(local_data)} 期")
 
-        # 首次运行时只拉取最新3期，否则拉取 FETCH_LIMIT 条
-        fetch_limit = 3 if is_first_run else FETCH_LIMIT
-        all_valid = await fetch_recent_messages(client, fetch_limit)
-        print(f"从最近 {fetch_limit} 条消息中提取到 {len(all_valid)} 条有效开奖（按期号降序）")
+        # 首次运行：拉取 FETCH_LIMIT 条消息，按期号取最大的3期
+        if is_first_run:
+            all_valid_temp = await fetch_recent_messages(client, FETCH_LIMIT)
+            all_valid = all_valid_temp[:3]  # 取期号最大的3期
+            print(f"首次运行，从最近 {FETCH_LIMIT} 条消息中提取到 {len(all_valid_temp)} 条有效开奖，取期号最大的3期: {[get_period(t) for t in all_valid]}")
+        else:
+            all_valid = await fetch_recent_messages(client, FETCH_LIMIT)
+            print(f"从最近 {FETCH_LIMIT} 条消息中提取到 {len(all_valid)} 条有效开奖（按期号降序）")
 
         if not all_valid:
             print("未拉取到任何有效开奖，退出")
