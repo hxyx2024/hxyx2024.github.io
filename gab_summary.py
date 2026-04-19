@@ -39,7 +39,6 @@ def parse_numbers(text):
     return [int(n) for n in nums[:7]]
 
 async def fetch_lotteries(client, limit):
-    # 使用字典按期号去重，保留第一次遇到的消息
     period_map = {}
     async for msg in client.iter_messages(CHANNEL, limit=limit):
         if not msg.text:
@@ -53,10 +52,8 @@ async def fetch_lotteries(client, limit):
         numbers = parse_numbers(txt)
         if len(numbers) != 7:
             continue
-        # 如果期号已存在，跳过（只保留最先采集到的）
         if period not in period_map:
             period_map[period] = numbers
-    # 转换为列表并按期号降序排序
     items = sorted(period_map.items(), key=lambda x: x[0], reverse=True)
     return [(period, nums) for period, nums in items]
 
