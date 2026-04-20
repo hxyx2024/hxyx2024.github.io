@@ -2,7 +2,7 @@ name: Collect LaoAo and HK Lottery
 
 on:
   schedule:
-    - cron: '*/5 18-21 * * *'   # 北京时间 18:00-21:55 每5分钟一次（可根据需要调整）
+    - cron: '*/5 10-13 * * *'   # UTC 10:00-13:00 对应北京时间 18:00-21:00
   workflow_dispatch:
 
 jobs:
@@ -43,5 +43,6 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add laoao_lottery_data.html hk_lottery_data.html .last_clean_date
           git diff --quiet && git diff --staged --quiet || git commit -m "Update LaoAo and HK lottery data [skip ci]"
+          git reset --hard HEAD   # 丢弃本地未暂存的更改（如session文件）
           git pull --rebase origin main
           git push
