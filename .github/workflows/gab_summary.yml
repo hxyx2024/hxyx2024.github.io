@@ -1,8 +1,8 @@
-name: Generate GA/GB Summary
+name: Collect GA/GB and Rules
 
 on:
   schedule:
-    - cron: '0 * * * *'   # 每小时运行一次（可根据需要修改）
+    - cron: '*/59 * * * *'   # 每分钟运行一次（可根据需要调整）
   workflow_dispatch:
 
 jobs:
@@ -14,26 +14,23 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Python
+      - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: "3.10"
 
       - name: Install dependencies
         run: pip install telethon
 
-      - name: Restore session file from secret
+      - name: Restore Telegram session
         env:
           SESSION_BASE64: ${{ secrets.SESSION_BASE64 }}
         run: |
           if [ -n "$SESSION_BASE64" ]; then
             echo "$SESSION_BASE64" | base64 -d > session.session
-            echo "Session file restored."
-          else
-            echo "No session secret found, will attempt interactive login (will fail)."
           fi
 
-      - name: Run summary script
+      - name: Run unified collection script
         env:
           API_ID: ${{ secrets.API_ID }}
           API_HASH: ${{ secrets.API_HASH }}
@@ -43,7 +40,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add gab_summary.html
-          git diff --quiet && git diff --staged --quiet || git commit -m "Update GA/GB summary [skip ci]"
+          git add gab_summary.html default_rules.txt
+          git diff --quiet && git diff --staged --quiet || git commit -m "Update GA/GB summary and default rules [skip ci]"
           git pull --rebase origin main
           git push
