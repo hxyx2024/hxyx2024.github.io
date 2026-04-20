@@ -2,7 +2,7 @@ name: Collect GA/GB and Rules
 
 on:
   schedule:
-    - cron: '*/59 * * * *'   # 每分钟运行一次（可根据需要调整）
+    - cron: '*/59 * * * *'
   workflow_dispatch:
 
 jobs:
@@ -12,10 +12,11 @@ jobs:
       contents: write
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v6       # 从 v4 改为 v6
 
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6   # 从 v5 改为 v6
         with:
           python-version: "3.10"
 
@@ -39,7 +40,7 @@ jobs:
       - name: Commit and push changes
         run: |
           git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config.user.email "github-actions[bot]@users.noreply.github.com"
           git add gab_summary.html default_rules.txt
           git diff --quiet && git diff --staged --quiet || git commit -m "Update GA/GB summary and default rules [skip ci]"
           git pull --rebase origin main
