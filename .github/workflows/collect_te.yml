@@ -1,8 +1,8 @@
-name: Fetch Data
+name: Collect Last 60 Te Codes
 
 on:
   schedule:
-    - cron: '*/59 * * * *'   # 每分钟运行一次
+    - cron: '*/59 * * * *'   # 每分钟运行一次，可根据需要调整
   workflow_dispatch:
 
 jobs:
@@ -13,10 +13,10 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.10"
 
@@ -35,13 +35,13 @@ jobs:
         env:
           API_ID: ${{ secrets.API_ID }}
           API_HASH: ${{ secrets.API_HASH }}
-        run: python collect.py
+        run: python collect_te.py   # 请确保脚本文件名与仓库中的一致
 
       - name: Commit and push changes
         run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add antdata.html antdata_state.json default_rules.txt default_rules_state.json
-          git diff --cached --quiet || git commit -m "update data"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add antdata.html antdata_state.json
+          git diff --quiet && git diff --staged --quiet || git commit -m "Update latest 60 te codes [skip ci]"
           git pull --rebase origin main
           git push
