@@ -41,8 +41,14 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add laoao_lottery_data.html hk_lottery_data.html .last_clean_date
-          git diff --quiet && git diff --staged --quiet || git commit -m "Update LaoAo and HK lottery data [skip ci]"
-          git reset --hard HEAD   # 丢弃本地未暂存的更改（如session文件）
+          # 丢弃本地所有未提交的更改和冲突标记
+          git reset --hard HEAD
+          git clean -fd
+          # 拉取远程最新代码
           git pull --rebase origin main
+          # 添加生成的文件
+          git add laoao_lottery_data.html hk_lottery_data.html .last_clean_date
+          # 仅当有变更时才提交
+          git diff --quiet && git diff --staged --quiet || git commit -m "Update LaoAo and HK lottery data [skip ci]"
+          # 推送
           git push
