@@ -7,7 +7,7 @@ from telethon import TelegramClient
 API_ID = int(os.environ["API_ID"])
 API_HASH = os.environ["API_HASH"]
 CHANNEL = "douapi"
-FETCH_LIMIT = 366
+FETCH_LIMIT = 500
 
 OUTPUT_HTML = "gab_summary.html"
 OUTPUT_RULES = "default_rules.txt"
