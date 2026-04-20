@@ -1,15 +1,15 @@
 import os
 import asyncio
-import json
 import re
+import json
 from telethon import TelegramClient
 
 API_ID = int(os.environ["API_ID"])
 API_HASH = os.environ["API_HASH"]
 CHANNEL = "douapi"
-
 OUTPUT_FILE = "antdata.html"
 STATE_FILE = "antdata_state.json"
+FETCH_LIMIT = 200
 
 PERIOD_RE = re.compile(r"新澳门六合彩第[:\s]*(\d{7})期")
 
@@ -18,7 +18,6 @@ def extract_period(text):
     return int(m.group(1)) if m else 0
 
 def is_valid_number_line(line):
-    """检查一行是否为恰好7个数字（1-49），且只包含数字和空格"""
     line = line.strip()
     if not line:
         return False
@@ -47,9 +46,24 @@ def save_last_id(msg_id):
     with open(STATE_FILE, 'w') as f:
         json.dump({'last_msg_id': msg_id}, f)
 
+def update_te_list(new_te):
+    # 读取现有特码列表
+    existing = []
+    if os.path.exists(OUTPUT_FILE):
+        with open(OUTPUT_FILE, 'r', encoding='utf-8') as f:
+            existing = [line.strip() for line in f if line.strip()]
+    # 插入新特码到开头，保留最新60期
+    existing.insert(0, str(new_te))
+    existing = existing[:60]
+    with open(OUTPUT_FILE, 'w', encoding='utf-8') as f:
+        for te in existing:
+            f.write(te + "\n")
+    return len(existing)
+
 async def main():
     client = await TelegramClient("session_ga", API_ID, API_HASH).start()
     try:
+        # 获取最新一条消息
         async for msg in client.iter_messages(CHANNEL, limit=1):
             if not msg.text:
                 print("最新消息无文本内容")
@@ -80,23 +94,9 @@ async def main():
                 return
 
             te = numbers[-1]
-
-            # 读取现有特码列表
-            existing = []
-            if os.path.exists(OUTPUT_FILE):
-                with open(OUTPUT_FILE, 'r', encoding='utf-8') as f:
-                    existing = [line.strip() for line in f if line.strip()]
-
-            # 插入新特码到开头，保留最新60期
-            existing.insert(0, str(te))
-            existing = existing[:60]
-
-            with open(OUTPUT_FILE, 'w', encoding='utf-8') as f:
-                for te_line in existing:
-                    f.write(te_line + "\n")
+            total = update_te_list(te)
             save_last_id(msg_id)
-            print(f"✅ 已更新 {OUTPUT_FILE}，当前共 {len(existing)} 个特码，最新特码: {te}")
-
+            print(f"✅ 已更新 {OUTPUT_FILE}，当前共 {total} 个特码，最新特码: {te}")
             return
     except Exception as e:
         print(f"❌ 错误: {e}")
