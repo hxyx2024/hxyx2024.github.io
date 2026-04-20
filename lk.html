@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, viewport-fit=cover">
+    <title>香港 · 老澳 双彩特码采集系统</title>
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+        body { background:#121212; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, sans-serif; padding:12px; color:#e0e0e0; font-size:14px; max-width:740px; margin:0 auto; }
+        .auth-overlay { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.92); backdrop-filter:blur(8px); z-index:10000; display:flex; align-items:center; justify-content:center; font-family:inherit; }
+        .auth-card { background:#1e1e1e; border-radius:32px; padding:28px 24px; width:90%; max-width:420px; border:1px solid #4f46e5; box-shadow:0 20px 35px rgba(0,0,0,0.6); text-align:center; }
+        .auth-card h2 { margin-bottom:16px; color:#facc15; }
+        .auth-card input { width:100%; background:#0d0d0d; border:1px solid #2c2c2c; border-radius:40px; padding:12px 16px; color:#e0e0e0; font-size:14px; text-align:center; margin:12px 0; outline:none; }
+        .auth-card button { background:#4f46e5; width:100%; padding:10px; border-radius:40px; font-weight:bold; margin-top:8px; cursor:pointer; }
+        .auth-card .info-text { font-size:12px; color:#aaa; margin-top:12px; }
+        .device-id { background:#0a0a0a; padding:8px; border-radius:20px; font-family:monospace; font-size:11px; word-break:break-all; margin:8px 0; }
+        .double-col { display:flex; flex-wrap:wrap; gap:16px; }
+        .col { flex:1; min-width:280px; }
+        .card { background:#1e1e1e; border-radius:20px; padding:16px; margin-bottom:16px; border:1px solid #2c2c2c; }
+        .card-header { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:14px; padding-bottom:10px; border-bottom:1px solid #2c2c2c; }
+        .card-header h3 { margin:0; font-size:1rem; font-weight:600; color:#aaa; }
+        .toggle-btn { background:#2a2a2a; border:none; padding:4px 12px; border-radius:20px; font-size:11px; cursor:pointer; color:#ccc; }
+        .toggle-btn:hover { background:#3a3a3a; color:#fff; }
+        .card-content.collapsed { display:none; }
+        h1 { font-size:1.4rem; font-weight:700; margin:0 0 4px 0; background:linear-gradient(135deg,#c0c0c0,#f0f0f0); -webkit-background-clip:text; background-clip:text; color:transparent; }
+        .sub { color:#777; margin-bottom:16px; font-size:0.7rem; border-left:3px solid #4f46e5; padding-left:10px; }
+        button { background:#2a2a2a; border:none; padding:8px 16px; border-radius:40px; font-weight:500; color:#e0e0e0; cursor:pointer; transition:0.2s; font-size:13px; }
+        button.primary { background:#4f46e5; color:white; }
+        button.success { background:#10b981; color:white; }
+        .flex-between { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-top:12px; font-size:13px; }
+        .filter-row { display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:12px; }
+        .filter-row input { background:#0d0d0d; border:1px solid #2c2c2c; border-radius:40px; padding:6px 12px; color:#e0e0e0; width:90px; text-align:center; }
+        .freq-table { width:100%; border-collapse:collapse; margin-top:8px; font-size:12px; table-layout:fixed; }
+        .freq-table th, .freq-table td { padding:8px 4px; text-align:center; border-bottom:1px solid #2c2c2c; vertical-align:middle; word-break:keep-all; }
+        .freq-table th:nth-child(1) { width:12%; }
+        .freq-table th:nth-child(2) { width:10%; }
+        .freq-table th:nth-child(3) { width:20%; }
+        .freq-table th:nth-child(4) { width:15%; }
+        .freq-table th:nth-child(5) { width:15%; }
+        .freq-table th:nth-child(6) { width:28%; }
+        .checkbox-col { text-align:center; }
+        .rule-caption { background:#0d0d0d; border-radius:12px; padding:6px 12px; margin-bottom:12px; color:#4ade80; font-size:12px; text-align:center; cursor:text; outline:none; transition:background 0.1s; }
+        .rule-caption:hover { background:#1a1a1a; }
+        .rule-caption:focus { background:#1a1a1a; border:1px solid #4f46e5; }
+        .table-footer-bar { display:flex; justify-content:flex-end; align-items:center; gap:16px; margin-top:12px; padding-top:8px; border-top:1px solid #2c2c2c; }
+        .select-all-wrapper { background:#0d0d0d; padding:5px 12px; border-radius:32px; border:1px solid #2c2c2c; }
+        .copy-selected-btn { background:#10b981; }
+        .zodiac-rank-table { width:100%; border-collapse:collapse; font-size:12px; margin-top:8px; table-layout:fixed; }
+        .zodiac-rank-table th, .zodiac-rank-table td { padding:8px 4px; text-align:center; border-bottom:1px solid #2c2c2c; vertical-align:middle; }
+        .zodiac-rank-table th:nth-child(1) { width:12%; }
+        .zodiac-rank-table th:nth-child(2) { width:10%; }
+        .zodiac-rank-table th:nth-child(3) { width:25%; }
+        .zodiac-rank-table th:nth-child(4) { width:15%; }
+        .zodiac-rank-table th:nth-child(5) { width:15%; }
+        .zodiac-rank-table th:nth-child(6) { width:23%; }
+        .miss-numbers { background:#0d0d0d; border-radius:16px; padding:12px; margin-top:12px; }
+        .reason { color:#6b7280; font-size:11px; margin-top:10px; }
+        .toast-msg { position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:#2a2a2a; padding:8px 18px; border-radius:40px; z-index:10001; white-space:nowrap; font-size:13px; }
+        footer { text-align:center; font-size:10px; color:#444; margin-top:20px; }
+        @media (max-width:740px) { .double-col { flex-direction:column; } }
+        #currentDateTime { font-family: monospace; background:#0d0d0d; padding:4px 12px; border-radius:40px; font-size:12px; letter-spacing:0.5px; border:1px solid #2c2c2c; white-space:nowrap; }
+        .col-header { margin-bottom:8px; font-size:1.2rem; font-weight:bold; text-align:center; padding:6px; border-radius:12px; }
+        .hk-header { background:#1e3a5f; }
+        .laoao-header { background:#5f3a1e; }
+    </style>
+</head>
+<body>
+<div id="authPanel" class="auth-overlay" style="display: flex;">
+    <div class="auth-card">
+        <h2>🔐 授权验证</h2>
+        <div class="device-id" id="deviceIdDisplay"></div>
+        <div class="info-text">每台设备仅可试用1天，过期后需授权码</div>
+        <input type="text" id="authCodeInput" placeholder="请输入授权码">
+        <button id="verifyBtn" class="primary">验证授权</button>
+        <div class="info-text" id="authStatusMsg">未授权，请验证或试用</div>
+        <button id="trialBtn" style="background:#2a2a2a; margin-top: 12px;">📅 试用1天（仅一次）</button>
+        <div class="info-text" style="margin-top: 16px; border-top: 1px solid #333; padding-top: 12px;">
+            📞 获取授权码请联系：<br>
+            ✈️ 电报：mayi2036（备注：六合彩）
+        </div>
+    </div>
+</div>
+
+<div id="appContainer" style="display: none;">
+<div class="container">
+    <div class="card">
+        <h1>🔴 香港 · 老澳 双彩分析</h1>
+        <div class="sub">独立采集香港六合彩与老澳彩数据</div>
+        <div id="licenseInfo" style="background:#0d0d0d; border-radius: 30px; padding: 6px 12px; margin-bottom: 12px; font-size:12px; display:inline-block; color:#4ade80;">✅ 授权状态: 加载中...</div>
+        <div class="flex-between">
+            <span>🕒 <span id="currentDateTime">--:--:--</span></span>
+        </div>
+    </div>
+
+    <div class="double-col">
+        <!-- 左侧：香港六合彩 -->
+        <div class="col">
+            <div class="hk-header col-header">🇭🇰 香港六合彩</div>
+            <div class="card">
+                <div class="filter-row">
+                    <label>📊 组数：</label>
+                    <input type="number" id="hkPeriodLimit" value="20" min="1" step="1">
+                    <span style="font-size:11px;">（推荐20组，0=全部）</span>
+                    <button id="hkCollectBtn" class="success">🌐 同步更新</button>
+                </div>
+                <div class="reason">💡 说明：特码热度值高、生肖占比大的中奖率高</div>
+            </div>
+
+            <div class="card"><div class="card-header"><h3>🔴 特码统计</h3><button class="toggle-btn" data-target="hk-freq-content">▼ 隐藏</button></div>
+                <div id="hk-freq-content" class="card-content">
+                    <div id="hkRuleCaption" class="rule-caption" contenteditable="true">等待采集数据</div>
+                    <div id="hkFreqTable"></div>
+                    <div class="table-footer-bar"><div class="select-all-wrapper"><label><input type="checkbox" class="hk-select-all"> 全选/取消</label></div><button class="copy-selected-btn hk-copy-num">📋 复制号码</button></div>
+                </div>
+            </div>
+
+            <div class="card"><div class="card-header"><h3>🔵 生肖统计</h3><button class="toggle-btn" data-target="hk-zodiac-content">▼ 隐藏</button></div>
+                <div id="hk-zodiac-content" class="card-content">
+                    <div id="hkZodiacRanking"></div>
+                    <div class="table-footer-bar"><div class="select-all-wrapper"><label><input type="checkbox" class="hk-zodiac-select-all"> 全选/取消</label></div><button class="copy-selected-btn hk-copy-zodiac">📋 复制生肖</button></div>
+                </div>
+            </div>
+
+            <div class="card"><div class="card-header"><h3>⚠️ 遗漏号码</h3><button class="toggle-btn" data-target="hk-miss-content">▼ 隐藏</button></div>
+                <div id="hk-miss-content" class="card-content"><div id="hkMissNumbers" class="miss-numbers">等待采集...</div></div>
+            </div>
+        </div>
+
+        <!-- 右侧：老澳彩 -->
+        <div class="col">
+            <div class="laoao-header col-header">🇲🇴 老澳彩</div>
+            <div class="card">
+                <div class="filter-row">
+                    <label>📊 组数：</label>
+                    <input type="number" id="laoaoPeriodLimit" value="20" min="1" step="1">
+                    <span style="font-size:11px;">（推荐20组，0=全部）</span>
+                    <button id="laoaoCollectBtn" class="success">🌐 同步更新</button>
+                </div>
+                <div class="reason">💡 说明：特码热度值高、生肖占比大的中奖率高</div>
+            </div>
+
+            <div class="card"><div class="card-header"><h3>🔴 特码统计</h3><button class="toggle-btn" data-target="laoao-freq-content">▼ 隐藏</button></div>
+                <div id="laoao-freq-content" class="card-content">
+                    <div id="laoaoRuleCaption" class="rule-caption" contenteditable="true">等待采集数据</div>
+                    <div id="laoaoFreqTable"></div>
+                    <div class="table-footer-bar"><div class="select-all-wrapper"><label><input type="checkbox" class="laoao-select-all"> 全选/取消</label></div><button class="copy-selected-btn laoao-copy-num">📋 复制号码</button></div>
+                </div>
+            </div>
+
+            <div class="card"><div class="card-header"><h3>🔵 生肖统计</h3><button class="toggle-btn" data-target="laoao-zodiac-content">▼ 隐藏</button></div>
+                <div id="laoao-zodiac-content" class="card-content">
+                    <div id="laoaoZodiacRanking"></div>
+                    <div class="table-footer-bar"><div class="select-all-wrapper"><label><input type="checkbox" class="laoao-zodiac-select-all"> 全选/取消</label></div><button class="copy-selected-btn laoao-copy-zodiac">📋 复制生肖</button></div>
+                </div>
+            </div>
+
+            <div class="card"><div class="card-header"><h3>⚠️ 遗漏号码</h3><button class="toggle-btn" data-target="laoao-miss-content">▼ 隐藏</button></div>
+                <div id="laoao-miss-content" class="card-content"><div id="laoaoMissNumbers" class="miss-numbers">等待采集...</div></div>
+            </div>
+        </div>
+    </div>
+
+    <footer>© 2026 蚂蚁数据 · 版权所有</footer>
+</div>
+</div>
+
+<script>
+    // ==================== 授权管理核心 ====================
+    const TrialMark = (function() {
+        const key = '_t_' + btoa('trial_data').substring(0, 16);
+        function set(data) { const value = JSON.stringify(data); try { localStorage.setItem(key, value); sessionStorage.setItem(key, value); document.cookie = `${key}=${encodeURIComponent(value)}; max-age=86400; path=/`; } catch(e) {} }
+        function get() { try { let value = localStorage.getItem(key); if (value) return JSON.parse(value); value = sessionStorage.getItem(key); if (value) return JSON.parse(value); const cookieMatch = document.cookie.match(new RegExp('(^| )' + key + '=([^;]+)')); if (cookieMatch) return JSON.parse(decodeURIComponent(cookieMatch[2])); } catch(e) {} return null; }
+        function clear() { localStorage.removeItem(key); sessionStorage.removeItem(key); document.cookie = `${key}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/`; }
+        return { set, get, clear };
+    })();
+    const STORAGE_LICENSE = 'lottery_auth_data';
+    function generateDeviceId() {
+        try {
+            let code = localStorage.getItem("device_code");
+            if (!code) {
+                const temp = [navigator.userAgent, screen.width, screen.height, navigator.language].join("|");
+                let hash = 0;
+                for (let i = 0; i < temp.length; i++) { hash = ((hash << 5) - hash) + temp.charCodeAt(i); hash = hash & hash; }
+                code = Math.abs(hash).toString(16).toUpperCase();
+                localStorage.setItem("device_code", code);
+            }
+            return code;
+        } catch(e) { return "UNKNOWN_DEVICE"; }
+    }
+    function generateLicenseCode(deviceId, days) {
+        const secret = "ANT2026_ZODIAC";
+        let period = days === 0 ? "forever" : `${days}d`;
+        let raw = `${deviceId}|${period}|${secret}`;
+        let hash = 0;
+        for (let i = 0; i < raw.length; i++) { hash = ((hash << 5) - hash) + raw.charCodeAt(i); hash = hash & hash; }
+        let hashHex = Math.abs(hash).toString(16).padStart(8, '0');
+        return `${period}_${hashHex}`;
+    }
+    function verifyLicenseCode(deviceId, code) {
+        if (!code || typeof code !== 'string') return null;
+        let parts = code.split('_');
+        if (parts.length !== 2) return null;
+        let periodStr = parts[0];
+        let providedHash = parts[1];
+        let days = null;
+        if (periodStr === 'forever') days = 0;
+        else if (periodStr.endsWith('d')) { let num = parseInt(periodStr.slice(0, -1), 10); if ([3,7,10,30,60].includes(num)) days = num; else return null; }
+        else return null;
+        let expected = generateLicenseCode(deviceId, days).split('_')[1];
+        return expected === providedHash ? days : null;
+    }
+    function saveAuth(expireTimestamp, days) { let data = { deviceId: generateDeviceId(), expireTimestamp, days, verifiedAt: Date.now() }; localStorage.setItem(STORAGE_LICENSE, JSON.stringify(data)); }
+    function getAuth() { let raw = localStorage.getItem(STORAGE_LICENSE); if (!raw) return null; try { let data = JSON.parse(raw); if (data.deviceId !== generateDeviceId()) return null; return data; } catch(e) { return null; } }
+    function checkAuthValid() { let auth = getAuth(); if (!auth) return false; if (auth.days === 0) return true; if (auth.expireTimestamp && Date.now() < auth.expireTimestamp) return true; return false; }
+    function getRemainingDays() { let auth = getAuth(); if (!auth) return null; if (auth.days === 0) return '永久'; let remainMs = auth.expireTimestamp - Date.now(); if (remainMs <= 0) return 0; return Math.ceil(remainMs / (1000 * 60 * 60 * 24)); }
+    function applyTrial() { const deviceId = generateDeviceId(); const trialData = TrialMark.get(); const now = Date.now(); if (trialData) { if (now < trialData.expire) { saveAuth(trialData.expire, 1); return true; } else return false; } else { const expire = now + 24 * 60 * 60 * 1000; TrialMark.set({ expire, deviceId }); saveAuth(expire, 1); return true; } }
+    function applyLicense(days) { saveAuth(days === 0 ? 0 : Date.now() + days * 24 * 60 * 60 * 1000, days); }
+
+    // ==================== 通用工具函数 ====================
+    const ZODIAC_NAMES = ['鼠','牛','虎','兔','龙','蛇','马','羊','猴','鸡','狗','猪'];
+    const ZODIAC_EMOJI = ['🐭','🐮','🐯','🐰','🐉','🐍','🐴','🐑','🐵','🐔','🐶','🐷'];
+    function getZodiacEmoji(name){ let idx=ZODIAC_NAMES.indexOf(name); return idx!==-1?ZODIAC_EMOJI[idx]:'❓'; }
+    const RED_SET = new Set([1,2,7,8,12,13,18,19,23,24,29,30,34,35,40,45,46]);
+    const BLUE_SET = new Set([3,4,9,10,14,15,20,25,26,31,36,37,41,42,47,48]);
+    const GREEN_SET = new Set([5,6,11,16,17,21,22,27,28,32,33,38,39,43,44,49]);
+    function getColorType(n){ if(RED_SET.has(n)) return 'red'; if(BLUE_SET.has(n)) return 'blue'; if(GREEN_SET.has(n)) return 'green'; return 'gray'; }
+    function getColorSymbol(n){ let t=getColorType(n); if(t==='red') return '🔴'; if(t==='blue') return '🔵'; if(t==='green') return '🟢'; return '⚪'; }
+
+    function extractNumbersFromLine(line){ let nums = []; let m = line.match(/\b\d{1,2}\b/g); if(m) for(let v of m){ let n=parseInt(v,10); if(n>=1&&n<=49) nums.push(n); } return nums.slice(0,6); }
+    function extractZodiacsFromLine(line){
+        if(!line) return [];
+        const map = {'鼠':'鼠','牛':'牛','虎':'虎','兔':'兔','龍':'龙','龙':'龙','蛇':'蛇','馬':'马','马':'马','羊':'羊','猴':'猴','雞':'鸡','鸡':'鸡','狗':'狗','豬':'猪','猪':'猪'};
+        const pattern = /[鼠牛虎兔龍龙蛇馬马羊猴雞鸡狗豬猪]/g;
+        let matches = line.match(pattern);
+        if(!matches) return [];
+        let res = [];
+        for(let m of matches){ let std = map[m]; if(ZODIAC_NAMES.includes(std)) res.push(std); if(res.length === 6) break; }
+        return res;
+    }
+    function extractColorsFromLine(line){ if(!line) return []; let symbols = line.match(/[🔴🟢🔵]/g); if(!symbols) return []; return symbols.slice(0,6); }
+
+    function parseLotteryData(text, lotteryTypeHint){
+        let lines = text.split(/\r?\n/);
+        let records = [];
+        let i = 0;
+        while(i < lines.length){
+            let line = lines[i].trim();
+            if(!line){ i++; continue; }
+            let periodMatch = line.match(/(?:新澳门|香港|老澳)?\s*第?\s*:?\s*(\d+)\s*期/);
+            if(!periodMatch) periodMatch = line.match(/(?:新澳门|香港|老澳)?\s*(\d+)\s*期/);
+            if(periodMatch){
+                let period = periodMatch[1];
+                let nextIdx = i+1;
+                let numLine = "", zodiacLine = "", colorLine = "";
+                while(nextIdx < lines.length && !numLine){
+                    let l = lines[nextIdx].trim();
+                    if(l && extractNumbersFromLine(l).length >= 6) numLine = l;
+                    else if(l && extractZodiacsFromLine(l).length >= 6) zodiacLine = l;
+                    else if(l && extractColorsFromLine(l).length >= 6) colorLine = l;
+                    nextIdx++;
+                    if(numLine && zodiacLine && colorLine) break;
+                }
+                if(!numLine && i+1 < lines.length) numLine = lines[i+1].trim();
+                if(!zodiacLine && i+2 < lines.length) zodiacLine = lines[i+2].trim();
+                if(!colorLine && i+3 < lines.length) colorLine = lines[i+3].trim();
+                let numbers = extractNumbersFromLine(numLine);
+                let zodiacs = extractZodiacsFromLine(zodiacLine);
+                let colors = extractColorsFromLine(colorLine);
+                if(numbers.length < 6 && i+2 < lines.length){ let extra = extractNumbersFromLine(lines[i+2]); if(extra.length) numbers = extra.slice(0,6); }
+                if(zodiacs.length < 6 && i+3 < lines.length){ let extra = extractZodiacsFromLine(lines[i+3]); if(extra.length) zodiacs = extra.slice(0,6); }
+                if(numbers.length >= 6 && zodiacs.length >= 6){
+                    let first6 = numbers.slice(0,6);
+                    let first6Zod = zodiacs.slice(0,6);
+                    let finalColors = colors.length >=6 ? colors.slice(0,6) : first6.map(n=>getColorSymbol(n));
+                    records.push({ period, numbers: first6, colors: finalColors, zodiacs: first6Zod });
+                }
+                i += 4;
+            } else { i++; }
+        }
+        records.sort((a,b)=>parseInt(a.period)-parseInt(b.period));
+        return records;
+    }
+
+    function countFrequency(records){ let f = new Array(50).fill(0); for(let r of records) for(let n of r.numbers) if(n>=1&&n<=49) f[n]++; return f; }
+    function countRecentFrequency(records){ let f = new Array(50).fill(0); let recent = records.slice(-7); for(let r of recent) for(let n of r.numbers) if(n>=1&&n<=49) f[n]++; return f; }
+    function countZodiacs(records){ let cnt={}; for(let n of ZODIAC_NAMES) cnt[n]=0; for(let r of records) for(let z of r.zodiacs) if(cnt[z]!==undefined) cnt[z]++; return cnt; }
+    function countRecentZodiacs(records){ let cnt={}; for(let n of ZODIAC_NAMES) cnt[n]=0; let recent = records.slice(-7); for(let r of recent) for(let z of r.zodiacs) if(cnt[z]!==undefined) cnt[z]++; return cnt; }
+
+    function getSortedNumbersAll(freqTotal, freqRecent){
+        let arr = []; for(let i=1;i<=49;i++) arr.push({ num: i, total: freqTotal[i], recent: freqRecent[i] });
+        arr.sort((a,b)=>{ if(a.total !== b.total) return b.total - a.total; if(a.recent !== b.recent) return b.recent - a.recent; return a.num - b.num; });
+        return arr;
+    }
+    function getSortedZodiacs(zodiacTotal, zodiacRecent){
+        let arr = [];
+        for(let name of ZODIAC_NAMES) if(zodiacTotal[name]>0) arr.push({ name, total: zodiacTotal[name], recent: zodiacRecent[name] });
+        arr.sort((a,b)=>{ if(a.total !== b.total) return b.total - a.total; if(a.recent !== b.recent) return b.recent - a.recent; let idxA = ZODIAC_NAMES.indexOf(a.name); let idxB = ZODIAC_NAMES.indexOf(b.name); return idxA - idxB; });
+        return arr;
+    }
+
+    function updateNextPeriodCaption(records, captionDiv, lotteryType){
+        if(!records.length){ if(captionDiv) captionDiv.innerText = '等待采集数据'; return; }
+        const lastRecord = records[records.length-1];
+        if(!lastRecord || !lastRecord.period) return;
+        let periodNum = parseInt(lastRecord.period,10);
+        if(isNaN(periodNum)) return;
+        let nextPeriod = periodNum + 1;
+        let nextPeriodStr = nextPeriod.toString().padStart(7,'0');
+        let text = lotteryType === 'hk' ? `香港六合彩第:${nextPeriodStr}期` : `老澳第:${nextPeriodStr}期`;
+        captionDiv.innerText = text;
+    }
+
+    function renderLottery(records, displayLimit, freqTableId, missDivId, zodiacContainerId, ruleCaptionId, lotteryType){
+        let displayRecords = (displayLimit>0) ? records.slice(-displayLimit) : [...records];
+        if(!displayRecords.length){
+            document.getElementById(freqTableId).innerHTML='';
+            document.getElementById(missDivId).innerHTML='<div class="reason">无数据</div>';
+            document.getElementById(zodiacContainerId).innerHTML='';
+            updateNextPeriodCaption(records, document.getElementById(ruleCaptionId), lotteryType);
+            return;
+        }
+        let freqTotal = countFrequency(displayRecords);
+        let freqRecent = countRecentFrequency(displayRecords);
+        let sortedNumbers = getSortedNumbersAll(freqTotal, freqRecent);
+        let tableHtml = `<table class="freq-table"><thead><tr><th class="checkbox-col">✅</th><th>排名</th><th>特码</th><th>频次</th><th>近期</th><th>热度值</th></tr></thead><tbody>`;
+        for(let i=0;i<sortedNumbers.length;i++){
+            let it = sortedNumbers[i];
+            let heat = it.total >= 4 ? '🔥热' : (it.total >= 2 ? '🌡️温' : '❄️冷');
+            tableHtml += `<tr><td class="checkbox-col"><input type="checkbox" class="num-checkbox" data-num="${it.num}"></td><td>${i+1}</td><td>${getColorSymbol(it.num)} ${it.num.toString().padStart(2,'0')}</td><td>${it.total}</td><td>${it.recent}</td><td>${heat}</td></tr>`;
+        }
+        tableHtml += `</tbody></table>`;
+        document.getElementById(freqTableId).innerHTML = tableHtml;
+
+        let miss = []; for(let i=1;i<=49;i++) if(freqTotal[i]===0) miss.push(i);
+        let missHtml = miss.length ? `<div class="miss-title">遗漏 ${miss.length}个</div><div>${miss.map(n=>n.toString().padStart(2,'0')).join(', ')}</div>` : '<div>✅全出现</div>';
+        document.getElementById(missDivId).innerHTML = missHtml;
+
+        let zodiacTotal = countZodiacs(displayRecords);
+        let zodiacRecent = countRecentZodiacs(displayRecords);
+        let totalZod = displayRecords.reduce((s,r)=>s+r.zodiacs.length,0);
+        let sortedZod = getSortedZodiacs(zodiacTotal, zodiacRecent);
+        let rankHtml = `<div class="reason">📊 生肖排名 打法以占比率主高防低</div><table class="zodiac-rank-table"><thead><tr><th class="checkbox-col">✅</th><th>排名</th><th>生肖</th><th>频次</th><th>近期</th><th>占比</th></tr></thead><tbody>`;
+        for(let i=0;i<sortedZod.length;i++){
+            let z = sortedZod[i];
+            let p = totalZod ? ((z.total/totalZod)*100).toFixed(1) : 0;
+            rankHtml += `<tr><td class="checkbox-col"><input type="checkbox" class="zodiac-checkbox" data-zodiac="${z.name}"></td><td>${i+1}</td><td>${getZodiacEmoji(z.name)} ${z.name}</td><td>${z.total}次</td><td>${z.recent}次</td><td>${p}%</td></tr>`;
+        }
+        rankHtml += `</tbody></table>`;
+        document.getElementById(zodiacContainerId).innerHTML = rankHtml;
+        updateNextPeriodCaption(records, document.getElementById(ruleCaptionId), lotteryType);
+    }
+
+    // ==================== 香港模块 ====================
+    let hkRecords = [];
+    async function hkCollect() {
+        const btn = document.getElementById('hkCollectBtn');
+        const original = btn.innerText;
+        btn.innerText = '⏳ 采集中...';
+        btn.disabled = true;
+        try {
+            const url = 'hk_lottery_data.html?t=' + Date.now();
+            const resp = await fetch(url, { cache: 'no-cache' });
+            if(!resp.ok) throw new Error(`HTTP ${resp.status}`);
+            const text = await resp.text();
+            if(!text.trim()) throw new Error('数据为空');
+            const parsed = parseLotteryData(text, 'hk');
+            if(!parsed.length) throw new Error('解析失败');
+            hkRecords = parsed;
+            const limit = parseInt(document.getElementById('hkPeriodLimit').value);
+            renderLottery(hkRecords, isNaN(limit)||limit<=0 ? 0 : limit, 'hkFreqTable', 'hkMissNumbers', 'hkZodiacRanking', 'hkRuleCaption', 'hk');
+            localStorage.setItem('hk_last_data', text);
+            showToast(`香港采集成功，共 ${hkRecords.length} 组`);
+        } catch(e){ console.error(e); showToast('香港采集失败'); }
+        finally { btn.innerText = original; btn.disabled = false; }
+    }
+    function hkFilter(){ let limit = parseInt(document.getElementById('hkPeriodLimit').value); renderLottery(hkRecords, isNaN(limit)||limit<=0 ? 0 : limit, 'hkFreqTable', 'hkMissNumbers', 'hkZodiacRanking', 'hkRuleCaption', 'hk'); }
+    function hkCopyNumbers(){ let checked = document.querySelectorAll('#hkFreqTable .num-checkbox:checked'); if(!checked.length){ showToast('未勾选号码'); return; } let nums = Array.from(checked).map(cb=>cb.getAttribute('data-num')); copyToClipboard(nums.join(', '), `已复制 ${nums.length} 个号码`); }
+    function hkCopyZodiac(){ let checked = document.querySelectorAll('#hkZodiacRanking .zodiac-checkbox:checked'); if(!checked.length){ showToast('未勾选生肖'); return; } let zodiacs = Array.from(checked).map(cb=>cb.getAttribute('data-zodiac')); copyToClipboard(zodiacs.join('、'), `已复制 ${zodiacs.length} 个生肖`); }
+    function hkToggleSelectAll(){ let isChecked = document.querySelector('.hk-select-all').checked; document.querySelectorAll('#hkFreqTable .num-checkbox').forEach(cb=>cb.checked=isChecked); }
+    function hkToggleZodiacAll(){ let isChecked = document.querySelector('.hk-zodiac-select-all').checked; document.querySelectorAll('#hkZodiacRanking .zodiac-checkbox').forEach(cb=>cb.checked=isChecked); }
+
+    // ==================== 老澳模块 ====================
+    let laoaoRecords = [];
+    async function laoaoCollect() {
+        const btn = document.getElementById('laoaoCollectBtn');
+        const original = btn.innerText;
+        btn.innerText = '⏳ 采集中...';
+        btn.disabled = true;
+        try {
+            const url = 'laoao_lottery_data.html?t=' + Date.now();
+            const resp = await fetch(url, { cache: 'no-cache' });
+            if(!resp.ok) throw new Error(`HTTP ${resp.status}`);
+            const text = await resp.text();
+            if(!text.trim()) throw new Error('数据为空');
+            const parsed = parseLotteryData(text, 'laoao');
+            if(!parsed.length) throw new Error('解析失败');
+            laoaoRecords = parsed;
+            const limit = parseInt(document.getElementById('laoaoPeriodLimit').value);
+            renderLottery(laoaoRecords, isNaN(limit)||limit<=0 ? 0 : limit, 'laoaoFreqTable', 'laoaoMissNumbers', 'laoaoZodiacRanking', 'laoaoRuleCaption', 'laoao');
+            localStorage.setItem('laoao_last_data', text);
+            showToast(`老澳采集成功，共 ${laoaoRecords.length} 组`);
+        } catch(e){ console.error(e); showToast('老澳采集失败'); }
+        finally { btn.innerText = original; btn.disabled = false; }
+    }
+    function laoaoFilter(){ let limit = parseInt(document.getElementById('laoaoPeriodLimit').value); renderLottery(laoaoRecords, isNaN(limit)||limit<=0 ? 0 : limit, 'laoaoFreqTable', 'laoaoMissNumbers', 'laoaoZodiacRanking', 'laoaoRuleCaption', 'laoao'); }
+    function laoaoCopyNumbers(){ let checked = document.querySelectorAll('#laoaoFreqTable .num-checkbox:checked'); if(!checked.length){ showToast('未勾选号码'); return; } let nums = Array.from(checked).map(cb=>cb.getAttribute('data-num')); copyToClipboard(nums.join(', '), `已复制 ${nums.length} 个号码`); }
+    function laoaoCopyZodiac(){ let checked = document.querySelectorAll('#laoaoZodiacRanking .zodiac-checkbox:checked'); if(!checked.length){ showToast('未勾选生肖'); return; } let zodiacs = Array.from(checked).map(cb=>cb.getAttribute('data-zodiac')); copyToClipboard(zodiacs.join('、'), `已复制 ${zodiacs.length} 个生肖`); }
+    function laoaoToggleSelectAll(){ let isChecked = document.querySelector('.laoao-select-all').checked; document.querySelectorAll('#laoaoFreqTable .num-checkbox').forEach(cb=>cb.checked=isChecked); }
+    function laoaoToggleZodiacAll(){ let isChecked = document.querySelector('.laoao-zodiac-select-all').checked; document.querySelectorAll('#laoaoZodiacRanking .zodiac-checkbox').forEach(cb=>cb.checked=isChecked); }
+
+    function copyToClipboard(text, successMsg) {
+        if(!text){ showToast('无内容'); return; }
+        if(navigator.clipboard && window.isSecureContext){ navigator.clipboard.writeText(text).then(()=>showToast(successMsg)).catch(()=>fallbackCopy(text, successMsg)); }
+        else { fallbackCopy(text, successMsg); }
+        function fallbackCopy(t, msg){ let ta = document.createElement('textarea'); ta.value = t; ta.style.position='fixed'; ta.style.top='-9999px'; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); showToast(msg); }
+    }
+    function showToast(msg){ let t = document.createElement('div'); t.className = 'toast-msg'; t.innerText = msg; document.body.appendChild(t); setTimeout(()=>t.remove(), 2000); }
+
+    function updateCurrentDateTime() {
+        const now = new Date();
+        const str = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`;
+        document.getElementById('currentDateTime').innerText = `📅 时间：${str}`;
+    }
+
+    // 初始化
+    function initAfterAuth(){
+        document.getElementById('authPanel').style.display = 'none';
+        document.getElementById('appContainer').style.display = 'block';
+        let remain = getRemainingDays();
+        let licenseSpan = document.getElementById('licenseInfo');
+        if(remain===null) licenseSpan.innerText = '⚠️ 授权异常';
+        else if(remain==='永久') licenseSpan.innerText = '✅ 永久授权 · 无限使用';
+        else if(typeof remain==='number' && remain>0) licenseSpan.innerText = `✅ 已授权 · 剩余 ${remain} 天`;
+        else licenseSpan.innerText = '⚠️ 授权已过期';
+        setInterval(updateCurrentDateTime, 1000);
+        updateCurrentDateTime();
+
+        // 加载本地缓存
+        let lastHk = localStorage.getItem('hk_last_data');
+        if(lastHk){ let p = parseLotteryData(lastHk, 'hk'); if(p.length){ hkRecords = p; hkFilter(); } }
+        let lastLaoao = localStorage.getItem('laoao_last_data');
+        if(lastLaoao){ let p = parseLotteryData(lastLaoao, 'laoao'); if(p.length){ laoaoRecords = p; laoaoFilter(); } }
+
+        // 绑定事件
+        document.getElementById('hkCollectBtn').onclick = hkCollect;
+        document.getElementById('hkPeriodLimit').addEventListener('input', hkFilter);
+        document.querySelector('.hk-select-all').onchange = hkToggleSelectAll;
+        document.querySelector('.hk-copy-num').onclick = hkCopyNumbers;
+        document.querySelector('.hk-zodiac-select-all').onchange = hkToggleZodiacAll;
+        document.querySelector('.hk-copy-zodiac').onclick = hkCopyZodiac;
+        document.getElementById('laoaoCollectBtn').onclick = laoaoCollect;
+        document.getElementById('laoaoPeriodLimit').addEventListener('input', laoaoFilter);
+        document.querySelector('.laoao-select-all').onchange = laoaoToggleSelectAll;
+        document.querySelector('.laoao-copy-num').onclick = laoaoCopyNumbers;
+        document.querySelector('.laoao-zodiac-select-all').onchange = laoaoToggleZodiacAll;
+        document.querySelector('.laoao-copy-zodiac').onclick = laoaoCopyZodiac;
+
+        document.querySelectorAll('.toggle-btn').forEach(btn=>btn.addEventListener('click',function(){ let t = document.getElementById(this.dataset.target); if(t) t.classList.toggle('collapsed'); }));
+
+        // 自动采集
+        setTimeout(()=>hkCollect(), 500);
+        setTimeout(()=>laoaoCollect(), 800);
+    }
+
+    document.getElementById('verifyBtn').onclick = ()=>{
+        let code = document.getElementById('authCodeInput').value.trim();
+        if(!code){ document.getElementById('authStatusMsg').innerText='请输入授权码'; return; }
+        let device = generateDeviceId();
+        let days = verifyLicenseCode(device, code);
+        if(days!==null){ applyLicense(days); document.getElementById('authStatusMsg').innerHTML = `✅ 授权成功！剩余${days===0?'永久':days+'天'}，即将刷新`; setTimeout(()=>location.reload(), 800); }
+        else { document.getElementById('authStatusMsg').innerText = '❌ 授权码无效'; }
+    };
+    document.getElementById('trialBtn').onclick = ()=>{
+        let auth = getAuth();
+        if(auth && checkAuthValid()){ document.getElementById('authStatusMsg').innerText='已有有效授权，无需试用'; return; }
+        if(applyTrial()){ document.getElementById('authStatusMsg').innerHTML = '✅ 试用1天已激活，即将刷新'; setTimeout(()=>location.reload(), 800); }
+        else { document.getElementById('authStatusMsg').innerHTML = '❌ 试用已过期，请获取授权码'; }
+    };
+    document.getElementById('deviceIdDisplay').innerText = `设备码: ${generateDeviceId()}`;
+
+    const trial = TrialMark.get();
+    if (trial && trial.expire && Date.now() < trial.expire) { const auth = getAuth(); if (!auth || !checkAuthValid()) { saveAuth(trial.expire, 1); } }
+    if(checkAuthValid()){ initAfterAuth(); } else { document.getElementById('authPanel').style.display = 'flex'; document.getElementById('appContainer').style.display = 'none'; }
+</script>
+</body>
+</html>
