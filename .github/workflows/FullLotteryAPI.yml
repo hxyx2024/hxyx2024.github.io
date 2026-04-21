@@ -1,7 +1,7 @@
 name: Full Lottery API
 
 on:
-  workflow_dispatch:   # 仅手动触发，取消自动运行
+  workflow_dispatch:   # 仅手动触发
 
 jobs:
   run:
@@ -40,7 +40,6 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add lottery_data_api.html .last_clean_date
           git diff --quiet && git diff --staged --quiet || git commit -m "Update lottery data [skip ci]"
-          # 丢弃未暂存的更改（解决 cannot pull with rebase 错误）
           git reset --hard HEAD
           git clean -fd
           git pull --rebase origin main
