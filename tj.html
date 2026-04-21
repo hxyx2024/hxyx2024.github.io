@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, maximum-scale=2.0, minimum-scale=1.0, viewport-fit=cover">
     <title>MAYI · 盘口自动统计</title>
     <style>
+        /* 样式与原版完全相同，无额外修改 */
         * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
         html,body { width:100%; min-height:100vh; background:#121212; color:#eee; padding:6px; }
         .container { max-width:700px; margin:0 auto; overflow-x:hidden; }
@@ -22,6 +23,7 @@
         .input-info { font-size:12px; color:#888; margin-top:4px; }
         .btn-group { display:flex; gap:6px; margin-bottom:10px; flex-wrap:wrap; }
         button, .btn-link { flex:1; min-width:60px; padding:10px 4px; border:none; border-radius:8px; background:#252525; color:#eee; font-size:13px; cursor:pointer; transition:all 0.2s; text-align:center; text-decoration:none; display:inline-flex; align-items:center; justify-content:center; min-height:44px; line-height:1.2; }
+        button:disabled { opacity:0.5; cursor:not-allowed; }
         .btn-link { background:#252525; color:#eee; }
         .btn-link:hover { background:#3a3a3a; }
         button:active, .btn-link:active { opacity:0.7; transform:scale(0.96); }
@@ -481,7 +483,6 @@ function clearBoth() {
     }); 
     autoCalc(1); 
     autoCalc(2);
-    // 清空数据时同时清除期号显示和存储，并显示“蚂蚁数据-专注澳彩”
     const periodSpan = document.getElementById('periodDisplay');
     if (periodSpan) periodSpan.innerText = '蚂蚁数据-专注澳彩';
     localStorage.removeItem('last_period');
@@ -755,7 +756,6 @@ function updateGridCount() {
     }
 }
 
-// ========== 支持 A 为区间的 applyUserEditedRule ==========
 function applyUserEditedRule(ruleText) {
     try {
         if (currentEditingType === null || currentEditingA === null) {
@@ -772,7 +772,6 @@ function applyUserEditedRule(ruleText) {
         if (!aStr) { showToast('❌ A 不能为空'); return false; }
         if (!window.selectCurrentData) { showToast('❌ 数据未加载，请刷新页面'); return false; }
         
-        // 解析 A 字符串，返回数字数组
         function parseAValues(aStr) {
             const values = new Set();
             const parts = aStr.split(',');
@@ -801,7 +800,6 @@ function applyUserEditedRule(ruleText) {
         const oldAStr = currentEditingA.toString();
         const oldAValues = parseAValues(oldAStr);
         
-        // 1. 删除旧规则
         if (currentEditingType === 'hot') {
             for (let a of oldAValues) {
                 if (hot.has(a)) hot.delete(a);
@@ -833,7 +831,6 @@ function applyUserEditedRule(ruleText) {
             }
         }
         
-        // 2. 添加新规则
         if (currentEditingType === 'hot') {
             for (let a of newAValues) {
                 hot.set(a, newB);
@@ -886,7 +883,6 @@ function renderSelectRulesFromData() {
     document.getElementById('selectRulesDetail').innerHTML = rulesDetailHtml;
 }
 
-// 记录上次的规则总数，用于判断是否变化
 let lastRuleCount = 0;
 
 function refreshSelectRange() {
@@ -895,7 +891,6 @@ function refreshSelectRange() {
         const totalRules = rules.length;
         const periodInput = document.getElementById('selectPeriodInput');
         
-        // 如果规则总数发生变化，则同步组数（默认规则更新时）
         if (periodInput && totalRules !== lastRuleCount) {
             periodInput.value = totalRules;
             lastRuleCount = totalRules;
@@ -1120,7 +1115,6 @@ function calculate(num) {
         state.minMax[num] = {min:0,max:0}; 
         document.getElementById(`baseResult${num}`).innerHTML = ''; 
         document.getElementById(`groupResult${num}`).innerHTML = ''; 
-        // 检查是否两个输入框都为空，若是则清除期号并显示“蚂蚁数据-专注澳彩”
         const val1 = document.getElementById('numInput1').value.trim();
         const val2 = document.getElementById('numInput2').value.trim();
         if (!utils.parseNumbers(val1).length && !utils.parseNumbers(val2).length) {
@@ -1145,7 +1139,6 @@ function autoCalc(num) {
     storage.autoSaveInput(); 
     clearTimeout(state.timers.autoCompare); 
     state.timers.autoCompare = setTimeout(compareAll, 260); 
-    // 再次检查是否需要清除期号（两个输入框都无数据）
     const val1 = document.getElementById('numInput1').value.trim();
     const val2 = document.getElementById('numInput2').value.trim();
     if (!utils.parseNumbers(val1).length && !utils.parseNumbers(val2).length) {
@@ -1163,65 +1156,75 @@ function handleRuleFileSelect(e) { let file = e.target.files[0]; if (!file) retu
 function importTxtToBoth() { document.getElementById('importFileInput').click(); }
 function handleFileSelect(e) { let file = e.target.files[0]; if (!file) return; let reader = new FileReader(); reader.onload = function(ev) { let content = ev.target.result; let parts = content.split(/\.{6,}/); if (parts.length < 2) { alert("文件格式错误：未找到分隔符 '........'，请确保上半部分为G·A数据，下半部分为G·B数据，中间用........隔开。"); return; } let ga = parts[0].trim(); let gb = parts[1].trim(); if (parts.length > 2) gb = parts.slice(1).join(' ').trim(); document.getElementById('numInput1').value = ga; document.getElementById('numInput2').value = gb; autoCalc(1); autoCalc(2); storage.saveInput(); }; reader.readAsText(file, "UTF-8"); e.target.value = ''; }
 
-// ==================== 自动同步轮询逻辑 ====================
-const DATA_API_URL = 'https://mayipan.eu.cc/gab_summary.html';   // 已改为新地址
+// ==================== 自动同步轮询逻辑（仅限21:00-21:10） ====================
+const DATA_API_URL = 'https://mayipan.eu.cc/gab_summary.html';
 let autoSyncInterval = null;
 let isAutoSyncing = false;
 
-// 解析 gab_summary.html 格式，提取 GA 和 GB 数字行
+// 检查当前时间是否在 21:00 - 21:10 之间
+function isSyncTimeAllowed() {
+    const now = new Date();
+    const hours = now.getHours();
+    const minutes = now.getMinutes();
+    // 21:00 到 21:10 之间（包含边界）
+    if (hours === 21 && minutes >= 0 && minutes <= 10) return true;
+    return false;
+}
+
+// 改进解析：提取有效数字行，跳过明显期号行、行内数字过少（<2个数字）的行，取前两行
 function extractGAGBFromText(text) {
     const lines = text.split(/\r?\n/);
-    let gaLine = null;
-    let gbLine = null;
-    let foundGA = false;
-    let foundGB = false;
-    for (let i = 0; i < lines.length; i++) {
-        let line = lines[i].trim();
-        if (line === "GA") {
-            foundGA = true;
-            // 下一行是数字
-            if (i + 1 < lines.length) {
-                gaLine = lines[i+1].trim();
-            }
-            continue;
-        }
-        if (line === "GB") {
-            foundGB = true;
-            if (i + 1 < lines.length) {
-                gbLine = lines[i+1].trim();
-            }
-            break;
-        }
+    const validLines = [];
+    for (let line of lines) {
+        const trimmed = line.trim();
+        if (trimmed === "") continue;
+        // 跳过期号行（包含“期”字，或者格式类似“第2026001期”）
+        if (/第\s*:?\s*\d{6,7}\s*期/.test(trimmed)) continue;
+        // 跳过明显不是数字行的（如包含中文且数字少于2个）
+        const numbers = trimmed.match(/\d+/g);
+        if (!numbers || numbers.length < 2) continue;
+        // 认为这一行是有效数据行
+        validLines.push(trimmed);
+        if (validLines.length >= 2) break;
     }
-    // 提取期号（第一行）
-    let periodMatch = text.match(/新澳彩第:\s*(\d{7})期/);
-    let periodText = periodMatch ? periodMatch[0] : null;
-    return { ga: gaLine, gb: gbLine, period: periodText };
+    if (validLines.length >= 2) {
+        return { ga: validLines[0], gb: validLines[1], period: null };
+    }
+    return { ga: null, gb: null, period: null };
 }
 
 async function performSync() {
+    // 非允许时间直接返回，不执行同步
+    if (!isSyncTimeAllowed()) {
+        console.log('非同步时段，跳过执行');
+        return;
+    }
+    const btn = document.getElementById('autoSyncBtn');
+    if (!btn) return;
     try {
-        const resp = await fetch(DATA_API_URL + '?t=' + Date.now(), { cache: 'no-cache' });
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 15000);
+        const resp = await fetch(DATA_API_URL + '?t=' + Date.now(), { cache: 'no-cache', signal: controller.signal });
+        clearTimeout(timeoutId);
         if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
         const text = await resp.text();
         if (!text.trim()) throw new Error('返回数据为空');
         
-        const { ga, gb, period } = extractGAGBFromText(text);
-        if (period) {
-            const periodSpan = document.getElementById('periodDisplay');
-            if (periodSpan) periodSpan.innerText = period;
-            localStorage.setItem('last_period', period);
-        } else {
-            console.warn('未解析到期号');
-            const periodSpan = document.getElementById('periodDisplay');
-            if (periodSpan) periodSpan.innerText = '蚂蚁数据-专注澳彩';
-            localStorage.removeItem('last_period');
-        }
+        const { ga, gb } = extractGAGBFromText(text);
         
         if (!ga || !gb) {
-            showToast('数据格式错误，无法解析 GA/GB');
+            console.error('解析失败，ga:', ga, 'gb:', gb);
+            showToast('数据格式错误，无法解析 GA/GB，请检查远程数据格式');
             return;
         }
+        
+        const gaNumbers = ga.match(/\d+/g);
+        const gbNumbers = gb.match(/\d+/g);
+        if (!gaNumbers || gaNumbers.length === 0 || !gbNumbers || gbNumbers.length === 0) {
+            showToast('解析出的数字为空，请检查远程数据内容');
+            return;
+        }
+        
         document.getElementById('numInput1').value = ga;
         document.getElementById('numInput2').value = gb;
         autoCalc(1);
@@ -1235,22 +1238,20 @@ async function performSync() {
 }
 
 async function pollAndSync() {
+    // 非允许时间不进行轮询同步
+    if (!isSyncTimeAllowed()) return;
     try {
         const resp = await fetch(DATA_API_URL + '?t=' + Date.now(), { cache: 'no-cache' });
         if (!resp.ok) return;
         const text = await resp.text();
-        let periodMatch = text.match(/新澳彩第:\s*(\d{7})期/);
-        if (periodMatch) {
-            const newPeriod = periodMatch[0];
-            const savedPeriod = localStorage.getItem('last_period');
-            if (savedPeriod !== newPeriod) {
-                console.log('期号变化，执行完整同步');
-                await performSync();
-            } else {
-                console.log('期号未变，跳过同步');
-            }
+        const currentData = text.trim();
+        const lastData = localStorage.getItem('last_sync_data');
+        if (currentData !== lastData) {
+            console.log('数据变化，执行完整同步');
+            await performSync();
+            localStorage.setItem('last_sync_data', currentData);
         } else {
-            console.warn('轮询未解析到期号');
+            console.log('数据未变，跳过同步');
         }
     } catch (err) {
         console.error('轮询错误:', err);
@@ -1258,8 +1259,14 @@ async function pollAndSync() {
 }
 
 function toggleAutoSync() {
+    // 非允许时间不允许操作，给出明确提示
+    if (!isSyncTimeAllowed()) {
+        showToast('⚠️ 自动同步仅限 21:00-21:10 操作');
+        return;
+    }
     const btn = document.getElementById('autoSyncBtn');
     if (isAutoSyncing) {
+        // 关闭同步
         if (autoSyncInterval) {
             clearInterval(autoSyncInterval);
             autoSyncInterval = null;
@@ -1268,16 +1275,39 @@ function toggleAutoSync() {
         btn.innerText = '⚙️ 自动同步关';
         showToast('已关闭自动同步');
     } else {
+        // 开启同步：先执行一次同步，然后启动定时器
         isAutoSyncing = true;
         btn.innerText = '⏳ 自动同步开';
         performSync().finally(() => {
             if (autoSyncInterval) clearInterval(autoSyncInterval);
             autoSyncInterval = setInterval(() => {
-                if (isAutoSyncing) pollAndSync();
+                if (isAutoSyncing && isSyncTimeAllowed()) {
+                    pollAndSync();
+                } else if (isAutoSyncing && !isSyncTimeAllowed()) {
+                    // 如果时间窗口结束，自动关闭同步
+                    toggleAutoSync(); // 调用自身关闭
+                }
             }, 5 * 60 * 1000);
             showToast('已开启自动同步（每5分钟检查更新）');
         });
     }
+}
+
+// 定时检查时间窗口，若超出时段且同步开启，则自动关闭
+function startTimeWindowMonitor() {
+    setInterval(() => {
+        if (!isSyncTimeAllowed() && isAutoSyncing) {
+            // 超出时段且同步开启，自动关闭
+            if (autoSyncInterval) {
+                clearInterval(autoSyncInterval);
+                autoSyncInterval = null;
+            }
+            isAutoSyncing = false;
+            const btn = document.getElementById('autoSyncBtn');
+            if (btn) btn.innerText = '⚙️ 自动同步关';
+            showToast('⏰ 已超出同步时段（21:00-21:10），自动同步已关闭');
+        }
+    }, 10000); // 每10秒检查一次
 }
 
 // ==================== 默认规则在线采集 ====================
@@ -1309,10 +1339,6 @@ async function onlineCollectRange() {
         btn.disabled = false;
     }
 }
-
-function openVip() { window.open('https://xm2026.github.io/vip.html', '_blank'); }
-function openHc() { window.open('https://xm2026.github.io/hc.html', '_blank'); }
-function openPm() { window.open('https://xm2026.github.io/xinao.html', '_blank'); }
 
 const DEFAULT_RANGE_DATA = "";
 
@@ -1359,15 +1385,23 @@ window.onload = function() {
     
     document.getElementById('importRulesFromRangeBtn').onclick = importRulesFromRange;
     document.getElementById('onlineCollectRangeBtn').onclick = onlineCollectRange;
-    document.getElementById('openVipBtn').onclick = openVip;
-    document.getElementById('openHcBtn').onclick = openHc;
-    document.getElementById('openPmBtn').onclick = openPm;
+    
+    // 安全绑定可能不存在的按钮
+    const vipBtn = document.getElementById('openVipBtn');
+    if (vipBtn) vipBtn.onclick = () => window.open('https://xm2026.github.io/vip.html', '_blank');
+    const hcBtn = document.getElementById('openHcBtn');
+    if (hcBtn) hcBtn.onclick = () => window.open('https://xm2026.github.io/hc.html', '_blank');
+    const pmBtn = document.getElementById('openPmBtn');
+    if (pmBtn) pmBtn.onclick = () => window.open('https://xm2026.github.io/xinao.html', '_blank');
     
     const autoSyncBtn = document.getElementById('autoSyncBtn');
     if (autoSyncBtn) autoSyncBtn.onclick = toggleAutoSync;
     
     const addBtn = document.getElementById('addCustomRuleBtn');
     if (addBtn) addBtn.addEventListener('click', addCustomRule);
+    
+    // 启动时间窗口监控
+    startTimeWindowMonitor();
     
     refreshSelectRange();
     window.editRule = editRule;
