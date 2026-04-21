@@ -52,5 +52,8 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add -f laoao_lottery_data.html hk_lottery_data.html .last_clean_date_hklao
           git diff --quiet && git diff --staged --quiet || git commit -m "Update LaoAo and HK lottery data [skip ci]"
+          # 丢弃所有未暂存的更改（如 session.session 的时间戳）
+          git reset --hard HEAD
+          git clean -fd
           git pull --rebase origin main
           git push
