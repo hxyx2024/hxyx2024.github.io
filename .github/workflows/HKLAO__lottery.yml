@@ -10,6 +10,10 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    # 防止并发运行导致取消
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: false
 
     steps:
       - name: Checkout repository
@@ -41,7 +45,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          # 丢弃本地所有未提交的更改和冲突标记
+          # 丢弃所有本地未提交的更改和冲突标记
           git reset --hard HEAD
           git clean -fd
           # 拉取远程最新代码
