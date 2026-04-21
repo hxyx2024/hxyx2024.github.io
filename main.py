@@ -88,11 +88,10 @@ async def fetch_recent_messages(client, limit):
                 period = get_period(txt)
                 if period:
                     items.append((period, txt))
-    items.sort(key=lambda x: x[0], reverse=True)  # 按期号降序
+    items.sort(key=lambda x: x[0], reverse=True)
     return [txt for _, txt in items]
 
 def clean_state_files():
-    """清空状态文件（但保留 .last_clean_date）"""
     state_files = ["ga_gb_state.json", "last_msg_id.json", "default_rules_state.json"]
     for sf in state_files:
         if os.path.exists(sf):
@@ -121,7 +120,6 @@ async def main():
         local_periods = {get_period(b) for b in local_data}
         print(f"本地已有 {len(local_data)} 期")
 
-        # 首次运行：拉取 FETCH_LIMIT 条消息，按期号取最大的3期
         if is_first_run:
             all_valid_temp = await fetch_recent_messages(client, FETCH_LIMIT)
             all_valid = all_valid_temp[:3]  # 取期号最大的3期
@@ -134,7 +132,6 @@ async def main():
             print("未拉取到任何有效开奖，退出")
             return
 
-        # 筛选出新期号
         new_periods = [txt for txt in all_valid if get_period(txt) not in local_periods]
         print(f"新期号数量: {len(new_periods)}")
 
@@ -142,7 +139,6 @@ async def main():
             print("无新期号，退出")
             return
 
-        # 随机抽取3-6条（从最新10条中）
         pool = new_periods[:CANDIDATE_POOL_SIZE]
         take = random.randint(MIN_TAKE, MAX_TAKE)
         take = min(take, len(pool))
@@ -152,7 +148,6 @@ async def main():
         selected = random.sample(pool, take)
         print(f"抽取 {take} 期，期号: {[get_period(t) for t in selected]}")
 
-        # 合并历史，保留最近60期
         all_blocks = local_data + selected
         unique = {}
         for b in all_blocks:
