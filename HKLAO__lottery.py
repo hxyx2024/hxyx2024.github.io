@@ -12,7 +12,7 @@ API_HASH = os.environ["API_HASH"]
 CHANNEL = "douapi"
 MAX_KEEP = 60
 BEIJING_TZ = timezone(timedelta(hours=8))
-CLEAN_FLAG_FILE = ".last_clean_date"
+CLEAN_FLAG_FILE = ".last_clean_date_hklao"   # 独立文件，不与 main.py 共用
 
 FETCH_LIMIT = 200
 CANDIDATE_POOL_SIZE = 10
