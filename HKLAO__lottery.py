@@ -39,20 +39,15 @@ def get_period(text, pattern):
     return int(m.group(1)) if m else 0
 
 def is_complete_lottery(text, pattern):
-    """检查消息是否为完整开奖（包含期号、数字行、生肖行、颜色行）"""
     lines = [ln.strip() for ln in text.split('\n') if ln.strip()]
     if len(lines) < 4:
         return False
-    # 第二行应有7个数字（可能包含空格分隔）
     if not re.search(r'\d+\s+\d+', lines[1]):
         return False
-    # 第三行应有7个生肖汉字
     if not re.search(r'[鼠牛虎兔龍蛇馬羊猴雞狗豬]', lines[2]):
         return False
-    # 第四行应有7个颜色符号
     if not re.search(r'[🟢🔴🔵]', lines[3]):
         return False
-    # 第一行必须包含匹配的期号
     if not pattern.search(lines[0]):
         return False
     return True
@@ -98,7 +93,6 @@ def is_auto_time():
     return True
 
 async def fetch_recent_messages(client, limit, pattern):
-    """拉取消息，返回列表 [(period, text), ...] 按期号降序"""
     items = []
     async for msg in client.iter_messages(CHANNEL, limit=limit):
         if msg.text:
@@ -111,7 +105,6 @@ async def fetch_recent_messages(client, limit, pattern):
     return [txt for _, txt in items]
 
 def clean_state_files():
-    """清空状态文件（保留 .last_clean_date）"""
     state_files = ["ga_gb_state.json", "last_msg_id.json", "default_rules_state.json"]
     for sf in state_files:
         if os.path.exists(sf):
@@ -119,7 +112,6 @@ def clean_state_files():
             print(f"已删除状态文件 {sf}")
 
 async def process_lottery(client, lottery_key, lottery_config, is_first_run):
-    """处理单个彩种"""
     out_file = lottery_config["out_file"]
     pattern = lottery_config["period_pattern"]
     name = lottery_config["name"]
@@ -130,13 +122,8 @@ async def process_lottery(client, lottery_key, lottery_config, is_first_run):
     local_periods = {get_period(b, pattern) for b in local_data}
     print(f"本地已有 {len(local_data)} 期")
     
-    if is_first_run:
-        all_valid_temp = await fetch_recent_messages(client, FETCH_LIMIT, pattern)
-        all_valid = all_valid_temp[:3]
-        print(f"首次运行，从最近 {FETCH_LIMIT} 条消息中提取到 {len(all_valid_temp)} 条有效开奖，取期号最大的3期: {[get_period(t, pattern) for t in all_valid]}")
-    else:
-        all_valid = await fetch_recent_messages(client, FETCH_LIMIT, pattern)
-        print(f"从最近 {FETCH_LIMIT} 条消息中提取到 {len(all_valid)} 条有效开奖（按期号降序）")
+    all_valid = await fetch_recent_messages(client, FETCH_LIMIT, pattern)
+    print(f"从最近 {FETCH_LIMIT} 条消息中提取到 {len(all_valid)} 条有效开奖（按期号降序）")
     
     if not all_valid:
         print("未拉取到任何有效开奖，退出")
