@@ -12,7 +12,7 @@ API_HASH = os.environ["API_HASH"]
 CHANNEL = "douapi"
 MAX_KEEP = 60
 BEIJING_TZ = timezone(timedelta(hours=8))
-CLEAN_FLAG_FILE = ".last_clean_date_hklao"   # 独立文件，不与 main.py 共用
+CLEAN_FLAG_FILE = ".last_clean_date_hklao"
 
 FETCH_LIMIT = 200
 CANDIDATE_POOL_SIZE = 10
@@ -39,12 +39,18 @@ def get_period(text, pattern):
     return int(m.group(1)) if m else 0
 
 def is_complete_lottery(text, pattern):
-    """宽松校验：包含期号且至少有7个1-49的数字"""
-    if not pattern.search(text):
+    lines = [ln.strip() for ln in text.split('\n') if ln.strip()]
+    if len(lines) < 4:
         return False
-    numbers = re.findall(r'\d+', text)
-    valid = [int(n) for n in numbers if 1 <= int(n) <= 49]
-    return len(valid) >= 7
+    if not re.search(r'\d+\s+\d+', lines[1]):
+        return False
+    if not re.search(r'[鼠牛虎兔龍蛇馬羊猴雞狗豬]', lines[2]):
+        return False
+    if not re.search(r'[🟢🔴🔵]', lines[3]):
+        return False
+    if not pattern.search(lines[0]):
+        return False
+    return True
 
 def get_local_data(out_file, pattern):
     if not os.path.exists(out_file):
@@ -116,8 +122,14 @@ async def process_lottery(client, lottery_key, lottery_config, is_first_run):
     local_periods = {get_period(b, pattern) for b in local_data}
     print(f"本地已有 {len(local_data)} 期")
     
-    all_valid = await fetch_recent_messages(client, FETCH_LIMIT, pattern)
-    print(f"从最近 {FETCH_LIMIT} 条消息中提取到 {len(all_valid)} 条有效开奖（按期号降序）")
+    # 首次运行：拉取 FETCH_LIMIT 条消息，只取期号最大的3期
+    if is_first_run:
+        all_valid_temp = await fetch_recent_messages(client, FETCH_LIMIT, pattern)
+        all_valid = all_valid_temp[:3]
+        print(f"首次运行，从最近 {FETCH_LIMIT} 条消息中提取到 {len(all_valid_temp)} 条有效开奖，取期号最大的3期: {[get_period(t, pattern) for t in all_valid]}")
+    else:
+        all_valid = await fetch_recent_messages(client, FETCH_LIMIT, pattern)
+        print(f"从最近 {FETCH_LIMIT} 条消息中提取到 {len(all_valid)} 条有效开奖（按期号降序）")
     
     if not all_valid:
         print("未拉取到任何有效开奖，退出")
@@ -152,10 +164,6 @@ async def process_lottery(client, lottery_key, lottery_config, is_first_run):
     with open(out_file, 'w', encoding='utf-8') as f:
         f.write("\n\n".join(sorted_blocks) + "\n")
     print(f"✅ {name} 彩写入完成，文件总期数: {len(sorted_blocks)}")
-    # 调试：打印文件内容前200字符
-    with open(out_file, 'r', encoding='utf-8') as f:
-        preview = f.read()[:200]
-        print(f"文件预览: {preview}...")
 
 async def main():
     is_manual = (os.environ.get("GITHUB_EVENT_NAME") == "workflow_dispatch")
