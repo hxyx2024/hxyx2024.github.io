@@ -39,18 +39,12 @@ def get_period(text, pattern):
     return int(m.group(1)) if m else 0
 
 def is_complete_lottery(text, pattern):
-    lines = [ln.strip() for ln in text.split('\n') if ln.strip()]
-    if len(lines) < 4:
+    """宽松校验：包含期号且至少有7个1-49的数字"""
+    if not pattern.search(text):
         return False
-    if not re.search(r'\d+\s+\d+', lines[1]):
-        return False
-    if not re.search(r'[鼠牛虎兔龍蛇馬羊猴雞狗豬]', lines[2]):
-        return False
-    if not re.search(r'[🟢🔴🔵]', lines[3]):
-        return False
-    if not pattern.search(lines[0]):
-        return False
-    return True
+    numbers = re.findall(r'\d+', text)
+    valid = [int(n) for n in numbers if 1 <= int(n) <= 49]
+    return len(valid) >= 7
 
 def get_local_data(out_file, pattern):
     if not os.path.exists(out_file):
@@ -158,6 +152,10 @@ async def process_lottery(client, lottery_key, lottery_config, is_first_run):
     with open(out_file, 'w', encoding='utf-8') as f:
         f.write("\n\n".join(sorted_blocks) + "\n")
     print(f"✅ {name} 彩写入完成，文件总期数: {len(sorted_blocks)}")
+    # 调试：打印文件内容前200字符
+    with open(out_file, 'r', encoding='utf-8') as f:
+        preview = f.read()[:200]
+        print(f"文件预览: {preview}...")
 
 async def main():
     is_manual = (os.environ.get("GITHUB_EVENT_NAME") == "workflow_dispatch")
