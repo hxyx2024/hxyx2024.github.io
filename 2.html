@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, maximum-scale=2.0, minimum-scale=1.0, viewport-fit=cover">
     <title>MAYI · 盘口自动统计</title>
     <style>
-        /* 样式与原版完全相同，无修改 */
+        /* 完整样式，与原版一致 */
         * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
         html,body { width:100%; min-height:100vh; background:#121212; color:#eee; padding:6px; }
         .container { max-width:700px; margin:0 auto; overflow-x:hidden; }
@@ -280,11 +280,11 @@
 <input type="file" id="importRuleFileInput" accept=".txt" style="display:none" onchange="handleRuleFileSelect(event)">
 
 <script>
-// ==================== 授权管理核心（修复版：授权成功后设备码永久固定，未授权时每次变化） ====================
+// ==================== 授权管理核心（最终修复版） ====================
 const SECRET_SALT = "ANT2026_ZODIAC";
 const STORAGE_KEY = "ANT_AUTH";
 
-// 实时计算设备码（基于 userAgent + 屏幕尺寸 + 语言）
+// 实时计算设备码（您原有的算法，完全未变）
 function computeDynamicDeviceCode() {
     const temp = [navigator.userAgent, screen.width, screen.height, navigator.language].join("|");
     let hash = 0;
@@ -295,25 +295,23 @@ function computeDynamicDeviceCode() {
     return Math.abs(hash).toString(16).toUpperCase();
 }
 
-// 获取当前设备码（如果冻结码存在且授权有效则返回冻结码，否则实时计算）
+// 获取当前设备码（如果有有效的冻结码则返回固定值，否则实时计算）
 function getDeviceCode() {
     try {
-        // 检查是否已冻结（即曾经授权成功过）
         const frozen = localStorage.getItem("device_code_frozen");
         if (frozen) {
-            // 还需要确认授权码是否仍然有效，如果失效则清除冻结码并重新实时计算
+            // 验证授权码是否仍然有效
             const auth = localStorage.getItem(STORAGE_KEY);
             if (auth && validateAuth(frozen, auth)) {
                 return frozen;
             } else {
-                // 授权已过期或无效，清除冻结码，返回实时码
+                // 授权已过期或无效，清除冻结码和授权记录
                 localStorage.removeItem("device_code_frozen");
-                // 同时也清除存储的授权码
                 localStorage.removeItem(STORAGE_KEY);
                 return computeDynamicDeviceCode();
             }
         }
-        // 没有冻结码，实时计算（每次刷新都不同）
+        // 从未授权或授权已清除，每次返回实时计算值（每次刷新都会不同）
         return computeDynamicDeviceCode();
     } catch(e) {
         if (!window._fallbackDeviceCode) {
@@ -381,14 +379,13 @@ function validateAuth(device, auth) {
 function checkAuthStatus() {
     const auth = localStorage.getItem(STORAGE_KEY);
     if (!auth) return false;
-    // 获取当前应使用的设备码（如果有冻结码且有效则用冻结码，否则实时计算，但此时冻结码不应存在）
+    // 获取当前应有的设备码（冻结码或实时码，但授权有效时冻结码一定存在）
     let device = localStorage.getItem("device_code_frozen");
     if (!device) {
         device = computeDynamicDeviceCode();
     }
     const valid = validateAuth(device, auth);
     if (!valid) {
-        // 授权无效，清除所有授权痕迹
         localStorage.removeItem(STORAGE_KEY);
         localStorage.removeItem("device_code_frozen");
     }
@@ -396,22 +393,21 @@ function checkAuthStatus() {
 }
 
 function checkAuth() {
-    // 注意：此时 getDeviceCode 可能返回实时码（如果从未授权）或冻结码（已有授权但过期？实际调用时会在 getDeviceCode 中处理）
-    // 为了确保验证时使用的是设备码原始值（基于当前环境），这里直接使用实时计算值（因为冻结码仅在授权有效时才返回）
-    // 但为了防止已授权用户再次误操作，我们获取当前设备码（可能是冻结码）
-    const d = getDeviceCode();
+    // 验证时获取当前实时设备码（因为尚未冻结，或用户重新授权）
+    const d = computeDynamicDeviceCode();
     const a = document.getElementById("authCode").value.trim();
     const tip = document.getElementById("authTip");
     if (!a) { tip.textContent = "请输入授权码！"; return; }
     if (validateAuth(d, a)) {
         localStorage.setItem(STORAGE_KEY, a);
-        // 授权成功，冻结设备码（保存当前设备码，后续永远不变）
+        // 授权成功：冻结当前设备码（以后永远返回这个值）
         localStorage.setItem("device_code_frozen", d);
         tip.style.color = "#6cce6c";
         tip.textContent = "✅ 验证成功！";
-        setTimeout(()=>document.getElementById("authModal").style.display="none",800);
-        // 强制刷新页面显示正确的设备码
-        location.reload();
+        setTimeout(()=>{
+            document.getElementById("authModal").style.display = "none";
+            location.reload(); // 刷新使冻结码立即生效
+        }, 800);
     } else {
         tip.textContent = "❌ 授权码无效或已过期 联系 @mayiya_bot";
     }
@@ -1207,8 +1203,7 @@ function isSyncTimeAllowed() {
     const now = new Date();
     const hours = now.getHours();
     const minutes = now.getMinutes();
-    if (hours === 21 && minutes >= 0 && minutes <= 10) return true;
-    return false;
+    return (hours === 21 && minutes >= 0 && minutes <= 10);
 }
 
 function extractGAGBFromText(text) {
@@ -1223,9 +1218,7 @@ function extractGAGBFromText(text) {
         validLines.push(trimmed);
         if (validLines.length >= 2) break;
     }
-    if (validLines.length >= 2) {
-        return { ga: validLines[0], gb: validLines[1], period: null };
-    }
+    if (validLines.length >= 2) return { ga: validLines[0], gb: validLines[1], period: null };
     return { ga: null, gb: null, period: null };
 }
 
