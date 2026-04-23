@@ -280,33 +280,35 @@
 <input type="file" id="importRuleFileInput" accept=".txt" style="display:none" onchange="handleRuleFileSelect(event)">
 
 <script>
-// ==================== 授权管理核心（设备码已修复为永久固定） ====================
+// ==================== 授权管理核心（设备码为永久固定的 UUID） ====================
 const SECRET_SALT = "ANT2026_ZODIAC";
 const STORAGE_KEY = "ANT_AUTH";
 
 function getDeviceCode() {
     try {
-        // 使用新的稳定存储键，确保设备码永不改变
-        let code = localStorage.getItem("device_code_stable");
+        let code = localStorage.getItem("device_code_uuid");
         if (!code) {
-            // 生成永久固定的设备码：随机字符串组合后取哈希
-            const randomPart = () => Math.random().toString(36).substring(2, 10);
-            const generator = randomPart() + '-' + randomPart() + '-' + randomPart();
-            let hash = 0;
-            for (let i = 0; i < generator.length; i++) {
-                hash = ((hash << 5) - hash) + generator.charCodeAt(i);
-                hash = hash & hash;
+            // 生成标准 UUID (v4)
+            if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+                code = crypto.randomUUID();
+            } else {
+                // 降级方案：手工生成 UUID v4
+                code = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                    const r = (Math.random() * 16) | 0;
+                    const v = c === 'x' ? r : (r & 0x3) | 0x8;
+                    return v.toString(16);
+                });
             }
-            code = Math.abs(hash).toString(16).toUpperCase();
-            localStorage.setItem("device_code_stable", code);
-            // 清除旧的不稳定设备码（避免混乱）
+            localStorage.setItem("device_code_uuid", code);
+            // 清除旧的不稳定设备码（如果存在）
             localStorage.removeItem("device_code");
+            localStorage.removeItem("device_code_stable");
         }
         return code;
     } catch(e) {
-        // localStorage 不可用时的降级方案（仍保证当前会话内不变）
+        // localStorage 不可用时的后备方案（当前会话有效）
         if (!window._fallbackDeviceCode) {
-            window._fallbackDeviceCode = 'FALLBACK_' + Math.random().toString(36).slice(2);
+            window._fallbackDeviceCode = 'fallback-' + Math.random().toString(36).substring(2, 15);
         }
         return window._fallbackDeviceCode;
     }
