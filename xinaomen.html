@@ -514,7 +514,7 @@
     async function initAppAfterAuth() {
         document.getElementById('authPanel').style.display = 'none';
         document.getElementById('appContainer').style.display = 'block';
-        document.getElementById('licenseInfo').innerText = '✅ 已授权 · 永久有效（由管理员控制）';
+        document.getElementById('licenseInfo').innerText = '✅ 已授权 ·（推广期间600元/周）';
         if(clockInterval) clearInterval(clockInterval);
         updateCurrentDateTime();
         clockInterval = setInterval(updateCurrentDateTime, 1000);
