@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, maximum-scale=2.0, minimum-scale=1.0, viewport-fit=cover">
-    <title>Ant Data AI Stats Tool</title>
+    <title>MAYI · 盘口自动统计</title>
     <style>
-        /* 完整样式（与原版完全一致） */
+        /* 原有样式 + 新增授权模态框样式 */
         * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
         html,body { width:100%; min-height:100vh; background:#121212; color:#eee; padding:6px; }
         .container { max-width:700px; margin:0 auto; overflow-x:hidden; }
@@ -66,14 +66,6 @@
         .total-zodiac-list .zodiac-item { display:inline-block; margin:2px; padding:4px 6px; background:#252525; border-radius:6px; font-size:12px; color:#eee; cursor:pointer; white-space:nowrap; }
         .hit-rate-display { margin:10px 0; padding:8px; background:#252525; border-radius:8px; text-align:center; font-size:14px; }
         .footer { text-align:center; margin-top:16px; font-size:11px; color:#666; }
-        .auth-modal { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:9999; display:flex; align-items:center; justify-content:center; display:none; }
-        .auth-box { background:#1e1e1e; border-radius:32px; padding:28px 24px; width:90%; max-width:360px; border:1px solid #4f46e5; box-shadow:0 20px 35px rgba(0,0,0,0.6); text-align:center; }
-        .device-info { background:#252525; padding:10px; border-radius:8px; color:#eee; margin:12px 0; display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap; }
-        .device-info span { font-family:monospace; font-size:11px; word-break:break-all; flex:1; }
-        .copy-code-btn { background:#007bff; border:none; padding:4px 12px; border-radius:20px; font-size:12px; cursor:pointer; color:#fff; white-space:nowrap; }
-        .auth-input { width:100%; padding:10px; margin:10px 0; border-radius:8px; border:none; background:#252525; color:#fff; text-align:center; }
-        .auth-btn { width:100%; padding:10px; border:none; border-radius:8px; background:#007bff; color:#fff; cursor:pointer; }
-        .auth-tip { margin-top:8px; font-size:12px; }
         .rule-import-box { margin:10px 0; display:flex; gap:8px; align-items:stretch; }
         .rule-import-input { flex:1; min-height:132px; height:auto; padding:8px; border-radius:8px; background:#222; color:#eee; font-size:14px; border:none; resize:vertical; max-height:150px; white-space:pre-wrap; }
         .rule-btn-col { display:flex; flex-direction:column; gap:8px; justify-content:space-between; }
@@ -138,10 +130,113 @@
             .result-title { font-size:11px; }
             .result-title .switch-control { font-size:9px; }
         }
+
+        /* 新增授权模态框样式 */
+        .auth-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.95);
+            backdrop-filter: blur(8px);
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            display: none;
+        }
+        .auth-box {
+            background: #1e1e1e;
+            border-radius: 32px;
+            padding: 28px 24px;
+            width: 90%;
+            max-width: 360px;
+            border: 1px solid #4f46e5;
+            box-shadow: 0 20px 35px rgba(0,0,0,0.6);
+            text-align: center;
+        }
+        .auth-box h2 {
+            margin-bottom: 16px;
+            color: #facc15;
+            font-size: 1.5rem;
+        }
+        .device-info {
+            background: #252525;
+            padding: 10px;
+            border-radius: 8px;
+            margin: 12px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .device-info span {
+            font-family: monospace;
+            font-size: 11px;
+            word-break: break-all;
+            flex: 1;
+        }
+        .copy-code-btn {
+            background: #007bff;
+            border: none;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            cursor: pointer;
+            color: #fff;
+            white-space: nowrap;
+        }
+        .auth-input {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 8px;
+            border: none;
+            background: #252525;
+            color: #fff;
+            text-align: center;
+        }
+        .auth-btn {
+            width: 100%;
+            padding: 10px;
+            border: none;
+            border-radius: 8px;
+            background: #007bff;
+            color: #fff;
+            cursor: pointer;
+        }
+        .auth-tip {
+            margin-top: 8px;
+            font-size: 12px;
+        }
+        .auth-footer {
+            margin-top: 12px;
+            font-size: 12px;
+            color: #888;
+            line-height: 1.4;
+        }
+        .auth-footer a {
+            color: #888;
+        }
+        .auth-row {
+            display: flex;
+            gap: 8px;
+            margin: 10px 0;
+        }
+        .auth-row .auth-input {
+            flex: 2;
+            margin: 0;
+        }
+        .auth-row .auth-btn {
+            flex: 1;
+            margin: 0;
+        }
     </style>
 </head>
 <body>
-<!-- ==================== 授权模态框（新增） ==================== -->
+<!-- ==================== 新增授权模态框 ==================== -->
 <div class="auth-modal" id="authModal">
     <div class="auth-box">
         <h2>🔒 授权验证</h2>
@@ -151,20 +246,20 @@
             <button class="copy-code-btn" id="copyDeviceBtn">📋 复制</button>
         </div>
         <div style="color:#ccc; margin-top: 8px;">请输入授权码：</div>
-        <div style="display: flex; gap: 8px; margin: 10px 0;">
-            <input type="password" class="auth-input" id="authCode" placeholder="输入授权码" style="flex:2;">
-            <button class="auth-btn" id="verifyBtn" style="flex:1;">确认</button>
+        <div class="auth-row">
+            <input type="password" class="auth-input" id="authCode" placeholder="输入授权码">
+            <button class="auth-btn" id="verifyBtn">确认</button>
         </div>
         <div class="auth-tip" id="authTip"></div>
-        <div class="auth-footer" style="margin-top:12px;font-size:12px;color:#888;line-height:1.4;">
+        <div class="auth-footer">
             首次使用或授权已过期，请将【设备码】发送给 @mayiya_bot 获取授权码<br>
             官方授权：<a href="https://t.me/mayiya_bot" target="_blank">机器人</a>
         </div>
     </div>
 </div>
 
-<!-- ==================== 主界面（初始隐藏） ==================== -->
-<div class="container" style="display:none;">
+<!-- ==================== 原有主界面（未作任何改动） ==================== -->
+<div class="container">
     <div class="tool-box">
         <h1>Ant Data AI Stats Tool</h1>
         <div class="panel">
@@ -298,11 +393,12 @@
 <input type="file" id="importRuleFileInput" accept=".txt" style="display:none" onchange="handleRuleFileSelect(event)">
 
 <script>
-// ==================== 新增：Worker 授权验证（一机一码） ====================
+// ==================== 新增授权验证模块（Worker 一机一码） ====================
 const WORKER_URL = 'https://api.mycm.cc.cd';
 const STORAGE_KEY = "ANT_AUTH";
 const DEVICE_UUID_KEY = "ANT_DEVICE_UUID";
 
+// 获取永久设备码（UUID）
 function getDeviceUUID() {
     let uuid = localStorage.getItem(DEVICE_UUID_KEY);
     if (!uuid) {
@@ -316,6 +412,7 @@ function getDeviceUUID() {
     return uuid;
 }
 
+// 带超时的 fetch
 async function fetchWithTimeout(url, options = {}, timeout = 10000) {
     const controller = new AbortController();
     const id = setTimeout(() => controller.abort(), timeout);
@@ -329,6 +426,7 @@ async function fetchWithTimeout(url, options = {}, timeout = 10000) {
     }
 }
 
+// 调用 Worker 验证授权码
 async function verifyAuthWithWorker(authCode) {
     const deviceCode = getDeviceUUID();
     if (!deviceCode || !authCode) return false;
@@ -348,6 +446,7 @@ async function verifyAuthWithWorker(authCode) {
     }
 }
 
+// 检查本地存储的授权是否有效
 async function checkLocalAuth() {
     const authCode = localStorage.getItem(STORAGE_KEY);
     if (!authCode) return false;
@@ -362,47 +461,11 @@ function clearAuth() {
     localStorage.removeItem(STORAGE_KEY);
 }
 
-// 复制设备码
+// 复制设备码（复用原有的 copyToClipboard 函数）
 document.getElementById('copyDeviceBtn').onclick = () => {
     const code = getDeviceUUID();
     copyToClipboard(code, 'authTip');
 };
-
-// 通用复制函数（保留原版功能，不做改动）
-async function copyToClipboard(text, tipId) {
-    if (!text || text.trim() === '') {
-        if (tipId) {
-            const tipEl = document.getElementById(tipId);
-            if (tipEl) tipEl.innerText = '❌ 无内容';
-            setTimeout(() => { if (tipEl) tipEl.innerText = ''; }, 1500);
-        }
-        return false;
-    }
-    try {
-        await navigator.clipboard.writeText(text);
-        if (tipId) {
-            const tipEl = document.getElementById(tipId);
-            if (tipEl) tipEl.innerText = '✅ 已复制';
-            setTimeout(() => tipEl.innerText = '', 1500);
-        }
-        return true;
-    } catch (e) {
-        const textarea = document.createElement('textarea');
-        textarea.value = text;
-        textarea.style.position = 'fixed';
-        textarea.style.top = '-9999px';
-        document.body.appendChild(textarea);
-        textarea.select();
-        const success = document.execCommand('copy');
-        document.body.removeChild(textarea);
-        if (tipId) {
-            const tipEl = document.getElementById(tipId);
-            if (tipEl) tipEl.innerText = success ? '✅ 已复制' : '❌ 复制失败';
-            setTimeout(() => tipEl.innerText = '', 1500);
-        }
-        return success;
-    }
-}
 
 // 验证按钮事件
 document.getElementById('verifyBtn').onclick = async () => {
@@ -417,9 +480,8 @@ document.getElementById('verifyBtn').onclick = async () => {
         tip.textContent = "✅ 验证成功！";
         setTimeout(() => {
             document.getElementById("authModal").style.display = "none";
-            document.querySelector(".container").style.display = "block";
-            // 可选：验证成功后自动同步一次数据
-            performSync().catch(console.warn);
+            // 授权成功后执行原有初始化
+            afterAuthInit();
         }, 800);
     } else {
         tip.style.color = "#ff6666";
@@ -427,7 +489,7 @@ document.getElementById('verifyBtn').onclick = async () => {
     }
 };
 
-// ==================== 以下为原有完整统计功能（未做任何修改） ====================
+// ==================== 原有所有功能（完全未动，仅将原 window.onload 内容包装为 afterAuthInit） ====================
 const ZODIAC_LIST = ['马','蛇','龙','兔','虎','牛','鼠','猪','狗','鸡','猴','羊'];
 const ZODIAC_NUMBER_MAP = {
     '马': [1,13,25,37,49], '蛇': [2,14,26,38], '龙': [3,15,27,39],
@@ -1410,35 +1472,7 @@ function openPm() { window.open('https://xm2026.github.io/xinao.html', '_blank')
 
 const DEFAULT_RANGE_DATA = "";
 
-window.onload = function() {
-    // 先显示设备码
-    document.getElementById('deviceCode').innerText = getDeviceUUID();
-    
-    // 检查本地授权
-    const savedAuth = localStorage.getItem(STORAGE_KEY);
-    if (savedAuth) {
-        verifyAuthWithWorker(savedAuth).then(valid => {
-            if (valid) {
-                // 授权有效，直接显示主界面
-                document.getElementById('authModal').style.display = 'none';
-                document.querySelector('.container').style.display = 'block';
-                afterAuthInit();
-            } else {
-                // 授权已失效，清除并弹出授权框
-                clearAuth();
-                document.getElementById('authModal').style.display = 'flex';
-                document.querySelector('.container').style.display = 'none';
-                document.getElementById('authTip').innerText = '授权已失效，请重新输入';
-            }
-        });
-    } else {
-        // 无授权码，显示授权框
-        document.getElementById('authModal').style.display = 'flex';
-        document.querySelector('.container').style.display = 'none';
-    }
-};
-
-// 主界面初始化函数（原有所有初始化逻辑）
+// 原 window.onload 内容全部移至此函数，未做任何改动
 function afterAuthInit() {
     storage.loadInput();
     storage.loadRange();
@@ -1500,6 +1534,59 @@ function afterAuthInit() {
     refreshSelectRange();
     window.editRule = editRule;
 }
+
+// 全局复制函数（原版已有，此处保留）
+async function copyToClipboard(text, tipId) {
+    if (!text || text.trim() === '') {
+        if (tipId) {
+            const tipEl = document.getElementById(tipId);
+            if (tipEl) tipEl.innerText = '❌ 无内容';
+            setTimeout(() => { if (tipEl) tipEl.innerText = ''; }, 1500);
+        }
+        return false;
+    }
+    try {
+        await navigator.clipboard.writeText(text);
+        if (tipId) {
+            const tipEl = document.getElementById(tipId);
+            if (tipEl) { tipEl.innerText = '✅ 已复制'; setTimeout(() => tipEl.innerText = '', 1500); }
+        }
+        return true;
+    } catch (e) {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.style.position = 'fixed';
+        textarea.style.top = '-9999px';
+        document.body.appendChild(textarea);
+        textarea.select();
+        const success = document.execCommand('copy');
+        document.body.removeChild(textarea);
+        if (tipId) {
+            const tipEl = document.getElementById(tipId);
+            if (tipEl) { tipEl.innerText = success ? '✅ 已复制' : '❌ 复制失败'; setTimeout(() => tipEl.innerText = '', 1500); }
+        }
+        return success;
+    }
+}
+
+// 新的 window.onload：先显示设备码，检查本地授权，有效则直接显示主界面并初始化，无效则显示授权框
+window.onload = function() {
+    document.getElementById('deviceCode').innerText = getDeviceUUID();
+    const savedAuth = localStorage.getItem(STORAGE_KEY);
+    if (savedAuth) {
+        verifyAuthWithWorker(savedAuth).then(valid => {
+            if (valid) {
+                document.getElementById('authModal').style.display = 'none';
+                afterAuthInit();
+            } else {
+                clearAuth();
+                document.getElementById('authModal').style.display = 'flex';
+            }
+        });
+    } else {
+        document.getElementById('authModal').style.display = 'flex';
+    }
+};
 </script>
 </body>
 </html>
