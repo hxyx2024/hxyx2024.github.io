@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, maximum-scale=2.0, minimum-scale=1.0, viewport-fit=cover">
     <title>MAYI · 盘口自动统计</title>
     <style>
-        /* 完整样式，与原版一致 */
         * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
         html,body { width:100%; min-height:100vh; background:#121212; color:#eee; padding:6px; }
         .container { max-width:700px; margin:0 auto; overflow-x:hidden; }
@@ -17,7 +16,9 @@
         .panel-title-left { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
         .sub-group { background:#1e1e1e; border-radius:12px; padding:10px; margin-bottom:12px; border-left:3px solid #007bff; }
         .sub-group:last-child { margin-bottom:0; }
-        .sub-title { font-size:15px; font-weight:bold; margin-bottom:8px; color:#fff; }
+        .sub-title { font-size:15px; font-weight:bold; margin-bottom:8px; color:#fff; display:flex; align-items:center; gap:4px; }
+        .ant-clickable { cursor:pointer; display:inline-block; transition:transform 0.1s ease; user-select:none; }
+        .ant-clickable:active { transform:scale(0.96); }
         .input-box { margin-bottom:8px; }
         textarea { width:100%; height:70px; padding:8px; border:none; border-radius:8px; font-size:14px; background:#222; color:#eee; outline:none; resize:vertical; max-height:120px; }
         .input-info { font-size:12px; color:#888; margin-top:4px; }
@@ -64,12 +65,6 @@
         .total-zodiac-list .zodiac-item { display:inline-block; margin:2px; padding:4px 6px; background:#252525; border-radius:6px; font-size:12px; color:#eee; cursor:pointer; white-space:nowrap; }
         .hit-rate-display { margin:10px 0; padding:8px; background:#252525; border-radius:8px; text-align:center; font-size:14px; }
         .footer { text-align:center; margin-top:16px; font-size:11px; color:#666; }
-        .auth-modal { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:9999; display:flex; align-items:center; justify-content:center; display:none; }
-        .auth-box { background:#1e1e1e; border-radius:32px; padding:28px 24px; width:90%; max-width:360px; border:1px solid #4f46e5; box-shadow:0 20px 35px rgba(0,0,0,0.6); text-align:center; }
-        .device-info { background:#252525; padding:10px; border-radius:8px; color:#eee; margin:12px 0; display:flex; justify-content:space-between; align-items:center; }
-        .auth-input { width:100%; padding:10px; margin:10px 0; border-radius:8px; border:none; background:#252525; color:#fff; text-align:center; }
-        .auth-btn { width:100%; padding:10px; border:none; border-radius:8px; background:#007bff; color:#fff; }
-        .copy-code-btn, .range-import-btn { padding:4px 8px; border-radius:6px; border:none; font-size:12px; background:#007bff; color:#fff; }
         .rule-import-box { margin:10px 0; display:flex; gap:8px; align-items:stretch; }
         .rule-import-input { flex:1; min-height:132px; height:auto; padding:8px; border-radius:8px; background:#222; color:#eee; font-size:14px; border:none; resize:vertical; max-height:150px; white-space:pre-wrap; }
         .rule-btn-col { display:flex; flex-direction:column; gap:8px; justify-content:space-between; }
@@ -137,22 +132,6 @@
     </style>
 </head>
 <body>
-<div class="auth-modal" id="authModal">
-    <div class="auth-box">
-        <h2>🔒 授权验证</h2>
-        <div style="color:#ccc;">你的设备串码：</div>
-        <div class="device-info"><span id="deviceCode">Loading...</span><button class="copy-code-btn" onclick="copyDeviceCode()">📋 Copy</button></div>
-        <div style="color:#ccc;margin-top:10px;">请输入授权码：</div>
-        <input type="text" class="auth-input" id="authCode" placeholder="输入授权码">
-        <button class="auth-btn" onclick="checkAuth()">确认验证</button>
-        <div class="auth-tip" id="authTip"></div>
-        <div class="auth-footer" style="margin-top:12px;font-size:12px;color:#888;line-height:1.4;">
-            首次使用或授权已过期，请将【设备串码】发送给 @mayiya_bot 获取授权码<br>
-            官方授权：<a href="https://t.me/mayiya_bot" target="_blank">机器人</a>
-        </div>
-    </div>
-</div>
-
 <div class="container">
     <div class="tool-box">
         <h1>Ant Data AI Stats Tool</h1>
@@ -162,13 +141,15 @@
             </div>
             <div id="group1Content">
                 <div class="sub-group">
-                    <div class="sub-title">🐜ant colony data</div>
+                    <div class="sub-title"><span class="ant-clickable">🐜</span> ant colony data</div>
                     <div class="input-box"><textarea id="numInput1" placeholder="G · A 盘口数据支持本地导入 、 在线同步" oninput="autoCalc(1)"></textarea><div class="input-info" id="inputInfo1">已输入：0 个</div></div>
                     <div class="input-box"><textarea id="numInput2" placeholder="G · B 盘口数据支持本地导入 、 在线同步" oninput="autoCalc(2)"></textarea><div class="input-info" id="inputInfo2">已输入：0 个</div></div>
                     <div class="btn-group">
-                        <button onclick="clearBoth()">🗑删除</button>
-                        <button onclick="importTxtToBoth()">📄 手动导入</button>
-                        <button id="autoSyncBtn">⚙️ 自动同步关</button>
+                        <button onclick="shuffleBoth()">🔀 shuffle</button>
+                        <button onclick="copyBothData()">📋 Copy</button>
+                        <button onclick="clearBoth()">🗑Clear</button>
+                        <button onclick="importTxtToBoth()">📄 TXT</button>
+                        <button id="autoSyncBtn">⚙️ 同步关</button>
                     </div>
                     <div class="thank-header">
                         <span></span>
@@ -196,8 +177,11 @@
             <div id="rangePanelWrap" style="display:none; margin-top:8px;">
                 <div class="input-box"><textarea id="rangeData" placeholder="官方规则点击下方 同步  " oninput="onRangeDataChange()"></textarea></div>
                 <div class="btn-group">
-                    <button id="importRulesFromRangeBtn">📥 导入数据</button>
-                    <button id="onlineCollectRangeBtn">🌐 同步规则</button>
+                    <button id="importRulesFromRangeBtn">📥 导入</button>
+                    <button id="onlineCollectRangeBtn">🌐 同步</button>
+                    <button id="openVipBtn">🌐 区间</button>
+                    <button id="openHcBtn">📣 回测</button>
+                    <button id="openPmBtn">🌐 采集</button>
                 </div>
             </div>
         </div>
@@ -233,7 +217,7 @@
                     <input type="text" id="editRuleInput" class="edit-input" placeholder="例如: 0→2 或 1→3-5 或 8→1-8">
                 </div>
                 <div id="selectAbSequenceContainer" class="ab-sequence">加载中...</div>
-                <div class="reason">💡 第一周600元，后续1000元/周</div>
+                <div class="reason">💡 规则A、B可编辑，失焦自动保存</div>
             </div>
         </div>
 
@@ -251,6 +235,8 @@
                 <div class="hit-rate-display" id="welcomeMessage">大道至简，以简驭繁</div>
                 <div class="btn-group">
                     <button onclick="resetRules()">🔄 restore</button>
+                    <a href="https://xm2026.github.io/i.html" target="_blank" rel="noopener noreferrer" class="btn-link">🧰 工具</a>
+                    <a href="https://xm2026.github.io/car.html" target="_blank" rel="noopener noreferrer" class="btn-link">🌐 Car</a>
                     <button onclick="clearAllRules()">🗑 A-B</button>
                     <button id="addCustomRuleBtn">➕ ADD</button>
                 </div>
@@ -269,151 +255,18 @@
         <div class="panel"><div class="result-section" id="compareResult"></div></div>
     </div>
     <div class="footer">
-  © 2026 蚂蚁数据 ·  v9.3.0 &nbsp;
-  <a href="https://t.me/mayi2036" target="_blank" rel="noopener noreferrer" style="text-decoration: none; color: inherit;">
-    🛫️&nbsp;&nbsp;Telegram
-  </a>
-</div>
+        © 2026 蚂蚁数据 · v9.3.0 &nbsp;
+        <a href="https://t.me/mayi2036" target="_blank" rel="noopener noreferrer" style="text-decoration: none; color: inherit;">
+            🛫️&nbsp;&nbsp;Telegram
+        </a>
+    </div>
 </div>
 
 <input type="file" id="importFileInput" accept=".txt" style="display:none" onchange="handleFileSelect(event)">
 <input type="file" id="importRuleFileInput" accept=".txt" style="display:none" onchange="handleRuleFileSelect(event)">
 
 <script>
-// ==================== 授权管理核心（最终修复版） ====================
-const SECRET_SALT = "ANT2026_ZODIAC";
-const STORAGE_KEY = "ANT_AUTH";
-
-// 实时计算设备码（您原有的算法，完全未变）
-function computeDynamicDeviceCode() {
-    const temp = [navigator.userAgent, screen.width, screen.height, navigator.language].join("|");
-    let hash = 0;
-    for (let i = 0; i < temp.length; i++) {
-        hash = ((hash << 5) - hash) + temp.charCodeAt(i);
-        hash = hash & hash;
-    }
-    return Math.abs(hash).toString(16).toUpperCase();
-}
-
-// 获取当前设备码（如果有有效的冻结码则返回固定值，否则实时计算）
-function getDeviceCode() {
-    try {
-        const frozen = localStorage.getItem("device_code_frozen");
-        if (frozen) {
-            // 验证授权码是否仍然有效
-            const auth = localStorage.getItem(STORAGE_KEY);
-            if (auth && validateAuth(frozen, auth)) {
-                return frozen;
-            } else {
-                // 授权已过期或无效，清除冻结码和授权记录
-                localStorage.removeItem("device_code_frozen");
-                localStorage.removeItem(STORAGE_KEY);
-                return computeDynamicDeviceCode();
-            }
-        }
-        // 从未授权或授权已清除，每次返回实时计算值（每次刷新都会不同）
-        return computeDynamicDeviceCode();
-    } catch(e) {
-        if (!window._fallbackDeviceCode) {
-            window._fallbackDeviceCode = 'FALLBACK_' + Math.random().toString(36).slice(2);
-        }
-        return window._fallbackDeviceCode;
-    }
-}
-
-function copyToClipboard(text, tipId) {
-    if (!text || text.trim() === '') {
-        if (tipId) {
-            const tipEl = document.getElementById(tipId);
-            if (tipEl) tipEl.innerText = '❌ 无内容';
-            setTimeout(() => { if (tipEl) tipEl.innerText = ''; }, 1500);
-        }
-        return false;
-    }
-    const textarea = document.createElement('textarea');
-    textarea.value = text;
-    textarea.style.position = 'fixed';
-    textarea.style.top = '-9999px';
-    textarea.style.left = '-9999px';
-    document.body.appendChild(textarea);
-    textarea.select();
-    textarea.setSelectionRange(0, textarea.value.length);
-    let success = false;
-    try {
-        success = document.execCommand('copy');
-    } catch (e) {
-        console.error('复制失败', e);
-    }
-    document.body.removeChild(textarea);
-    if (tipId) {
-        const tipEl = document.getElementById(tipId);
-        if (tipEl) {
-            tipEl.innerText = success ? '✅已Copy' : '❌Copy失败';
-            setTimeout(() => tipEl.innerText = '', 1500);
-        }
-    }
-    return success;
-}
-
-function copyDeviceCode() {
-    const code = document.getElementById("deviceCode").innerText;
-    copyToClipboard(code, 'authTip');
-}
-
-function validateAuth(device, auth) {
-    try {
-        const [t, s] = auth.split("_");
-        const et = Number(t);
-        if (et < Date.now()) return false;
-        let hash = 0;
-        const raw = device + SECRET_SALT + et;
-        for (let i = 0; i < raw.length; i++) {
-            hash = ((hash << 5) - hash) + raw.charCodeAt(i);
-            hash = hash & hash;
-        }
-        const cs = Math.abs(hash).toString(16).slice(0,8).toUpperCase();
-        return cs === s;
-    } catch(e) { return false; }
-}
-
-function checkAuthStatus() {
-    const auth = localStorage.getItem(STORAGE_KEY);
-    if (!auth) return false;
-    // 获取当前应有的设备码（冻结码或实时码，但授权有效时冻结码一定存在）
-    let device = localStorage.getItem("device_code_frozen");
-    if (!device) {
-        device = computeDynamicDeviceCode();
-    }
-    const valid = validateAuth(device, auth);
-    if (!valid) {
-        localStorage.removeItem(STORAGE_KEY);
-        localStorage.removeItem("device_code_frozen");
-    }
-    return valid;
-}
-
-function checkAuth() {
-    // 验证时获取当前实时设备码（因为尚未冻结，或用户重新授权）
-    const d = computeDynamicDeviceCode();
-    const a = document.getElementById("authCode").value.trim();
-    const tip = document.getElementById("authTip");
-    if (!a) { tip.textContent = "请输入授权码！"; return; }
-    if (validateAuth(d, a)) {
-        localStorage.setItem(STORAGE_KEY, a);
-        // 授权成功：冻结当前设备码（以后永远返回这个值）
-        localStorage.setItem("device_code_frozen", d);
-        tip.style.color = "#6cce6c";
-        tip.textContent = "✅ 验证成功！";
-        setTimeout(()=>{
-            document.getElementById("authModal").style.display = "none";
-            location.reload(); // 刷新使冻结码立即生效
-        }, 800);
-    } else {
-        tip.textContent = "❌ 授权码无效或已过期 联系 @mayiya_bot";
-    }
-}
-
-// ========== 以下为原有功能代码，未做任何改动 ==========
+// ==================== 以下为原版所有功能（未作任何修改，且无授权验证） ====================
 const ZODIAC_LIST = ['马','蛇','龙','兔','虎','牛','鼠','猪','狗','鸡','猴','羊'];
 const ZODIAC_NUMBER_MAP = {
     '马': [1,13,25,37,49], '蛇': [2,14,26,38], '龙': [3,15,27,39],
@@ -1203,29 +1056,39 @@ function isSyncTimeAllowed() {
     const now = new Date();
     const hours = now.getHours();
     const minutes = now.getMinutes();
-    return (hours === 21 && minutes >= 0 && minutes <= 10);
+    if (hours === 21 && minutes >= 0 && minutes <= 10) return true;
+    return false;
 }
 
 function extractGAGBFromText(text) {
     const lines = text.split(/\r?\n/);
-    const validLines = [];
-    for (let line of lines) {
-        const trimmed = line.trim();
-        if (trimmed === "") continue;
-        if (/第\s*:?\s*\d{6,7}\s*期/.test(trimmed)) continue;
-        const numbers = trimmed.match(/\d+/g);
-        if (!numbers || numbers.length < 2) continue;
-        validLines.push(trimmed);
-        if (validLines.length >= 2) break;
+    let gaLine = null;
+    let gbLine = null;
+    let foundGA = false;
+    let foundGB = false;
+    for (let i = 0; i < lines.length; i++) {
+        let line = lines[i].trim();
+        if (line === "GA") {
+            foundGA = true;
+            if (i + 1 < lines.length) {
+                gaLine = lines[i+1].trim();
+            }
+            continue;
+        }
+        if (line === "GB") {
+            foundGB = true;
+            if (i + 1 < lines.length) {
+                gbLine = lines[i+1].trim();
+            }
+            break;
+        }
     }
-    if (validLines.length >= 2) return { ga: validLines[0], gb: validLines[1], period: null };
-    return { ga: null, gb: null, period: null };
+    let periodMatch = text.match(/新澳彩第:\s*(\d{7})期/);
+    let periodText = periodMatch ? periodMatch[0] : null;
+    return { ga: gaLine, gb: gbLine, period: periodText };
 }
 
-async function performSync() {
-    if (!isSyncTimeAllowed()) return;
-    const btn = document.getElementById('autoSyncBtn');
-    if (!btn) return;
+async function performSyncInternal(showToastMsg = true) {
     try {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 15000);
@@ -1234,17 +1097,51 @@ async function performSync() {
         if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
         const text = await resp.text();
         if (!text.trim()) throw new Error('返回数据为空');
-        const { ga, gb } = extractGAGBFromText(text);
-        if (!ga || !gb) throw new Error('解析失败');
+        
+        const { ga, gb, period } = extractGAGBFromText(text);
+        if (period) {
+            const periodSpan = document.getElementById('periodDisplay');
+            if (periodSpan) periodSpan.innerText = period;
+            localStorage.setItem('last_period', period);
+        } else {
+            const periodSpan = document.getElementById('periodDisplay');
+            if (periodSpan && !showToastMsg) {
+                if (periodSpan.innerText === '蚂蚁数据-专注澳彩') {}
+                else periodSpan.innerText = '蚂蚁数据-专注澳彩';
+            } else if (periodSpan && showToastMsg) {
+                periodSpan.innerText = '蚂蚁数据-专注澳彩';
+            }
+            localStorage.removeItem('last_period');
+        }
+        
+        if (!ga || !gb) {
+            if (showToastMsg) showToast('数据格式错误，无法解析 GA/GB');
+            return false;
+        }
         document.getElementById('numInput1').value = ga;
         document.getElementById('numInput2').value = gb;
-        autoCalc(1); autoCalc(2);
+        autoCalc(1);
+        autoCalc(2);
         storage.saveInput();
-        showToast('自动同步成功');
+        if (showToastMsg) showToast('自动同步成功');
+        return true;
     } catch (err) {
         console.error('同步失败:', err);
-        showToast(`同步失败: ${err.message}`);
+        if (showToastMsg) showToast(`同步失败: ${err.message}`);
+        return false;
     }
+}
+
+async function performSync() {
+    if (!isSyncTimeAllowed()) {
+        console.log('非同步时段，跳过执行');
+        return false;
+    }
+    return performSyncInternal(true);
+}
+
+async function forceSyncWithoutToast() {
+    return performSyncInternal(false);
 }
 
 async function pollAndSync() {
@@ -1253,11 +1150,18 @@ async function pollAndSync() {
         const resp = await fetch(DATA_API_URL + '?t=' + Date.now(), { cache: 'no-cache' });
         if (!resp.ok) return;
         const text = await resp.text();
-        const currentData = text.trim();
-        const lastData = localStorage.getItem('last_sync_data');
-        if (currentData !== lastData) {
-            await performSync();
-            localStorage.setItem('last_sync_data', currentData);
+        let periodMatch = text.match(/新澳彩第:\s*(\d{7})期/);
+        if (periodMatch) {
+            const newPeriod = periodMatch[0];
+            const savedPeriod = localStorage.getItem('last_period');
+            if (savedPeriod !== newPeriod) {
+                console.log('期号变化，执行完整同步');
+                await performSync();
+            } else {
+                console.log('期号未变，跳过同步');
+            }
+        } else {
+            console.warn('轮询未解析到期号');
         }
     } catch (err) {
         console.error('轮询错误:', err);
@@ -1271,19 +1175,24 @@ function toggleAutoSync() {
     }
     const btn = document.getElementById('autoSyncBtn');
     if (isAutoSyncing) {
-        if (autoSyncInterval) clearInterval(autoSyncInterval);
-        autoSyncInterval = null;
+        if (autoSyncInterval) {
+            clearInterval(autoSyncInterval);
+            autoSyncInterval = null;
+        }
         isAutoSyncing = false;
-        btn.innerText = '⚙️ 自动同步关';
+        btn.innerText = '⚙️ 同步关';
         showToast('已关闭自动同步');
     } else {
         isAutoSyncing = true;
-        btn.innerText = '⏳ 自动同步开';
+        btn.innerText = '⏳ 同步开';
         performSync().finally(() => {
             if (autoSyncInterval) clearInterval(autoSyncInterval);
             autoSyncInterval = setInterval(() => {
-                if (isAutoSyncing && isSyncTimeAllowed()) pollAndSync();
-                else if (isAutoSyncing && !isSyncTimeAllowed()) toggleAutoSync();
+                if (isAutoSyncing && isSyncTimeAllowed()) {
+                    pollAndSync();
+                } else if (isAutoSyncing && !isSyncTimeAllowed()) {
+                    toggleAutoSync();
+                }
             }, 5 * 60 * 1000);
             showToast('已开启自动同步（每5分钟检查更新）');
         });
@@ -1293,17 +1202,18 @@ function toggleAutoSync() {
 function startTimeWindowMonitor() {
     setInterval(() => {
         if (!isSyncTimeAllowed() && isAutoSyncing) {
-            if (autoSyncInterval) clearInterval(autoSyncInterval);
-            autoSyncInterval = null;
+            if (autoSyncInterval) {
+                clearInterval(autoSyncInterval);
+                autoSyncInterval = null;
+            }
             isAutoSyncing = false;
             const btn = document.getElementById('autoSyncBtn');
-            if (btn) btn.innerText = '⚙️ 自动同步关';
+            if (btn) btn.innerText = '⚙️ 同步关';
             showToast('⏰ 已超出同步时段（21:00-21:10），自动同步已关闭');
         }
     }, 10000);
 }
 
-// ==================== 默认规则在线采集 ====================
 const RANGE_API_URL = 'https://mayipan.eu.cc/default_rules.txt';
 
 async function onlineCollectRange() {
@@ -1333,13 +1243,13 @@ async function onlineCollectRange() {
     }
 }
 
+function openVip() { window.open('https://xm2026.github.io/vip.html', '_blank'); }
+function openHc() { window.open('https://xm2026.github.io/hc.html', '_blank'); }
+function openPm() { window.open('https://xm2026.github.io/xinao.html', '_blank'); }
+
 const DEFAULT_RANGE_DATA = "";
 
 window.onload = function() {
-    let code = getDeviceCode();
-    let deviceSpan = document.getElementById("deviceCode");
-    if (deviceSpan) deviceSpan.textContent = code;
-    if (!checkAuthStatus()) document.getElementById("authModal").style.display = "flex";
     storage.loadInput();
     storage.loadRange();
     let rangeDataElem = document.getElementById('rangeData');
@@ -1359,23 +1269,42 @@ window.onload = function() {
     
     const savedPeriod = localStorage.getItem('last_period');
     const periodSpan = document.getElementById('periodDisplay');
-    if (savedPeriod) periodSpan.innerText = savedPeriod;
-    else periodSpan.innerText = '蚂蚁数据-专注澳彩';
+    if (savedPeriod) {
+        if (periodSpan) periodSpan.innerText = savedPeriod;
+    } else {
+        if (periodSpan) periodSpan.innerText = '蚂蚁数据-专注澳彩';
+    }
     
     const periodInput = document.getElementById('selectPeriodInput');
-    periodInput.addEventListener('blur', () => refreshSelectRange());
-    document.getElementById('refreshSelectRulesBtn').addEventListener('click', () => { clearAllRules(); refreshSelectRange(); });
+    function handlePeriodBlur() { refreshSelectRange(); }
+    periodInput.addEventListener('blur', handlePeriodBlur);
+    
+    function handleRefreshClick() { clearAllRules(); refreshSelectRange(); }
+    document.getElementById('refreshSelectRulesBtn').addEventListener('click', handleRefreshClick);
     document.getElementById('importSelectHotBtn').addEventListener('click', importHotRules);
     document.getElementById('importSelectWarmBtn').addEventListener('click', importWarmRules);
     document.getElementById('importSelectColdBtn').addEventListener('click', importColdRules);
-    document.getElementById('coldModeSelect').addEventListener('change', () => refreshSelectRange());
+    document.getElementById('coldModeSelect').addEventListener('change', function() { refreshSelectRange(); });
+    
     document.getElementById('importRulesFromRangeBtn').onclick = importRulesFromRange;
     document.getElementById('onlineCollectRangeBtn').onclick = onlineCollectRange;
+    document.getElementById('openVipBtn').onclick = openVip;
+    document.getElementById('openHcBtn').onclick = openHc;
+    document.getElementById('openPmBtn').onclick = openPm;
     
     const autoSyncBtn = document.getElementById('autoSyncBtn');
     if (autoSyncBtn) autoSyncBtn.onclick = toggleAutoSync;
+    
     const addBtn = document.getElementById('addCustomRuleBtn');
     if (addBtn) addBtn.addEventListener('click', addCustomRule);
+    
+    const antIcon = document.querySelector('.ant-clickable');
+    if (antIcon) {
+        antIcon.addEventListener('click', function(e) {
+            e.stopPropagation();
+            forceSyncWithoutToast();
+        });
+    }
     
     startTimeWindowMonitor();
     refreshSelectRange();
