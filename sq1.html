@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, maximum-scale=2.0, minimum-scale=1.0, viewport-fit=cover">
     <title>MAYI · 盘口自动统计</title>
     <style>
-        /* 原有样式 + 新增授权模态框样式 */
+        /* 原有样式（完整保留） */
         * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
         html,body { width:100%; min-height:100vh; background:#121212; color:#eee; padding:6px; }
         .container { max-width:700px; margin:0 auto; overflow-x:hidden; }
@@ -131,7 +131,7 @@
             .result-title .switch-control { font-size:9px; }
         }
 
-        /* 新增授权模态框样式 */
+        /* 新增授权框样式（只修改此处，其他不变） */
         .auth-modal {
             position: fixed;
             top: 0;
@@ -161,51 +161,55 @@
             color: #facc15;
             font-size: 1.5rem;
         }
-        .device-info {
-            background: #252525;
-            padding: 10px;
-            border-radius: 8px;
-            margin: 12px 0;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 8px;
-            flex-wrap: wrap;
-        }
-        .device-info span {
-            font-family: monospace;
-            font-size: 11px;
-            word-break: break-all;
-            flex: 1;
-        }
-        .copy-code-btn {
-            background: #007bff;
-            border: none;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            cursor: pointer;
-            color: #fff;
-            white-space: nowrap;
-        }
-        .auth-input {
-            width: 100%;
-            padding: 10px;
-            margin: 10px 0;
-            border-radius: 8px;
-            border: none;
-            background: #252525;
-            color: #fff;
-            text-align: center;
-        }
+        /* 统一按钮样式 */
         .auth-btn {
-            width: 100%;
-            padding: 10px;
+            background: #007bff;
             border: none;
             border-radius: 8px;
-            background: #007bff;
+            padding: 10px 16px;
             color: #fff;
             cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            white-space: nowrap;
+            min-width: 80px;
+            text-align: center;
+            transition: 0.2s;
+        }
+        .auth-btn:active {
+            transform: scale(0.96);
+            opacity: 0.9;
+        }
+        /* 设备码行 */
+        .device-row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            margin: 8px 0 16px 0;
+        }
+        .device-row span {
+            flex: 1;
+            background: #252525;
+            padding: 10px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 12px;
+            word-break: break-all;
+        }
+        /* 授权码行 */
+        .auth-row {
+            display: flex;
+            gap: 8px;
+            margin: 8px 0 20px 0;
+        }
+        .auth-row input {
+            flex: 1;
+            background: #252525;
+            border: none;
+            border-radius: 8px;
+            padding: 10px;
+            color: #fff;
+            font-size: 14px;
         }
         .auth-tip {
             margin-top: 8px;
@@ -220,34 +224,21 @@
         .auth-footer a {
             color: #888;
         }
-        .auth-row {
-            display: flex;
-            gap: 8px;
-            margin: 10px 0;
-        }
-        .auth-row .auth-input {
-            flex: 2;
-            margin: 0;
-        }
-        .auth-row .auth-btn {
-            flex: 1;
-            margin: 0;
-        }
     </style>
 </head>
 <body>
-<!-- ==================== 新增授权模态框 ==================== -->
+<!-- ==================== 授权框（已修改样式，按钮统一且对齐） ==================== -->
 <div class="auth-modal" id="authModal">
     <div class="auth-box">
         <h2>🔒 授权验证</h2>
         <div style="color:#ccc;">你的设备码：</div>
-        <div class="device-info">
+        <div class="device-row">
             <span id="deviceCode">加载中...</span>
-            <button class="copy-code-btn" id="copyDeviceBtn">📋 复制</button>
+            <button class="auth-btn" id="copyDeviceBtn">📋 复制</button>
         </div>
         <div style="color:#ccc; margin-top: 8px;">请输入授权码：</div>
         <div class="auth-row">
-            <input type="password" class="auth-input" id="authCode" placeholder="输入授权码">
+            <input type="password" id="authCode" placeholder="输入授权码">
             <button class="auth-btn" id="verifyBtn">确认</button>
         </div>
         <div class="auth-tip" id="authTip"></div>
@@ -398,7 +389,6 @@ const WORKER_URL = 'https://api.mycm.cc.cd';
 const STORAGE_KEY = "ANT_AUTH";
 const DEVICE_UUID_KEY = "ANT_DEVICE_UUID";
 
-// 获取永久设备码（UUID）
 function getDeviceUUID() {
     let uuid = localStorage.getItem(DEVICE_UUID_KEY);
     if (!uuid) {
@@ -412,7 +402,6 @@ function getDeviceUUID() {
     return uuid;
 }
 
-// 带超时的 fetch
 async function fetchWithTimeout(url, options = {}, timeout = 10000) {
     const controller = new AbortController();
     const id = setTimeout(() => controller.abort(), timeout);
@@ -426,7 +415,6 @@ async function fetchWithTimeout(url, options = {}, timeout = 10000) {
     }
 }
 
-// 调用 Worker 验证授权码
 async function verifyAuthWithWorker(authCode) {
     const deviceCode = getDeviceUUID();
     if (!deviceCode || !authCode) return false;
@@ -446,7 +434,6 @@ async function verifyAuthWithWorker(authCode) {
     }
 }
 
-// 检查本地存储的授权是否有效
 async function checkLocalAuth() {
     const authCode = localStorage.getItem(STORAGE_KEY);
     if (!authCode) return false;
@@ -461,7 +448,7 @@ function clearAuth() {
     localStorage.removeItem(STORAGE_KEY);
 }
 
-// 复制设备码（复用原有的 copyToClipboard 函数）
+// 复制设备码
 document.getElementById('copyDeviceBtn').onclick = () => {
     const code = getDeviceUUID();
     copyToClipboard(code, 'authTip');
@@ -489,7 +476,7 @@ document.getElementById('verifyBtn').onclick = async () => {
     }
 };
 
-// ==================== 原有所有功能（完全未动，仅将原 window.onload 内容包装为 afterAuthInit） ====================
+// ==================== 原有所有功能（完全未动） ====================
 const ZODIAC_LIST = ['马','蛇','龙','兔','虎','牛','鼠','猪','狗','鸡','猴','羊'];
 const ZODIAC_NUMBER_MAP = {
     '马': [1,13,25,37,49], '蛇': [2,14,26,38], '龙': [3,15,27,39],
@@ -1472,7 +1459,7 @@ function openPm() { window.open('https://xm2026.github.io/xinao.html', '_blank')
 
 const DEFAULT_RANGE_DATA = "";
 
-// 原 window.onload 内容全部移至此函数，未做任何改动
+// 原 window.onload 内容移至此函数，未做任何改动
 function afterAuthInit() {
     storage.loadInput();
     storage.loadRange();
@@ -1535,7 +1522,7 @@ function afterAuthInit() {
     window.editRule = editRule;
 }
 
-// 全局复制函数（原版已有，此处保留）
+// 全局复制函数（原有，未改动）
 async function copyToClipboard(text, tipId) {
     if (!text || text.trim() === '') {
         if (tipId) {
