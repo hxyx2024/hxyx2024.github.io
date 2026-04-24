@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, maximum-scale=2.0, minimum-scale=1.0, viewport-fit=cover">
+    <title>蚂蚁数据 · 盘口自动统计</title>
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+        html,body { width:100%; min-height:100vh; background:#121212; color:#eee; padding:6px; }
+        .container { max-width:700px; margin:0 auto; overflow-x:hidden; }
+        .tool-box { background:#1a1a1a; padding:12px 10px; border-radius:16px; border:1px solid #2a2a2a; }
+        h1 { text-align:center; font-size:20px; margin-bottom:12px; color:#fff; }
+        .panel { margin-bottom:16px; padding-bottom:12px; border-bottom:1px solid #222; }
+        .panel:last-child { margin-bottom:0; padding-bottom:0; border-bottom:none; }
+        .panel-title { font-size:15px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; }
+        .panel-title-left { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+        .sub-group { background:#1e1e1e; border-radius:12px; padding:10px; margin-bottom:12px; border-left:3px solid #007bff; }
+        .sub-group:last-child { margin-bottom:0; }
+        .sub-title { font-size:15px; font-weight:bold; margin-bottom:8px; color:#fff; display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap; }
+        .ant-clickable { cursor:pointer; display:inline-block; transition:transform 0.1s ease; user-select:none; }
+        .ant-clickable:active { transform:scale(0.96); }
+        #inputAreaWrapper { display: none; transition: opacity 0.2s; }
+        textarea { width:100%; height:70px; padding:8px; border:none; border-radius:8px; font-size:14px; background:#222; color:#eee; outline:none; resize:vertical; max-height:120px; }
+        .input-info { font-size:12px; color:#888; margin-top:4px; }
+        .btn-group { display:flex; gap:6px; margin-bottom:10px; flex-wrap:wrap; }
+        button, .btn-link { flex:1; min-width:60px; padding:10px 4px; border:none; border-radius:8px; background:#252525; color:#eee; font-size:13px; cursor:pointer; transition:all 0.2s; text-align:center; text-decoration:none; display:inline-flex; align-items:center; justify-content:center; min-height:44px; line-height:1.2; }
+        button:disabled { opacity:0.5; cursor:not-allowed; }
+        .btn-link { background:#252525; color:#eee; }
+        .btn-link:hover { background:#3a3a3a; }
+        button:active, .btn-link:active { opacity:0.7; transform:scale(0.96); }
+        button.primary { background:#007bff; color:#fff; }
+        .result-section { margin-top:8px; padding:8px; border-radius:12px; background:#222; }
+        .result-title { font-size:15px; margin-bottom:8px; padding-bottom:4px; border-bottom:1px solid #333; display:flex; justify-content:space-between; align-items:center; gap:6px; flex-wrap:wrap; }
+        .stats-two-columns { display:flex; gap:16px; flex-wrap:wrap; }
+        .stats-column { flex:1; min-width:0; }
+        .stats-column .stat-header { font-size:13px; font-weight:bold; color:#007bff; margin-bottom:8px; padding-bottom:4px; border-bottom:1px solid #333; }
+        .thank-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; padding:6px 0; border-bottom:1px solid #333; gap:12px; flex-wrap:wrap; }
+        .marquee-container { flex:1; overflow:hidden; text-align:center; }
+        .marquee { white-space: nowrap; display: inline-block; animation: marquee 15s linear infinite; padding-left: 100%; }
+        @keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-100%); } }
+        .period-text { font-size:14px; font-weight:bold; color:#007bff; white-space:nowrap; background:#252525; padding:4px 12px; border-radius:40px; }
+        .base-row { display:flex; gap:12px; font-size:13px; flex-wrap:wrap; align-items:center; }
+        .group-item { padding:8px 10px; margin:4px 0; background:#252525; font-size:13px; border-radius:6px; display:flex; justify-content:space-between; align-items:center; width:100%; word-break:break-word; overflow-wrap:break-word; border-left:2px solid #007bff; flex-wrap:wrap; gap:8px; }
+        .copy-btn { padding:4px 8px; background:#333; color:#fff; border:none; border-radius:6px; font-size:12px; cursor:pointer; }
+        .copy-tip { color:#6cce6c; font-size:12px; margin-left:6px; }
+        .compare-row { background:#252525; border-left:2px solid #007bff; }
+        .final-row { background:#252525; border-left:2px solid #007bff; }
+        .final-row .title-right { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+        .datetime { font-size:12px; color:#aaa; }
+        .rule-row { display:flex; align-items:center; gap:8px; margin-bottom:10px; background:#252525; padding:6px 10px; border-radius:10px; position:relative; flex-wrap:wrap; }
+        .rule-row .rule-index { width:36px; text-align:center; font-weight:bold; color:#007bff; font-size:14px; }
+        .rule-row input { flex:1; background:#1e1e1e; border:1px solid #3a3a3a; border-radius:8px; padding:10px 6px; color:#eee; font-size:14px; text-align:center; min-width:80px; }
+        .custom-rule-row { display:flex; align-items:center; gap:8px; margin-bottom:10px; background:#252525; padding:6px 10px; border-radius:10px; position:relative; flex-wrap:wrap; }
+        .custom-rule-row .rule-index { width:36px; text-align:center; font-weight:bold; color:#007bff; font-size:14px; }
+        .custom-rule-row input { flex:1; background:#1e1e1e; border:1px solid #3a3a3a; border-radius:8px; padding:10px 6px; color:#eee; font-size:14px; text-align:center; min-width:80px; }
+        .del-rule-btn { position:absolute; right:0px; top:-8px; background:transparent; border:none; color:#aaa; font-size:12px; cursor:pointer; padding:0; line-height:1; font-weight:bold; z-index:5; }
+        .del-rule-btn:hover { color:#ff4444; }
+        .rule-inputs-container { margin-top:12px; display: none; }
+        .switch-control { display:flex; align-items:center; gap:6px; font-size:12px; color:#888; }
+        .switch-control input { width:36px; height:20px; appearance:none; background:#333; border-radius:20px; position:relative; cursor:pointer; }
+        .switch-control input:checked { background:#007bff; }
+        .switch-control input::after { content:''; position:absolute; width:16px; height:16px; background:#fff; border-radius:50%; top:2px; left:2px; transition:0.2s; }
+        .switch-control input:checked::after { left:18px; }
+        .note-textarea { width:100%; height:100px; margin-top:8px; display:none; background:#252525; border:none; border-radius:8px; color:#eee; padding:8px; resize:vertical; max-height:150px; }
+        .query-zodiac-input { margin-top:8px; max-width:70%; }
+        .query-zodiac-input input { width:100%; padding:8px 6px; border-radius:8px; background:#222; color:#eee; font-size:14px; border:none; }
+        .query-zodiac-result { margin-top:8px; padding:8px; background:#252525; border-radius:8px; font-size:13px; word-break:break-word; }
+        .total-zodiac-stat { margin-top:8px; padding:8px; background:#252525; border-radius:8px; font-size:13px; }
+        .total-zodiac-list { display:grid; grid-template-columns:repeat(6,1fr); gap:6px; justify-items:center; margin-top:6px; }
+        .total-zodiac-list .zodiac-item { display:inline-block; margin:2px; padding:4px 6px; background:#252525; border-radius:6px; font-size:12px; color:#eee; cursor:pointer; white-space:nowrap; }
+        .hit-rate-display { margin:10px 0; padding:8px; background:#252525; border-radius:8px; text-align:center; font-size:14px; }
+        .footer { text-align:center; margin-top:16px; font-size:11px; color:#666; }
+        .rule-import-box { margin:10px 0; display:flex; gap:8px; align-items:stretch; }
+        .rule-import-input { flex:1; min-height:132px; height:auto; padding:8px; border-radius:8px; background:#222; color:#eee; font-size:14px; border:none; resize:vertical; max-height:150px; white-space:pre-wrap; }
+        .rule-btn-col { display:flex; flex-direction:column; gap:8px; justify-content:space-between; }
+        .rule-btn-col button { flex:1; white-space:nowrap; min-height:0; }
+        .link-btn { background:#007bff; color:#fff; padding:6px 10px; border-radius:8px; text-decoration:none; font-size:13px; display:flex; align-items:center; justify-content:center; flex:1; min-width:60px; }
+        .rule-container { background:#0d0d0d; border-radius:14px; padding:12px; margin:12px 0; display:flex; flex-wrap:wrap; gap:8px; border:1px solid #2c2c2c; }
+        .ab-line { margin:2px 0; padding:4px 10px; line-height:1.4; border-radius:20px; cursor:pointer; display:inline-block; font-size:12px; transition:all 0.2s; }
+        .ab-line:hover { transform:scale(1.02); filter:brightness(1.1); background:#3a3a3a; }
+        .rule-hot { background:#2a1a1a; color:#f97316; border-left:3px solid #f97316; }
+        .rule-warm { background:#2a2a1a; color:#facc15; border-left:3px solid #facc15; }
+        .rule-cold { background:#1a2a3a; color:#60a5fa; border-left:3px solid #60a5fa; }
+        .ab-sequence { background:#0d0d0d; border-radius:14px; padding:12px; margin-top:10px; font-family:monospace; font-size:12px; max-height:260px; overflow-y:auto; border:1px solid #2c2c2c; }
+
+        /* ✅ 修复：组数/模式/格数固定一行，不换行 */
+        .period-input-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: nowrap;        /* 禁止换行 */
+            margin-bottom: 12px;
+            overflow-x: auto;        /* 超宽时可横向滚动 */
+            white-space: nowrap;
+        }
+        .period-input-row label { font-size: 14px; color: #aaa; font-weight: 500; white-space: nowrap; }
+        .period-input-row input { background: #222; border: none; border-radius: 40px; padding: 8px 12px; color: #eee; font-size: 14px; width: 70px; text-align: center; }
+        .period-input-row select { background: #222; border: none; border-radius: 40px; padding: 8px 12px; color: #eee; font-size: 14px; cursor: pointer; }
+        .rule-stats {
+            font-size: 14px;
+            font-weight: 500;
+            color: #007bff;
+            background: #252525;
+            padding: 5px 12px;
+            border-radius: 40px;
+            line-height: 1.2;
+            white-space: nowrap;
+            flex-shrink: 0;          /* 防止被压缩 */
+        }
+        .button-row-right { display:flex; justify-content:flex-end; align-items:center; gap:6px; margin-bottom:12px; flex-wrap:wrap; }
+        .btn-small { background:#252525; border:none; padding:8px 12px; border-radius:8px; font-size:13px; cursor:pointer; color:#eee; transition:all 0.2s; min-width:60px; text-align:center; }
+        .btn-small:hover { background:#3a3a3a; }
+        .btn-small:active { opacity:0.7; transform:scale(0.96); }
+        .info-row-right { display:flex; justify-content:flex-end; align-items:center; margin-bottom:12px; flex-wrap:wrap; }
+        .edit-rule-row { margin-top:12px; margin-bottom:12px; padding:10px; background:#1a1a1a; border-radius:12px; border:1px solid #2c2c2c; }
+        .edit-label { font-size:12px; color:#888; margin-bottom:6px; }
+        .edit-input { width:100%; background:#0d0d0d; border:1px solid #2c2c2c; border-radius:40px; padding:10px 12px; color:#e0e0e0; font-size:13px; font-family:monospace; }
+        .reason { display: flex; align-items: center; justify-content: center; font-size: 12px; color: #888; margin-top: 8px; padding: 4px 0; }
+        .auth-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); backdrop-filter: blur(8px); z-index: 10000; display: flex; align-items: center; justify-content: center; display: none; }
+        .auth-box { background: #1e1e1e; border-radius: 32px; padding: 28px 24px; width: 90%; max-width: 360px; border: 1px solid #4f46e5; box-shadow: 0 20px 35px rgba(0,0,0,0.6); text-align: center; }
+        .auth-box h2 { margin-bottom: 16px; color: #facc15; font-size: 1.5rem; }
+        .auth-btn { background: #007bff; border: none; border-radius: 8px; padding: 10px 16px; color: #fff; cursor: pointer; font-size: 14px; font-weight: 500; white-space: nowrap; min-width: 80px; text-align: center; transition: 0.2s; }
+        .auth-btn:active { transform: scale(0.96); opacity: 0.9; }
+        .device-row { display: flex; gap: 8px; align-items: center; margin: 8px 0 16px 0; }
+        .device-row span { flex: 1; background: #252525; padding: 10px; border-radius: 8px; font-family: monospace; font-size: 12px; word-break: break-all; }
+        .auth-row { display: flex; gap: 8px; margin: 8px 0 20px 0; }
+        .auth-row input { flex: 1; background: #252525; border: none; border-radius: 8px; padding: 10px; color: #fff; font-size: 14px; }
+        .auth-tip { margin-top: 8px; font-size: 12px; }
+        .auth-footer { margin-top: 12px; font-size: 12px; color: #888; line-height: 1.4; }
+        .auth-footer a { color: #888; }
+        @media (max-width:600px) {
+            body { padding:4px; }
+            .tool-box { padding:8px; }
+            .sub-group { padding:8px; }
+            .rule-row, .custom-rule-row { gap:6px; padding:4px 8px; }
+            .rule-row input, .custom-rule-row input { padding:8px 4px; font-size:13px; min-width:70px; }
+            .rule-row .rule-index, .custom-rule-row .rule-index { width:30px; font-size:13px; }
+            button, .btn-link { padding:8px 2px; font-size:12px; min-height:40px; }
+            .btn-small { padding:6px 8px; font-size:11px; min-width:50px; }
+            .del-rule-btn { font-size:10px; right:0px; top:-6px; }
+            .total-zodiac-list { grid-template-columns:repeat(4,1fr); gap:4px; }
+            .total-zodiac-list .zodiac-item { white-space:normal; font-size:11px; padding:4px 4px; }
+            .group-item { font-size:12px; padding:6px 8px; flex-direction:column; align-items:flex-start; }
+            .group-item .copy-btn { align-self:flex-end; }
+            .query-zodiac-input { max-width:100%; }
+            .rule-import-input { min-height:120px; }
+            .stats-two-columns { flex-direction:column; gap:8px; }
+            .button-row-right { justify-content:flex-start; }
+            .info-row-right { justify-content:flex-start; }
+            .period-input-row { gap: 8px; }
+            .period-input-row input { width: 60px; padding: 6px 8px; }
+            .period-input-row select { padding: 6px 8px; }
+            .rule-stats { padding: 4px 10px; font-size: 13px; }
+            .result-title { font-size:15px; gap:4px; }
+            .result-title .switch-control { font-size:12px; }
+            .result-title .switch-control input { width:36px; height:20px; }
+            .result-title .switch-control input::after { width:16px; height:16px; top:2px; left:2px; }
+            .result-title .switch-control input:checked::after { left:18px; }
+            .sub-title { flex-wrap:wrap; }
+            .period-text { font-size:12px; }
+            .marquee-container { text-align:center; }
+            .datetime { font-size:11px; }
+            .reason { font-size:11px; }
+            .auth-box { padding: 20px 16px; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- 授权模态框 -->
+<div class="auth-modal" id="authModal">
+    <div class="auth-box">
+        <h2>🔒 授权验证</h2>
+        <div style="color:#ccc;">你的设备码：</div>
+        <div class="device-row"><span id="deviceCode">加载中...</span><button class="auth-btn" id="copyDeviceBtn">📋 复制</button></div>
+        <div style="color:#ccc; margin-top: 8px;">请输入授权码：</div>
+        <div class="auth-row"><input type="password" id="authCode" placeholder="输入授权码"><button class="auth-btn" id="verifyBtn">确认</button></div>
+        <div class="auth-tip" id="authTip"></div>
+        <div class="auth-footer">授权码已生成请将【设备码】发送给机器人或代理商 获取授权码<br>官方授权：<a href="https://t.me/mayiya_bot" target="_blank">蚂蚁机器人</a></div>
+    </div>
+</div>
+
+<!-- 主界面 -->
+<div class="container">
+    <div class="tool-box">
+        <h1>Ant Data AI Stats Tool</h1>
+        <div class="panel">
+            <div class="panel-title"><div class="panel-title-left"><span></span></div></div>
+            <div id="group1Content">
+                <div class="sub-group" id="gaGbPanel">
+                    <div class="sub-title"><span><span class="ant-clickable" id="antIcon">🐜</span> Data</span><span class="period-text" id="periodNumber"></span></div>
+                    <div class="btn-group">
+                        <button onclick="copyBothData()">📋 Copy</button>
+                        <button onclick="clearBoth()">🗑 Clear</button>
+                        <button onclick="importTxtToBoth()">📄 TXT</button>
+                        <button id="autoSyncBtn">⚙️ 同步关</button>
+                    </div>
+                    <div id="inputAreaWrapper">
+                        <div class="input-box"><textarea id="numInput1" placeholder="G · A 盘口数据支持本地导入 、 在线同步" oninput="autoCalc(1)"></textarea><div class="input-info" id="inputInfo1">已输入：0 个</div></div>
+                        <div class="input-box"><textarea id="numInput2" placeholder="G · B 盘口数据支持本地导入 、 在线同步" oninput="autoCalc(2)"></textarea><div class="input-info" id="inputInfo2">已输入：0 个</div></div>
+                    </div>
+                    <div class="thank-header">
+                        <div class="marquee-container" id="marqueeContainer"><div class="marquee" id="marqueeText">蚂蚁数据-专注澳彩</div></div>
+                        <label class="switch-control"><input type="checkbox" id="globalStatSwitch" onchange="toggleGlobalStat()"></label>
+                    </div>
+                    <div class="stats-two-columns" id="statsColumns">
+                        <div class="stats-column"><div id="baseResult1"></div><div id="groupResult1"></div></div>
+                        <div class="stats-column"><div id="baseResult2"></div><div id="groupResult2"></div></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="panel">
+            <div class="panel-title"><div class="panel-title-left"><span>🟥 默认规则</span></div><label class="switch-control"><input type="checkbox" id="rangeSwitch" onchange="toggleRangePanel()"></label></div>
+            <div id="rangePanelWrap" style="display:none; margin-top:8px;">
+                <div class="input-box"><textarea id="rangeData" placeholder="官方规则点击下方 同步  " oninput="onRangeDataChange()"></textarea></div>
+                <div class="btn-group">
+                    <button id="importRulesFromRangeBtn">📥 导入</button>
+                    <button id="onlineCollectRangeBtn">🌐 同步</button>
+                    <button id="openVipBtn">🌐 区间</button>
+                    <button id="openPmBtn">🌐 采集</button>
+                </div>
+            </div>
+        </div>
+        <div class="panel">
+            <div class="panel-title"><div class="panel-title-left"><span>🟩 笛卡尔积</span></div><label class="switch-control"><input type="checkbox" id="selectRangeSwitch" onchange="toggleSelectRangePanel()"></label></div>
+            <div id="selectRangePanelWrap" style="display:none; margin-top:8px;">
+                <!-- ✅ 这一行固定不换行 -->
+                <div class="period-input-row">
+                    <label>组数：</label>
+                    <input type="tel" id="selectPeriodInput" value="0" inputmode="numeric">
+                    <label>模式：</label>
+                    <select id="coldModeSelect">
+                        <option value="minmax">max > min</option>
+                        <option value="diff2">B ≥ 2</option>
+                    </select>
+                    <span id="selectRuleGridCount" class="rule-stats">0格</span>
+                </div>
+                <div class="button-row-right">
+                    <button id="refreshSelectRulesBtn" class="btn-small">🔄 刷新</button>
+                    <button id="importSelectHotBtn" class="btn-small">🔥 导入热</button>
+                    <button id="importSelectWarmBtn" class="btn-small">🌡️ 导入温</button>
+                    <button id="importSelectColdBtn" class="btn-small">❄️ 导入冷</button>
+                </div>
+                <div id="selectRulesDetail" class="rule-container">加载中...</div>
+                <div id="editRulePanel" class="edit-rule-row" style="display: none;">
+                    <div class="edit-label">✏️ 点击规则编辑，光标离开自动保存</div>
+                    <input type="text" id="editRuleInput" class="edit-input" placeholder="例如: 0→2 或 1→3-5 或 8→1-8">
+                </div>
+                <div id="selectAbSequenceContainer" class="ab-sequence">加载中...</div>
+                <div class="reason">💡 禁止倒卖 转发，一经发现取消授权</div>
+            </div>
+        </div>
+        <div class="panel">
+            <div class="panel-title"><span>🟦自选规则</span><label class="switch-control"><input type="checkbox" id="matchSwitch" onchange="toggleMatchPanel()"></label></div>
+            <div id="rulePanelWrap" style="display:none; margin-top:8px;">
+                <div class="rule-import-box">
+                    <textarea class="rule-import-input" id="ruleImportText" placeholder="区间规则一键导入&#10;格式：1-4→1-4" oninput="autoSaveRuleImportText()"></textarea>
+                    <div class="rule-btn-col">
+                        <button class="rule-clear-btn" onclick="clearRuleImportInput()">清空</button>
+                        <button class="rule-txt-btn" onclick="importRuleFromTxt()">TXT</button>
+                        <button class="rule-import-btn" onclick="importCustomRuleByText()">导入</button>
+                    </div>
+                </div>
+                <div class="hit-rate-display" id="welcomeMessage">大道至简，以简驭繁</div>
+                <div class="btn-group">
+                    <button onclick="resetRules()">🔄 restore</button>
+                    <a href="https://xm2026.github.io/i.html" target="_blank" class="btn-link">🧰 工具</a>
+                    <button onclick="clearAllRules()">🗑 A-B</button>
+                    <button id="addCustomRuleBtn">➕ ADD</button>
+                </div>
+                <div class="rule-inputs-container" id="ruleInputsContainer">
+                    <div id="fixedRulesContainer">
+                        <div class="rule-row" data-idx="1"><div class="rule-index">1</div><input type="text" id="rule1a" placeholder="A" oninput="onRuleChange()"><input type="text" id="rule1b" placeholder="B" oninput="onRuleChange()"></div>
+                        <div class="rule-row" data-idx="2"><div class="rule-index">2</div><input type="text" id="rule2a" placeholder="A" oninput="onRuleChange()"><input type="text" id="rule2b" placeholder="B" oninput="onRuleChange()"></div>
+                        <div class="rule-row" data-idx="3"><div class="rule-index">3</div><input type="text" id="rule3a" placeholder="A" oninput="onRuleChange()"><input type="text" id="rule3b" placeholder="B" oninput="onRuleChange()"></div>
+                        <div class="rule-row" data-idx="4"><div class="rule-index">4</div><input type="text" id="rule4a" placeholder="A" oninput="onRuleChange()"><input type="text" id="rule4b" placeholder="B" oninput="onRuleChange()"></div>
+                        <div class="rule-row" data-idx="5"><div class="rule-index">5</div><input type="text" id="rule5a" placeholder="A" oninput="onRuleChange()"><input type="text" id="rule5b" placeholder="B" oninput="onRuleChange()"></div>
+                    </div>
+                    <div id="customRuleContainer"></div>
+                </div>
+            </div>
+        </div>
+        <div class="panel"><div class="result-section" id="compareResult"></div></div>
+    </div>
+    <div class="footer">© 2026 蚂蚁数据 · v9.3.0 &nbsp;<a href="https://t.me/mayi2036" target="_blank" style="text-decoration: none; color: inherit;">🛫️&nbsp;&nbsp;Telegram</a></div>
+</div>
+
+<input type="file" id="importFileInput" accept=".txt" style="display:none" onchange="handleFileSelect(event)">
+<input type="file" id="importRuleFileInput" accept=".txt" style="display:none" onchange="handleRuleFileSelect(event)">
+
+<script>
+// ==================== 授权系统 ====================
+const WORKER_URL = 'https://api.mycm.cc.cd';
+const STORAGE_KEY = "ANT_AUTH";
+const DEVICE_UUID_KEY = "ANT_DEVICE_UUID";
+
+function getDeviceUUID() {
+    let uuid = localStorage.getItem(DEVICE_UUID_KEY);
+    if (!uuid) {
+        uuid = crypto.randomUUID ? crypto.randomUUID() : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+            const r = Math.random() * 16 | 0;
+            const v = c === 'x' ? r : (r & 0x3 | 0x8);
+            return v.toString(16);
+        });
+        localStorage.setItem(DEVICE_UUID_KEY, uuid);
+    }
+    return uuid;
+}
+
+async function fetchWithTimeout(url, options = {}, timeout = 10000) {
+    const controller = new AbortController();
+    const id = setTimeout(() => controller.abort(), timeout);
+    try {
+        const response = await fetch(url, { ...options, signal: controller.signal });
+        clearTimeout(id);
+        return response;
+    } catch (err) {
+        clearTimeout(id);
+        throw err;
+    }
+}
+
+async function verifyAuthWithWorker(authCode) {
+    const deviceCode = getDeviceUUID();
+    if (!deviceCode || !authCode) return false;
+    try {
+        const resp = await fetchWithTimeout(`${WORKER_URL}/verify`, {
+            method: 'GET',
+            headers: { 'X-Device-Code': deviceCode, 'X-Auth-Code': authCode }
+        }, 10000);
+        const data = await resp.json();
+        return data.valid === true;
+    } catch (err) {
+        console.error('验证请求失败', err);
+        return false;
+    }
+}
+
+function saveAuthCode(authCode) { localStorage.setItem(STORAGE_KEY, authCode); }
+function clearAuth() { localStorage.removeItem(STORAGE_KEY); }
+
+// ==================== 核心功能 ====================
+let showRulesDetail = false;
+function showToast(msg) { 
+    const toast = document.createElement('div'); 
+    toast.textContent = msg; 
+    toast.style.position = 'fixed'; 
+    toast.style.bottom = '20px'; 
+    toast.style.left = '50%'; 
+    toast.style.transform = 'translateX(-50%)'; 
+    toast.style.backgroundColor = '#333'; 
+    toast.style.color = '#fff'; 
+    toast.style.padding = '8px 16px'; 
+    toast.style.borderRadius = '20px'; 
+    toast.style.fontSize = '12px'; 
+    toast.style.zIndex = '10000'; 
+    toast.style.whiteSpace = 'nowrap'; 
+    document.body.appendChild(toast); 
+    setTimeout(() => toast.remove(), 1500); 
+}
+function getCurrentDateTime() {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth() + 1;
+    const day = now.getDate();
+    const weekdays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+    const weekday = weekdays[now.getDay()];
+    const hours = now.getHours().toString().padStart(2,'0');
+    const minutes = now.getMinutes().toString().padStart(2,'0');
+    return `${year}年${month}月${day}日 ${weekday} ${hours}:${minutes}`;
+}
+
+async function loadMarqueeText() {
+    const marqueeEl = document.getElementById('marqueeText');
+    if (!marqueeEl) return;
+    try {
+        const resp = await fetch('ptz.txt?t=' + Date.now());
+        if (resp.ok) {
+            const text = await resp.text();
+            marqueeEl.textContent = text.trim() || '蚂蚁数据-专注澳彩';
+        } else {
+            marqueeEl.textContent = '蚂蚁数据-专注澳彩';
+        }
+    } catch (e) {
+        marqueeEl.textContent = '蚂蚁数据-专注澳彩';
+    }
+}
+
+const ZODIAC_LIST = ['马','蛇','龙','兔','虎','牛','鼠','猪','狗','鸡','猴','羊'];
+const ZODIAC_NUMBER_MAP = {
+    '马':[1,13,25,37,49], '蛇':[2,14,26,38], '龙':[3,15,27,39],
+    '兔':[4,16,28,40], '虎':[5,17,29,41], '牛':[6,18,30,42],
+    '鼠':[7,19,31,43], '猪':[8,20,32,44], '狗':[9,21,33,45],
+    '鸡':[10,22,34,46], '猴':[11,23,35,47], '羊':[12,24,36,48]
+};
+const state = { countData:{1:{},2:{}}, minMax:{1:{min:0,max:0},2:{min:0,max:0}}, groupLines:{1:'',2:''}, timers:{autoCompare:null, ruleChange:null, noteSave:null, inputSave:null, rangeSave:null, ruleImportSave:null, rangeCompare:null}, customRules:[] };
+const utils = {
+    padZero: n => n.toString().padStart(2, '0'),
+    getZodiac: n => ZODIAC_LIST[(n - 1) % 12],
+    uniqueSort: arr => [...new Set(arr)].sort((a, b) => a - b),
+    formatNumbers: arr => utils.uniqueSort(arr).map(utils.padZero).join(' ') || '无',
+    parseNumbers: str => (str.match(/\d+/g) || []).map(Number).filter(n => n >= 1 && n <= 49),
+    shuffleArray: arr => { const a = [...arr]; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+};
+const ui = {
+    bindCopyButtons() {
+        document.querySelectorAll('.copy-btn').forEach(btn => {
+            if (btn._copyHandler) btn.removeEventListener('click', btn._copyHandler);
+            const handler = () => {
+                const text = btn.getAttribute('data-copy');
+                const tipId = btn.getAttribute('data-tip');
+                copyToClipboard(text, tipId);
+            };
+            btn.addEventListener('click', handler);
+            btn._copyHandler = handler;
+        });
+    },
+    updateInputInfo(num) {
+        const val = document.getElementById(`numInput${num}`).value;
+        const cnt = utils.parseNumbers(val).length;
+        document.getElementById(`inputInfo${num}`).innerHTML = `已输入：${cnt} 个 <span id="inputTip${num}" class="copy-tip"></span>`;
+    }
+};
+const zodiacUI = {
+    showTotalZodiacNum(zodiac) {
+        const nums = ZODIAC_NUMBER_MAP[zodiac].map(utils.padZero).join(' ');
+        const el = document.getElementById('totalZodiacShowNum');
+        if (el) {
+            el.textContent = `${zodiac}：${nums}`;
+            el.style.display = 'block';
+        }
+    },
+    queryZodiac() {
+        const val = document.getElementById('queryZodiacInput').value.trim();
+        const nums = utils.parseNumbers(val);
+        document.getElementById('queryZodiacResult').textContent = nums.map(n => `${utils.padZero(n)}=${utils.getZodiac(n)}`).join('  ');
+    }
+};
+const storage = {
+    saveNote() { localStorage.setItem('lottery_note', document.getElementById('noteTextarea').value); },
+    loadNote() { document.getElementById('noteTextarea').value = localStorage.getItem('lottery_note') || ''; },
+    autoSaveNote() { clearTimeout(state.timers.noteSave); state.timers.noteSave = setTimeout(storage.saveNote, 500); },
+    saveInput() { localStorage.setItem('lottery_input1', document.getElementById('numInput1').value); localStorage.setItem('lottery_input2', document.getElementById('numInput2').value); },
+    loadInput() { document.getElementById('numInput1').value = localStorage.getItem('lottery_input1') || ''; document.getElementById('numInput2').value = localStorage.getItem('lottery_input2') || ''; },
+    autoSaveInput() { clearTimeout(state.timers.inputSave); state.timers.inputSave = setTimeout(storage.saveInput, 300); },
+    saveRange() { localStorage.setItem('lottery_range', document.getElementById('rangeData').value); },
+    loadRange() { const saved = localStorage.getItem('lottery_range'); if (saved !== null) document.getElementById('rangeData').value = saved; },
+    autoSaveRange() { clearTimeout(state.timers.rangeSave); state.timers.rangeSave = setTimeout(() => { storage.saveRange(); compareAll(); }, 300); },
+    saveRuleImportText() { localStorage.setItem('rule_import_text', document.getElementById('ruleImportText').value); },
+    loadRuleImportText() { const saved = localStorage.getItem('rule_import_text'); if (saved !== null) document.getElementById('ruleImportText').value = saved; },
+    autoSaveRuleImportText() { clearTimeout(state.timers.ruleImportSave); state.timers.ruleImportSave = setTimeout(storage.saveRuleImportText, 300); },
+    clearRuleImportText() { localStorage.removeItem('rule_import_text'); }
+};
+
+function onRangeDataChange() { storage.autoSaveRange(); clearTimeout(state.timers.rangeCompare); state.timers.rangeCompare = setTimeout(() => { compareAll(); refreshSelectRange(); }, 100); }
+function autoSaveRuleImportText() { storage.autoSaveRuleImportText(); }
+function toggleGlobalStat() { const chk = document.getElementById('globalStatSwitch'); document.querySelectorAll('.stat-content').forEach(el => el.style.display = chk.checked ? 'block' : 'none'); localStorage.setItem('globalStatVisible', chk.checked ? 1 : 0); }
+function toggleMatchPanel() { document.getElementById('rulePanelWrap').style.display = document.getElementById('matchSwitch').checked ? 'block' : 'none'; }
+function toggleRangePanel() { document.getElementById('rangePanelWrap').style.display = document.getElementById('rangeSwitch').checked ? 'block' : 'none'; }
+function toggleSelectRangePanel() { document.getElementById('selectRangePanelWrap').style.display = document.getElementById('selectRangeSwitch').checked ? 'block' : 'none'; }
+function copyBothData() { copyToClipboard("G · A\n" + document.getElementById('numInput1').value.trim() + "\n...........\nG · B\n" + document.getElementById('numInput2').value.trim(), 'inputTip2'); }
+function clearBoth() {
+    [1,2].forEach(n => {
+        document.getElementById(`numInput${n}`).value = '';
+        document.getElementById(`baseResult${n}`).innerHTML = '';
+        document.getElementById(`groupResult${n}`).innerHTML = '';
+        state.countData[n] = {};
+        state.minMax[n] = {min:0,max:0};
+        ui.updateInputInfo(n);
+    });
+    autoCalc(1); autoCalc(2);
+    document.getElementById('periodNumber').innerText = '';
+    localStorage.removeItem('last_period');
+}
+function rangeToNumbers(r) {
+    r = r.trim();
+    if (!r || r === '-') return [];
+    let normalized = r.replace(/[～~－]/g, '-');
+    let m = normalized.match(/^(\d+)-(\d+)$/);
+    if (m) {
+        let s = parseInt(m[1]), e = parseInt(m[2]);
+        if (!isNaN(s) && !isNaN(e) && s <= e) { let arr = []; for (let i = s; i <= e; i++) arr.push(i); return arr; }
+    }
+    if (r.includes(',')) return r.split(',').map(n => parseInt(n, 10)).filter(n => !isNaN(n));
+    let n = parseInt(r);
+    return isNaN(n) ? [] : [n];
+}
+function parseRuleLine(line) {
+    line = line.trim();
+    if (!line) return null;
+    let arrow = line.match(/(.+?)(?:→|➔|=>|->)(.+)/);
+    if (arrow) { let a = arrow[1].trim(), b = arrow[2].trim(); if (a && b) return { a, b }; }
+    let parts = line.split(/\s+/);
+    if (parts.length >= 2) return { a: parts[0], b: parts[1] };
+    return null;
+}
+function getAllRuleSet() {
+    let s = new Set();
+    for (let i = 1; i <= 5; i++) { let a = document.getElementById(`rule${i}a`).value.trim(), b = document.getElementById(`rule${i}b`).value.trim(); if (a && b) s.add(`${a}|${b}`); }
+    state.customRules.forEach(r => { if (r.a && r.b) s.add(`${r.a}|${r.b}`); });
+    return s;
+}
+function fillRuleToSlots(aVal, bVal) {
+    let key = `${aVal}|${bVal}`;
+    if (getAllRuleSet().has(key)) return false;
+    for (let i = 1; i <= 5; i++) {
+        let aEl = document.getElementById(`rule${i}a`), bEl = document.getElementById(`rule${i}b`);
+        if (aEl && bEl && (!aEl.value.trim() || !bEl.value.trim())) { aEl.value = aVal; bEl.value = bVal; onRuleChange(); return true; }
+    }
+    state.customRules.push({ a: aVal, b: bVal });
+    renderCustomRules(); onRuleChange();
+    return true;
+}
+function openCustomRulePanel() { let chk = document.getElementById('matchSwitch'); if (!chk.checked) { chk.checked = true; toggleMatchPanel(); } }
+function importRulesFromRange() { openCustomRulePanel(); let lines = document.getElementById('rangeData').value.split(/\r?\n/); let hasNew = false; lines.forEach(line => { let p = parseRuleLine(line); if (p && p.a && p.b && fillRuleToSlots(p.a, p.b)) hasNew = true; }); if (hasNew) setTimeout(compareAll, 100); }
+function importCustomRuleByText() { document.getElementById('ruleImportText').value.split(/[\r\n]+/).forEach(line => { let p = parseRuleLine(line); if (p && p.a && p.b) fillRuleToSlots(p.a, p.b); }); }
+function ruleContains(ruleVal, val) { return rangeToNumbers(ruleVal).includes(val); }
+function matchRule(val, rule) { rule = (rule || '').trim().replace(/~/g,'-').replace(/～/g,'-'); if (!rule) return true; if (rule.includes('-')) { let [a,b] = rule.split('-').map(Number); return val >= Math.min(a,b) && val <= Math.max(a,b); } return val == Number(rule); }
+function getDynamicDefaults() { let m1 = state.minMax[1].max||0, m2 = state.minMax[2].max||0; return [{a:'0-2',b:'0-2'},{a:'2-2',b:'1-4'},{a:'3-5',b:'2-6'},{a:'6-6',b:'2-6'},{a:`7-${m1}`,b:`3-${m2}`}]; }
+function deleteCustomRule(idx) { state.customRules.splice(idx,1); renderCustomRules(); compareAll(); }
+function updateCustomRule(idx,key,val) { if (state.customRules[idx]) { state.customRules[idx][key] = val.trim(); onRuleChange(); } }
+function renderCustomRules() { let h = ''; state.customRules.forEach((r,i) => { let idx = 6+i; h += `<div class="custom-rule-row" data-idx="${idx}"><div class="rule-index">${idx}</div><input type="text" value="${escapeHtml(r.a)}" placeholder="A" oninput="updateCustomRule(${i},'a',this.value)"><input type="text" value="${escapeHtml(r.b)}" placeholder="B" oninput="updateCustomRule(${i},'b',this.value)"><button class="del-rule-btn" onclick="deleteCustomRule(${i})">✖</button></div>`; }); document.getElementById('customRuleContainer').innerHTML = h; }
+function escapeHtml(s) { return s.replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;'})[m]); }
+function clearAllRules() { for (let i=1;i<=5;i++) { document.getElementById(`rule${i}a`).value=''; document.getElementById(`rule${i}b`).value=''; } state.customRules=[]; renderCustomRules(); compareAll(); }
+function syncRules() { let d = getDynamicDefaults(); for (let i=1;i<=5;i++) { document.getElementById(`rule${i}a`).value = d[i-1].a; document.getElementById(`rule${i}b`).value = d[i-1].b; } state.customRules=[]; renderCustomRules(); }
+function resetRules() { syncRules(); setTimeout(compareAll, 50); }
+function onRuleChange() { clearTimeout(state.timers.ruleChange); state.timers.ruleChange = setTimeout(compareAll, 200); }
+function getTotalZodiacStat() { let t = {}; ZODIAC_LIST.forEach(z => t[z]=0); [1,2].forEach(n => utils.parseNumbers(document.getElementById(`numInput${n}`).value).forEach(v => t[utils.getZodiac(v)]++)); return Object.entries(t).sort((a,b) => b[1]-a[1]); }
+
+function compareAll() {
+    const rules = [1,2,3,4,5].map(i => ({ a: document.getElementById(`rule${i}a`).value.trim(), b: document.getElementById(`rule${i}b`).value.trim() }));
+    const allRules = [...rules, ...state.customRules].filter(r => r.a && r.b);
+    const rangeText = document.getElementById('rangeData').value.trim();
+    const lines = rangeText ? rangeText.split('\n').filter(l => l.trim()) : [];
+    const gaNums = utils.parseNumbers(document.getElementById('numInput1').value);
+    const gbNums = utils.parseNumbers(document.getElementById('numInput2').value);
+    if (!gaNums.length || !gbNums.length) {
+        document.getElementById('compareResult').innerHTML = `<div class="result-title"><span>🔵 统计结果</span><label class="switch-control">Memo book<input type="checkbox" id="noteSwitch" onchange="toggleNote()"></label></div><div id="statsContent"><textarea id="noteTextarea" class="note-textarea" placeholder="..." oninput="storage.autoSaveNote()"></textarea></div>`;
+        ui.bindCopyButtons(); storage.loadNote(); keepNoteState();
+        return;
+    }
+    let allSet = new Set(), hitSet = new Set();
+    lines.forEach(line => {
+        let m = line.match(/(.+?)(?:→|➔|=>|->)(.+)/);
+        let aStr = '', bStr = '';
+        if (m) { aStr = m[1].trim(); bStr = m[2].trim(); }
+        else { let p = line.split(/\s+/); if (p.length >= 2) { aStr = p[0]; bStr = p[1]; } }
+        if (!aStr || !bStr) return;
+        let aVals = rangeToNumbers(aStr), bVals = rangeToNumbers(bStr);
+        if (!aVals.length || !bVals.length) return;
+        aVals.forEach(a => bVals.forEach(b => {
+            let key = `${a},${b}`; allSet.add(key);
+            if (allRules.some(r => ruleContains(r.a, a) && ruleContains(r.b, b))) hitSet.add(key);
+        }));
+    });
+    let total = allSet.size, hit = hitSet.size;
+    let probHtml = total > 0 ? `<div class="hit-rate-display">中奖概率：${hit} / ${total} = ${((hit/total)*100).toFixed(2)}%</div>` : `<div class="hit-rate-display">组合命中率：0 / 0 = 0.00%</div>`;
+    const allNums = Array.from({length:49},(_,i)=>i+1);
+    let results = [], texts = [];
+    allRules.forEach(r => {
+        let s = new Set();
+        allNums.forEach(n => { if (matchRule(state.countData[1][n], r.a) && matchRule(state.countData[2][n], r.b)) s.add(n); });
+        results.push([...s].sort((a,b)=>a-b));
+        texts.push(`${r.a} → ${r.b}`);
+    });
+    let final = [...new Set(results.flat())].sort((a,b)=>a-b);
+    let zodiacHtml = `<div class="total-zodiac-title">📊 生肖冷热门</div><div class="total-zodiac-list">`;
+    getTotalZodiacStat().forEach(([z,n]) => zodiacHtml += `<span class="zodiac-item" onclick="zodiacUI.showTotalZodiacNum('${z}')">${z} ${n}</span>`);
+    zodiacHtml += `</div><div class="zodiac-show-num" id="totalZodiacShowNum" style="display:none;"></div>`;
+    let detailHtml = '';
+    if (showRulesDetail && allRules.length) texts.forEach((t,i) => detailHtml += `<div class="group-item compare-row">【${t} · ${results[i].length}】：${utils.formatNumbers(results[i])}</div>`);
+    let finalHtml = allRules.length ? `${probHtml}<div class="group-item final-row">✅ 特码 ·${final.length}：${utils.formatNumbers(final)}<div class="title-right"><button class="copy-btn" data-copy="${utils.formatNumbers(final)}" data-tip="cfTip">Copy</button><span id="cfTip" class="copy-tip"></span><span class="datetime">${getCurrentDateTime()}</span></div></div>` : '';
+    document.getElementById('compareResult').innerHTML = `<div class="result-title"><span>🔵 统计结果</span><label class="switch-control">Memo book<input type="checkbox" id="noteSwitch" onchange="toggleNote()"></label></div><div id="statsContent"><textarea id="noteTextarea" class="note-textarea" placeholder="..." oninput="storage.autoSaveNote()"></textarea>${detailHtml}${finalHtml}<div class="query-zodiac-input"><input id="queryZodiacInput" oninput="zodiacUI.queryZodiac()" placeholder="输入数字查生肖"></div><div class="query-zodiac-result" id="queryZodiacResult"></div><div class="total-zodiac-stat">${zodiacHtml}</div></div>`;
+    ui.bindCopyButtons(); storage.loadNote(); keepNoteState();
+}
+function toggleNote() { let el = document.getElementById('noteTextarea'); el.style.display = document.getElementById('noteSwitch').checked ? 'block' : 'none'; localStorage.setItem('note_visible', document.getElementById('noteSwitch').checked ? 1 : 0); }
+function keepNoteState() { let sw = document.getElementById('noteSwitch'); if (sw) { sw.checked = (localStorage.getItem('note_visible') == 1); toggleNote(); } }
+function addCustomRule() { let c = document.getElementById('ruleInputsContainer'); if (c) { let hid = c.style.display === 'none'; c.style.display = hid ? 'block' : 'none'; showToast(hid ? '规则面板已显示' : '规则面板已隐藏'); } showRulesDetail = !showRulesDetail; compareAll(); }
+
+function renderBase(num, total, unique, maxCount) { let c = document.getElementById(`baseResult${num}`); if (c) c.innerHTML = `<div class="stat-content"><div class="base-row"><span>频次</span><div>：${total}</div><div>高频：${maxCount}次(热)</div><div>低频：0次(冷)</div></div></div>`; }
+function renderGroup(num, sortedCounts, groupMap, maxCount) { let h = `<div class="stat-content">`; sortedCounts.forEach(c => { let nums = groupMap[c].join(','); if (nums) h += `<div class="group-item">${c}次 - ${nums}</div>`; }); let ct = sortedCounts.map(c => { let nums = groupMap[c].join(','); return nums ? `${c}次 - ${nums}` : ''; }).filter(Boolean).join('\n'); state.groupLines[num] = ct; h += `<div class="title-right"><button class="copy-btn" data-copy="${ct}" data-tip="gTip${num}">Copy All</button><span id="gTip${num}" class="copy-tip"></span></div></div>`; document.getElementById(`groupResult${num}`).innerHTML = h; ui.bindCopyButtons(); }
+function calculate(num) {
+    let nums = utils.parseNumbers(document.getElementById(`numInput${num}`).value);
+    if (!nums.length) { state.countData[num] = {}; state.minMax[num] = {min:0,max:0}; document.getElementById(`baseResult${num}`).innerHTML = ''; document.getElementById(`groupResult${num}`).innerHTML = ''; return; }
+    let cm = {}; for (let i=1;i<=49;i++) cm[i]=0; nums.forEach(n => cm[n]++); state.countData[num] = cm;
+    let max = Math.max(...Object.values(cm)); state.minMax[num].max = max;
+    let gm = {}; for (let c=0;c<=max;c++) gm[c]=[]; for (let i=1;i<=49;i++) gm[cm[i]].push(i);
+    let sc = Array.from({length:max+1},(_,i)=>i).filter(c => gm[c].length);
+    renderBase(num, nums.length, new Set(nums).size, max); renderGroup(num, sc, gm, max);
+}
+function autoCalc(num) { ui.updateInputInfo(num); calculate(num); storage.autoSaveInput(); clearTimeout(state.timers.autoCompare); state.timers.autoCompare = setTimeout(compareAll, 260); updateInputAreaVisibility(); }
+let showInputTimer, hideInputTimer;
+function showInputArea() { let w = document.getElementById('inputAreaWrapper'); if (w) w.style.display = 'block'; if (hideInputTimer) { clearTimeout(hideInputTimer); hideInputTimer = null; } }
+function resetShowTimer() { if (showInputTimer) clearTimeout(showInputTimer); showInputTimer = setTimeout(() => { let w = document.getElementById('inputAreaWrapper'); if (w) w.style.display = 'none'; showInputTimer = null; }, 30000); }
+function scheduleHideInputArea() { if (hideInputTimer) clearTimeout(hideInputTimer); hideInputTimer = setTimeout(() => { let w = document.getElementById('inputAreaWrapper'); if (w) w.style.display = 'none'; hideInputTimer = null; if (showInputTimer) { clearTimeout(showInputTimer); showInputTimer = null; } }, 10000); }
+function updateInputAreaVisibility() { let hasBoth = utils.parseNumbers(document.getElementById('numInput1').value).length && utils.parseNumbers(document.getElementById('numInput2').value).length; if (hasBoth) { showInputArea(); resetShowTimer(); if (hideInputTimer) { clearTimeout(hideInputTimer); hideInputTimer = null; } } else { let w = document.getElementById('inputAreaWrapper'); if (w && w.style.display === 'block') scheduleHideInputArea(); if (showInputTimer) { clearTimeout(showInputTimer); showInputTimer = null; } } }
+
+function bindPaste() { [1,2].forEach(n => document.getElementById(`numInput${n}`).addEventListener('paste', e => { e.preventDefault(); let nums = utils.parseNumbers((e.clipboardData||window.clipboardData).getData('text')); let el = document.getElementById(`numInput${n}`); el.value = el.value.substring(0, el.selectionStart) + nums.join(' ') + el.value.substring(el.selectionStart); autoCalc(n); })); }
+function clearRuleImportInput() { document.getElementById('ruleImportText').value = ''; storage.clearRuleImportText(); }
+function importRuleFromTxt() { openCustomRulePanel(); document.getElementById('importRuleFileInput').click(); }
+function handleRuleFileSelect(e) { let f = e.target.files[0]; if (!f) return; let r = new FileReader(); r.onload = ev => { document.getElementById('ruleImportText').value = ev.target.result; storage.saveRuleImportText(); importCustomRuleByText(); keepNoteState(); }; r.readAsText(f); e.target.value = ''; }
+function importTxtToBoth() { document.getElementById('importFileInput').click(); }
+function handleFileSelect(e) { let f = e.target.files[0]; if (!f) return; let r = new FileReader(); r.onload = ev => { let parts = ev.target.result.split(/\.{6,}/); if (parts.length < 2) alert("格式错误"); else { document.getElementById('numInput1').value = parts[0].trim(); document.getElementById('numInput2').value = parts.slice(1).join(' ').trim(); autoCalc(1); autoCalc(2); storage.saveInput(); keepNoteState(); } }; r.readAsText(f); e.target.value = ''; }
+
+// ==================== 同步模块 ====================
+const DATA_API_URL = 'https://mayipan.eu.cc/gab_summary.html';
+let autoSyncInterval = null, isAutoSyncing = false;
+function isSyncTimeAllowed() { const n = new Date(); return n.getHours() === 21 && n.getMinutes() >= 0 && n.getMinutes() <= 10; }
+function savePeriodToLocal(p) { p ? localStorage.setItem('last_period', p) : localStorage.removeItem('last_period'); }
+function restorePeriodDisplay() { let s = localStorage.getItem('last_period'); let el = document.getElementById('periodNumber'); if (el) el.innerText = s || ''; }
+async function fetchRemoteData() {
+    let resp = await fetch(DATA_API_URL + '?t=' + Date.now(), { cache: 'no-cache' });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    let text = await resp.text();
+    let ga = null, gb = null;
+    let lines = text.split(/\r?\n/);
+    for (let i=0;i<lines.length;i++) {
+        let line = lines[i].trim();
+        if (/^G[·\s\-]?A$/i.test(line) && i+1 < lines.length) ga = lines[i+1].trim();
+        if (/^G[·\s\-]?B$/i.test(line) && i+1 < lines.length) { gb = lines[i+1].trim(); break; }
+    }
+    let m = text.match(/新澳彩第:\s*(\d{7})期/);
+    return { ga, gb, period: m ? m[0] : null };
+}
+async function performFullSync(showMsg = false) {
+    try {
+        let { ga, gb, period } = await fetchRemoteData();
+        savePeriodToLocal(period);
+        document.getElementById('periodNumber').innerText = period || '';
+        if (!ga || !gb) { if (showMsg) showToast('❌ 未获取到GA/GB数据'); return false; }
+        document.getElementById('numInput1').value = ga;
+        document.getElementById('numInput2').value = gb;
+        autoCalc(1); autoCalc(2);
+        storage.saveInput(); keepNoteState();
+        if (showMsg) showToast('✅ 同步成功');
+        return true;
+    } catch (e) { if (showMsg) showToast(`❌ 同步失败: ${e.message}`); return false; }
+}
+async function manualSyncSilent() { await performFullSync(false); }
+async function autoSyncWithTipOnChange() {
+    if (!isSyncTimeAllowed()) return;
+    let old = localStorage.getItem('last_period') || '';
+    let { period, ga, gb } = await fetchRemoteData();
+    savePeriodToLocal(period); document.getElementById('periodNumber').innerText = period || '';
+    if (period !== old && period && ga && gb) {
+        document.getElementById('numInput1').value = ga;
+        document.getElementById('numInput2').value = gb;
+        autoCalc(1); autoCalc(2); storage.saveInput(); keepNoteState();
+        showToast(`📢 期号更新为 ${period}，已同步数据`);
+    }
+}
+async function pollForPeriodChange() { await autoSyncWithTipOnChange(); }
+function toggleAutoSync() {
+    if (!isSyncTimeAllowed()) { showToast('⚠️ 自动同步仅限 21:00-21:10 操作'); return; }
+    let btn = document.getElementById('autoSyncBtn');
+    if (isAutoSyncing) {
+        if (autoSyncInterval) clearInterval(autoSyncInterval);
+        autoSyncInterval = null; isAutoSyncing = false; btn.innerText = '⚙️ 同步关'; showToast('已关闭自动同步');
+    } else {
+        isAutoSyncing = true; btn.innerText = '⏳ 同步开';
+        autoSyncWithTipOnChange().finally(() => {
+            autoSyncInterval = setInterval(() => { if (isAutoSyncing) pollForPeriodChange(); else if (!isSyncTimeAllowed()) toggleAutoSync(); }, 5*60*1000);
+            showToast('已开启自动同步（每5分钟检查更新）');
+        });
+    }
+}
+function startTimeWindowMonitor() {
+    setInterval(() => { if (!isSyncTimeAllowed() && isAutoSyncing) { clearInterval(autoSyncInterval); autoSyncInterval = null; isAutoSyncing = false; document.getElementById('autoSyncBtn').innerText = '⚙️ 同步关'; showToast('⏰ 已超出同步时段，自动同步已关闭'); } }, 10000);
+}
+
+// ==================== 默认规则采集 ====================
+const RANGE_API_URL = 'https://mayipan.eu.cc/default_rules.txt';
+async function onlineCollectRange() {
+    let btn = document.getElementById('onlineCollectRangeBtn'), orig = btn.innerText;
+    btn.innerText = '⏳ 采集中...'; btn.disabled = true;
+    try {
+        let resp = await fetch(RANGE_API_URL + '?t=' + Date.now());
+        if (!resp.ok) throw new Error('fail');
+        let data = await resp.text();
+        if (!data.trim()) { showToast('采集返回数据为空'); return; }
+        document.getElementById('rangeData').value = data;
+        onRangeDataChange(); showToast('默认规则在线采集成功'); storage.saveRange(); keepNoteState();
+    } catch { showToast('采集失败'); }
+    finally { btn.innerText = orig; btn.disabled = false; }
+}
+function openVip() { window.open('/vip.html','_blank'); }
+function openPm() { window.open('/xinao.html','_blank'); }
+
+// ==================== 精选区间模块 ====================
+let currentEditingType = null, currentEditingA = null, currentEditingIndex = null, pendingEdit = null, isSaving = false;
+const editInputElem = document.getElementById('editRuleInput'), editPanelElem = document.getElementById('editRulePanel');
+function saveRuleEdit() { /* ... 同前 ... */ }
+function onEditBlur() { saveRuleEdit(); }
+function onEditKeypress(e) { if (e.key === 'Enter') { e.preventDefault(); saveRuleEdit(); } }
+editInputElem.addEventListener('blur', onEditBlur);
+editInputElem.addEventListener('keypress', onEditKeypress);
+function editRule(type, a, value, index) { /* ... 同前 ... */ }
+function parseRangeDataToRules() { /* ... 同前 ... */ }
+function updateGridCount() { /* ... 同前 ... */ }
+function applyUserEditedRule(ruleText) { /* ... 同前 ... */ }
+function renderSelectRulesFromData() { /* ... 同前 ... */ }
+let lastRuleCount = 0;
+function refreshSelectRange() { /* ... 同前 ... */ }
+function getBStatsFromRules(rules) { /* ... 同前 ... */ }
+function getHotWarmFromStats(stats) { /* ... 同前 ... */ }
+function getColdIntervalsFromStats(stats, hot, warm, mode) { /* ... 同前 ... */ }
+function renderSelectRulesWithTooltip(stats, hot, warm, cold, coldDetails, clickable = true) { /* ... 同前 ... */ }
+function renderSelectAbSequence(rules) { /* ... 同前 ... */ }
+function importRulesToConfig(list) { /* ... 同前 ... */ }
+function importHotRules() { /* ... 同前 ... */ }
+function doImportHot() { /* ... 同前 ... */ }
+function importWarmRules() { /* ... 同前 ... */ }
+function doImportWarm() { /* ... 同前 ... */ }
+function importColdRules() { /* ... 同前 ... */ }
+function doImportCold() { /* ... 同前 ... */ }
+async function copyToClipboard(text, tipId) { /* ... 同前 ... */ }
+
+// ==================== 初始化 ====================
+function initApp() {
+    storage.loadInput(); storage.loadRange();
+    if (!document.getElementById('rangeData').value.trim()) { document.getElementById('rangeData').value = ''; storage.saveRange(); }
+    storage.loadRuleImportText(); bindPaste(); clearAllRules();
+    autoCalc(1); autoCalc(2);
+    setTimeout(() => { compareAll(); refreshSelectRange(); }, 100);
+    document.getElementById('globalStatSwitch').checked = (localStorage.getItem('globalStatVisible') == '1');
+    toggleGlobalStat();
+    restorePeriodDisplay();
+    document.getElementById('selectPeriodInput').addEventListener('blur', refreshSelectRange);
+    document.getElementById('refreshSelectRulesBtn').onclick = () => { clearAllRules(); refreshSelectRange(); };
+    document.getElementById('importSelectHotBtn').onclick = importHotRules;
+    document.getElementById('importSelectWarmBtn').onclick = importWarmRules;
+    document.getElementById('importSelectColdBtn').onclick = importColdRules;
+    document.getElementById('coldModeSelect').onchange = () => refreshSelectRange();
+    document.getElementById('importRulesFromRangeBtn').onclick = importRulesFromRange;
+    document.getElementById('onlineCollectRangeBtn').onclick = onlineCollectRange;
+    document.getElementById('openVipBtn').onclick = openVip;
+    document.getElementById('openPmBtn').onclick = openPm;
+    document.getElementById('autoSyncBtn').onclick = toggleAutoSync;
+    document.getElementById('addCustomRuleBtn').onclick = addCustomRule;
+    let antIcon = document.getElementById('antIcon');
+    if (antIcon) { antIcon.removeEventListener('click', manualSyncSilent); antIcon.addEventListener('click', e => { e.stopPropagation(); manualSyncSilent(); }); }
+    startTimeWindowMonitor(); refreshSelectRange();
+    window.editRule = editRule; showRulesDetail = false;
+    updateInputAreaVisibility(); loadMarqueeText(); keepNoteState();
+    // 绝不自动同步
+}
+
+document.getElementById('copyDeviceBtn').onclick = () => copyToClipboard(getDeviceUUID(), 'authTip');
+document.getElementById('verifyBtn').onclick = async () => {
+    let code = document.getElementById('authCode').value.trim();
+    if (!code) { document.getElementById('authTip').textContent = '请输入授权码！'; return; }
+    document.getElementById('authTip').textContent = '⏳ 验证中...';
+    if (await verifyAuthWithWorker(code)) {
+        saveAuthCode(code);
+        document.getElementById('authTip').style.color = '#6cce6c';
+        document.getElementById('authTip').textContent = '✅ 验证成功！';
+        setTimeout(() => { document.getElementById('authModal').style.display = 'none'; initApp(); }, 800);
+    } else {
+        document.getElementById('authTip').style.color = '#ff6666';
+        document.getElementById('authTip').textContent = '❌ 授权码无效或已过期';
+    }
+};
+window.onload = () => {
+    document.getElementById('deviceCode').innerText = getDeviceUUID();
+    let saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+        verifyAuthWithWorker(saved).then(valid => valid ? (document.getElementById('authModal').style.display = 'none', initApp()) : (clearAuth(), document.getElementById('authModal').style.display = 'flex'));
+    } else document.getElementById('authModal').style.display = 'flex';
+};
+</script>
+</body>
+</html>
