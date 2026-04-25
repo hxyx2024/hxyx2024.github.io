@@ -158,8 +158,8 @@
 </div>
 
 <script>
-    // ==================== Worker 授权验证（修改版：授权成功UUID永久固定，未授权/过期可变） ====================
-    const WORKER_URL = 'https://api.mycm.cc.cd';   // 保持原地址，如需共用请自行修改
+    // ==================== Worker 授权验证（改进版：授权后UUID固定，未授权/过期可变）====================
+    const WORKER_URL = 'https://api.mycm.cc.cd';   // 保持原地址
     const STORAGE_KEY = "ANT_AUTH";
     const AUTHORIZED_UUID_KEY = "ANT_AUTHORIZED_UUID";
     const TEMP_UUID_KEY = "ANT_TEMP_UUID";
@@ -174,10 +174,10 @@
     }
 
     function getDeviceUUID() {
-        // 优先返回授权固定UUID
+        // 优先返回已授权的固定UUID
         let authorized = localStorage.getItem(AUTHORIZED_UUID_KEY);
         if (authorized) return authorized;
-        // 否则返回临时UUID（每次未授权/过期后会重新生成）
+        // 否则返回临时UUID（未授权/过期时可变）
         let temp = localStorage.getItem(TEMP_UUID_KEY);
         if (!temp) {
             temp = generateUUID();
@@ -612,28 +612,29 @@
         if (localAuthCode) {
             const valid = await verifyAuthWithWorker(localAuthCode);
             if (valid) {
-                // 授权有效：确保UUID已固定
+                // 授权有效：确保 UUID 已固定
                 if (!localStorage.getItem(AUTHORIZED_UUID_KEY)) {
                     finalizeAuthorization();
                     updateDeviceDisplay();
                 }
                 initAppAfterAuth();
             } else {
-                // 授权失效：清除所有授权数据，显示授权面板
+                // 授权失效：清除所有授权数据，显示授权面板（下次访问会生成新临时UUID）
                 clearAuthorization();
+                // 确保重新生成临时UUID（清除后再调用 getDeviceUUID 会生成新的）
+                getDeviceUUID();
+                updateDeviceDisplay();
                 document.getElementById('authPanel').style.display = 'flex';
                 document.getElementById('appContainer').style.display = 'none';
                 document.getElementById('authStatusMsg').innerText = '授权已失效，请重新输入授权码';
-                updateDeviceDisplay();  // 重新生成临时显示
             }
         } else {
-            // 未授权：确保没有残留授权UUID，显示授权面板，临时UUID会保持或重新生成
+            // 未授权：清除可能遗留的授权UUID，生成新的临时UUID
             localStorage.removeItem(AUTHORIZED_UUID_KEY);
-            // 如果连临时UUID都没有，则生成一个
-            if (!localStorage.getItem(TEMP_UUID_KEY)) {
-                getDeviceUUID();
-                updateDeviceDisplay();
-            }
+            // 强制生成新的临时UUID（删除旧的再生成）
+            localStorage.removeItem(TEMP_UUID_KEY);
+            getDeviceUUID();  // 会生成新的临时UUID
+            updateDeviceDisplay();
             document.getElementById('authPanel').style.display = 'flex';
             document.getElementById('appContainer').style.display = 'none';
             document.getElementById('authStatusMsg').innerText = '未授权，请输入授权码';
