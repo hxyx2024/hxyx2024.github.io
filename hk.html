@@ -61,30 +61,10 @@
         footer { text-align:center; font-size:10px; color:#444; margin-top:20px; }
         @media (max-width:560px) { .freq-table th, .freq-table td, .zodiac-rank-table th, .zodiac-rank-table td { padding:4px 2px; font-size:10px; } }
         #currentDateTime { font-family: monospace; background:#0d0d0d; padding:4px 12px; border-radius:40px; font-size:12px; letter-spacing:0.5px; border:1px solid #2c2c2c; white-space:nowrap; }
-        .scroll-container {
-            background: #0d0d0d;
-            border-radius: 30px;
-            padding: 6px 12px;
-            margin: 12px 0 8px 0;
-            overflow: hidden;
-            white-space: nowrap;
-            box-sizing: border-box;
-            border: 1px solid #2c2c2c;
-        }
-        .scroll-text {
-            display: inline-block;
-            padding-left: 100%;
-            animation: scroll-left 20s linear infinite;
-            font-size: 13px;
-            color: #facc15;
-        }
-        @keyframes scroll-left {
-            0% { transform: translateX(0); }
-            100% { transform: translateX(-100%); }
-        }
-        .scroll-container:hover .scroll-text {
-            animation-play-state: paused;
-        }
+        .scroll-container { background: #0d0d0d; border-radius: 30px; padding: 6px 12px; margin: 12px 0 8px 0; overflow: hidden; white-space: nowrap; box-sizing: border-box; border: 1px solid #2c2c2c; }
+        .scroll-text { display: inline-block; padding-left: 100%; animation: scroll-left 20s linear infinite; font-size: 13px; color: #facc15; }
+        @keyframes scroll-left { 0% { transform: translateX(0); } 100% { transform: translateX(-100%); } }
+        .scroll-container:hover .scroll-text { animation-play-state: paused; }
     </style>
 </head>
 <body>
@@ -124,7 +104,6 @@
             </div>
             <div class="reason">💡 说明：香港赛马会独家经营的六合彩不存在内幕，统计中奖概率</div>
         </div>
-
         <div class="card"><div class="card-header"><h3>🔴 特码统计</h3><button class="toggle-btn" data-target="freq-content">▼ 隐藏</button></div>
             <div id="freq-content" class="card-content">
                 <div class="scroll-container" id="scrollContainer">
@@ -135,7 +114,6 @@
                 <div class="table-footer-bar"><div class="select-all-wrapper"><label><input type="checkbox" id="selectAllCheckbox"> 全选/取消</label></div><button id="copySelectedNumbersBtn" class="copy-selected-btn">📋 复制号码</button></div>
             </div>
         </div>
-
         <div class="card"><div class="card-header"><h3>🔵 生肖统计</h3><button class="toggle-btn" data-target="zodiac-content">▼ 隐藏</button></div>
             <div id="zodiac-content" class="card-content">
                 <div id="zodiacRankingContainer"></div>
@@ -143,23 +121,20 @@
                 <div class="reason">⭐ 破解渗透香港六合彩盘口数据库</div>
             </div>
         </div>
-
         <div class="card"><div class="card-header"><h3>⚠️ N不中码</h3><button class="toggle-btn" data-target="miss-content">▼ 隐藏</button></div>
             <div id="miss-content" class="card-content"><div id="missNumbers" class="miss-numbers">等待采集...</div></div>
         </div>
-
         <footer>© 2026 蚂蚁数据 · 版权所有</footer>
     </div>
 </div>
 
 <script>
-    // 授权配置
+    // ==================== 授权核心 ====================
     const WORKER_URL = 'https://api.hxyx.cc.cd';
     const STORAGE_KEY = "ANT_AUTH";
-    const AUTHORIZED_UUID_KEY = "ANT_AUTHORIZED_UUID";   // 存储授权成功后固定的UUID
-    const TEMP_UUID_KEY = "ANT_TEMP_UUID";               // 存储临时UUID（未授权时使用）
+    const AUTHORIZED_UUID_KEY = "ANT_AUTHORIZED_UUID";
+    const TEMP_UUID_KEY = "ANT_TEMP_UUID";
 
-    // 生成随机UUID的辅助函数
     function generateUUID() {
         if (crypto.randomUUID) return crypto.randomUUID();
         return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
@@ -169,11 +144,9 @@
         });
     }
 
-    // 获取当前设备码（优先已授权的，否则生成临时）
     function getDeviceUUID() {
         let authorized = localStorage.getItem(AUTHORIZED_UUID_KEY);
         if (authorized) return authorized;
-        // 未授权：获取或生成临时UUID
         let temp = localStorage.getItem(TEMP_UUID_KEY);
         if (!temp) {
             temp = generateUUID();
@@ -182,7 +155,6 @@
         return temp;
     }
 
-    // 授权成功：将当前临时UUID转为授权UUID，清除临时
     function finalizeAuthorization() {
         let current = getDeviceUUID();
         if (current) {
@@ -191,15 +163,13 @@
         }
     }
 
-    // 清除授权（授权失效时调用）：删除授权UUID和临时UUID，并刷新页面重新生成
     function clearAuthorization() {
         localStorage.removeItem(AUTHORIZED_UUID_KEY);
         localStorage.removeItem(TEMP_UUID_KEY);
         localStorage.removeItem(STORAGE_KEY);
-        location.reload();  // 刷新页面以重新生成临时UUID
+        // 不自动刷新，仅清除数据
     }
 
-    // 验证授权码（与Worker通信）
     async function verifyAuthWithWorker(authCode) {
         const deviceCode = getDeviceUUID();
         if (!deviceCode || !authCode) return false;
@@ -223,19 +193,11 @@
         }
     }
 
-    // 检查本地存储的授权码是否有效
-    async function checkLocalAuth() {
-        const authCode = localStorage.getItem(STORAGE_KEY);
-        if (!authCode) return false;
-        return await verifyAuthWithWorker(authCode);
-    }
-
-    // 保存授权码
     function saveAuthCode(authCode) {
         localStorage.setItem(STORAGE_KEY, authCode);
     }
 
-    // 跑马灯加载
+    // ==================== 跑马灯 ====================
     async function loadMarqueeText() {
         const scrollTextEl = document.getElementById('scrollText');
         try {
@@ -253,7 +215,7 @@
         }
     }
 
-    // ==================== 业务逻辑（保持不变） ====================
+    // ==================== 业务逻辑 ====================
     let allRecords = [], currentDisplayRecords = [];
     let autoCollectDone = false;
 
@@ -445,7 +407,7 @@
         document.getElementById('totalPeriods').innerText = allRecords.length;
 
         let sortedNumbers = getSortedNumbersAll(freqTotal, freqRecent);
-        let tableHtml = `<table class="freq-table"><thead><tr><th class="checkbox-col">✅</th><th>排名</th><th>特码</th><th>频次</th><th>近期</th><th>热度值</th><tr></thead><tbody>`;
+        let tableHtml = `<table class="freq-table"><thead><tr><th class="checkbox-col">✅</th><th>排名</th><th>特码</th><th>频次</th><th>近期</th><th>热度值</th></tr></thead><tbody>`;
         for(let i=0;i<sortedNumbers.length;i++){
             let it = sortedNumbers[i];
             let heat = '';
@@ -531,7 +493,6 @@
     function showToast(msg){ let t = document.createElement('div'); t.className = 'toast-msg'; t.innerText = msg; document.body.appendChild(t); setTimeout(()=>t.remove(), 2000); }
 
     const DATA_API_URL = 'https://mayipan.eu.cc/hk_lottery_data.html';
-
     async function onlineCollect() {
         const btn = document.getElementById('onlineCollectBtn');
         const originalText = btn.innerText;
@@ -593,35 +554,46 @@
         loadMarqueeText();
     }
 
-    // 页面启动主流程
-    (async function() {
-        // 显示当前设备码
+    // 更新页面显示的设备码
+    function updateDeviceDisplay() {
         const deviceId = getDeviceUUID();
         document.getElementById('deviceIdDisplay').innerText = deviceId;
         document.getElementById('copyDeviceBtn').onclick = () => copyToClipboard(deviceId, '设备码已复制');
+    }
 
+    // 启动主流程
+    (async function() {
+        updateDeviceDisplay();
         const localAuthCode = localStorage.getItem(STORAGE_KEY);
         if (localAuthCode) {
             const valid = await verifyAuthWithWorker(localAuthCode);
             if (valid) {
-                // 授权有效：确保当前UUID已固定
                 if (!localStorage.getItem(AUTHORIZED_UUID_KEY)) {
                     finalizeAuthorization();
+                    updateDeviceDisplay();
                 }
                 initAppAfterAuth();
             } else {
-                // 授权过期或无效：清除所有授权状态并刷新
                 clearAuthorization();
+                document.getElementById('authPanel').style.display = 'flex';
+                document.getElementById('appContainer').style.display = 'none';
+                document.getElementById('authStatusMsg').innerText = '授权已失效，请重新输入授权码';
+                updateDeviceDisplay();
             }
         } else {
-            // 未授权：清除可能遗留的授权UUID，保证每次未授权状态都生成新临时UUID
+            // 未授权状态：确保没有残留的授权UUID，显示授权面板
             localStorage.removeItem(AUTHORIZED_UUID_KEY);
-            localStorage.removeItem(TEMP_UUID_KEY);
-            // 重新生成临时UUID（通过刷新页面或简单重新获取）
-            location.reload();
+            // 如果没有临时UUID则生成一个（getDeviceUUID会自动生成）
+            if (!localStorage.getItem(TEMP_UUID_KEY)) {
+                getDeviceUUID();
+                updateDeviceDisplay();
+            }
+            document.getElementById('authPanel').style.display = 'flex';
+            document.getElementById('appContainer').style.display = 'none';
+            document.getElementById('authStatusMsg').innerText = '未授权，请输入授权码';
         }
 
-        // 验证按钮逻辑
+        // 验证按钮事件
         document.getElementById('verifyBtn').onclick = async () => {
             const code = document.getElementById('authCodeInput').value.trim();
             if (!code) { document.getElementById('authStatusMsg').innerText = '请输入授权码'; return; }
@@ -629,7 +601,8 @@
             const valid = await verifyAuthWithWorker(code);
             if (valid) {
                 saveAuthCode(code);
-                finalizeAuthorization();   // 固定当前UUID
+                finalizeAuthorization();
+                updateDeviceDisplay();
                 document.getElementById('authStatusMsg').innerText = '✅ 授权成功，正在加载...';
                 initAppAfterAuth();
             } else {
