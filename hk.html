@@ -7,7 +7,6 @@
     <style>
         * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
         body { background:#121212; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, sans-serif; padding:12px; color:#e0e0e0; font-size:14px; max-width:800px; margin:0 auto; }
-        /* 授权面板 */
         .auth-overlay { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.92); backdrop-filter:blur(8px); z-index:10000; display:flex; align-items:center; justify-content:center; font-family:inherit; display:none; }
         .auth-card { background:#1e1e1e; border-radius:32px; padding:28px 24px; width:90%; max-width:420px; border:1px solid #4f46e5; box-shadow:0 20px 35px rgba(0,0,0,0.6); text-align:center; }
         .auth-card h2 { margin-bottom:16px; color:#facc15; font-size:1.5rem; }
@@ -19,7 +18,6 @@
         .device-id-row span { font-family:monospace; font-size:11px; word-break:break-all; color:#eee; flex:1; text-align:left; }
         .copy-device-btn { background:#3a3a3a; padding:6px 12px; border-radius:20px; font-size:12px; cursor:pointer; border:none; color:#fff; width:auto; margin:0; white-space:nowrap; }
         .copy-device-btn:active { background:#007bff; transform:scale(0.96); }
-        /* 业务样式 */
         .card { background:#1e1e1e; border-radius:20px; padding:16px; margin-bottom:16px; border:1px solid #2c2c2c; }
         .card-header { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:14px; padding-bottom:10px; border-bottom:1px solid #2c2c2c; }
         .card-header h3 { margin:0; font-size:1rem; font-weight:600; color:#aaa; }
@@ -63,7 +61,6 @@
         footer { text-align:center; font-size:10px; color:#444; margin-top:20px; }
         @media (max-width:560px) { .freq-table th, .freq-table td, .zodiac-rank-table th, .zodiac-rank-table td { padding:4px 2px; font-size:10px; } }
         #currentDateTime { font-family: monospace; background:#0d0d0d; padding:4px 12px; border-radius:40px; font-size:12px; letter-spacing:0.5px; border:1px solid #2c2c2c; white-space:nowrap; }
-        /* 跑马灯样式 */
         .scroll-container {
             background: #0d0d0d;
             border-radius: 30px;
@@ -91,7 +88,6 @@
     </style>
 </head>
 <body>
-<!-- 授权面板 -->
 <div id="authPanel" class="auth-overlay">
     <div class="auth-card">
         <h2>🔐 授权验证</h2>
@@ -110,7 +106,6 @@
     </div>
 </div>
 
-<!-- 主界面 -->
 <div id="appContainer" style="display: none;">
     <div class="container">
         <div class="card">
@@ -158,51 +153,68 @@
 </div>
 
 <script>
-    // ==================== Worker 授权验证 ====================
-    const WORKER_URL = 'https://api.hxyx.cc.cd';   // 授权验证服务器
+    // 授权配置
+    const WORKER_URL = 'https://api.hxyx.cc.cd';
     const STORAGE_KEY = "ANT_AUTH";
+    const AUTHORIZED_UUID_KEY = "ANT_AUTHORIZED_UUID";   // 存储授权成功后固定的UUID
+    const TEMP_UUID_KEY = "ANT_TEMP_UUID";               // 存储临时UUID（未授权时使用）
 
-    // 方法二：根据当前域名+路径动态生成设备码存储键名（同一域名不同路径自动隔离）
-    const SITE_ID = (window.location.hostname + window.location.pathname).replace(/[^a-zA-Z0-9]/g, '_');
-    const DEVICE_UUID_KEY = `ANT_DEVICE_UUID_${SITE_ID}`;
+    // 生成随机UUID的辅助函数
+    function generateUUID() {
+        if (crypto.randomUUID) return crypto.randomUUID();
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+            const r = Math.random() * 16 | 0;
+            const v = c === 'x' ? r : (r & 0x3 | 0x8);
+            return v.toString(16);
+        });
+    }
 
+    // 获取当前设备码（优先已授权的，否则生成临时）
     function getDeviceUUID() {
-        let uuid = localStorage.getItem(DEVICE_UUID_KEY);
-        if (!uuid) {
-            uuid = crypto.randomUUID ? crypto.randomUUID() : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
-                const r = Math.random() * 16 | 0;
-                const v = c === 'x' ? r : (r & 0x3 | 0x8);
-                return v.toString(16);
-            });
-            localStorage.setItem(DEVICE_UUID_KEY, uuid);
+        let authorized = localStorage.getItem(AUTHORIZED_UUID_KEY);
+        if (authorized) return authorized;
+        // 未授权：获取或生成临时UUID
+        let temp = localStorage.getItem(TEMP_UUID_KEY);
+        if (!temp) {
+            temp = generateUUID();
+            localStorage.setItem(TEMP_UUID_KEY, temp);
         }
-        return uuid;
+        return temp;
     }
 
-    async function fetchWithTimeout(url, options = {}, timeout = 10000) {
-        const controller = new AbortController();
-        const id = setTimeout(() => controller.abort(), timeout);
-        try {
-            const response = await fetch(url, { ...options, signal: controller.signal });
-            clearTimeout(id);
-            return response;
-        } catch (err) {
-            clearTimeout(id);
-            throw err;
+    // 授权成功：将当前临时UUID转为授权UUID，清除临时
+    function finalizeAuthorization() {
+        let current = getDeviceUUID();
+        if (current) {
+            localStorage.setItem(AUTHORIZED_UUID_KEY, current);
+            localStorage.removeItem(TEMP_UUID_KEY);
         }
     }
 
+    // 清除授权（授权失效时调用）：删除授权UUID和临时UUID，并刷新页面重新生成
+    function clearAuthorization() {
+        localStorage.removeItem(AUTHORIZED_UUID_KEY);
+        localStorage.removeItem(TEMP_UUID_KEY);
+        localStorage.removeItem(STORAGE_KEY);
+        location.reload();  // 刷新页面以重新生成临时UUID
+    }
+
+    // 验证授权码（与Worker通信）
     async function verifyAuthWithWorker(authCode) {
         const deviceCode = getDeviceUUID();
         if (!deviceCode || !authCode) return false;
         try {
-            const resp = await fetchWithTimeout(`${WORKER_URL}/verify`, {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 10000);
+            const resp = await fetch(`${WORKER_URL}/verify`, {
                 method: 'GET',
                 headers: {
                     'X-Device-Code': deviceCode,
                     'X-Auth-Code': authCode
-                }
-            }, 10000);
+                },
+                signal: controller.signal
+            });
+            clearTimeout(timeoutId);
             const data = await resp.json();
             return data.valid === true;
         } catch (err) {
@@ -211,26 +223,19 @@
         }
     }
 
+    // 检查本地存储的授权码是否有效
     async function checkLocalAuth() {
         const authCode = localStorage.getItem(STORAGE_KEY);
         if (!authCode) return false;
         return await verifyAuthWithWorker(authCode);
     }
 
+    // 保存授权码
     function saveAuthCode(authCode) {
         localStorage.setItem(STORAGE_KEY, authCode);
     }
 
-    function clearAuth() {
-        localStorage.removeItem(STORAGE_KEY);
-    }
-
-    document.getElementById('copyDeviceBtn').onclick = () => {
-        const deviceId = getDeviceUUID();
-        copyToClipboard(deviceId, '设备码已复制');
-    };
-
-    // 跑马灯加载（保持 hktz.txt 不变）
+    // 跑马灯加载
     async function loadMarqueeText() {
         const scrollTextEl = document.getElementById('scrollText');
         try {
@@ -238,11 +243,7 @@
             if (response.ok) {
                 const text = await response.text();
                 const trimmed = text.trim();
-                if (trimmed) {
-                    scrollTextEl.innerText = trimmed;
-                } else {
-                    scrollTextEl.innerText = '暂无通知';
-                }
+                scrollTextEl.innerText = trimmed || '暂无通知';
             } else {
                 throw new Error('文件不存在');
             }
@@ -444,7 +445,7 @@
         document.getElementById('totalPeriods').innerText = allRecords.length;
 
         let sortedNumbers = getSortedNumbersAll(freqTotal, freqRecent);
-        let tableHtml = `<table class="freq-table"><thead><tr><th class="checkbox-col">✅</th><th>排名</th><th>特码</th><th>频次</th><th>近期</th><th>热度值</th></tr></thead><tbody>`;
+        let tableHtml = `<table class="freq-table"><thead><tr><th class="checkbox-col">✅</th><th>排名</th><th>特码</th><th>频次</th><th>近期</th><th>热度值</th><tr></thead><tbody>`;
         for(let i=0;i<sortedNumbers.length;i++){
             let it = sortedNumbers[i];
             let heat = '';
@@ -592,24 +593,35 @@
         loadMarqueeText();
     }
 
+    // 页面启动主流程
     (async function() {
+        // 显示当前设备码
         const deviceId = getDeviceUUID();
         document.getElementById('deviceIdDisplay').innerText = deviceId;
+        document.getElementById('copyDeviceBtn').onclick = () => copyToClipboard(deviceId, '设备码已复制');
+
         const localAuthCode = localStorage.getItem(STORAGE_KEY);
         if (localAuthCode) {
-            initAppAfterAuth();
             const valid = await verifyAuthWithWorker(localAuthCode);
-            if (!valid) {
-                clearAuth();
-                document.getElementById('authPanel').style.display = 'flex';
-                document.getElementById('appContainer').style.display = 'none';
-                document.getElementById('authStatusMsg').innerText = '授权已失效，请重新输入授权码';
+            if (valid) {
+                // 授权有效：确保当前UUID已固定
+                if (!localStorage.getItem(AUTHORIZED_UUID_KEY)) {
+                    finalizeAuthorization();
+                }
+                initAppAfterAuth();
+            } else {
+                // 授权过期或无效：清除所有授权状态并刷新
+                clearAuthorization();
             }
         } else {
-            document.getElementById('authPanel').style.display = 'flex';
-            document.getElementById('appContainer').style.display = 'none';
-            document.getElementById('authStatusMsg').innerText = '未授权，请输入授权码';
+            // 未授权：清除可能遗留的授权UUID，保证每次未授权状态都生成新临时UUID
+            localStorage.removeItem(AUTHORIZED_UUID_KEY);
+            localStorage.removeItem(TEMP_UUID_KEY);
+            // 重新生成临时UUID（通过刷新页面或简单重新获取）
+            location.reload();
         }
+
+        // 验证按钮逻辑
         document.getElementById('verifyBtn').onclick = async () => {
             const code = document.getElementById('authCodeInput').value.trim();
             if (!code) { document.getElementById('authStatusMsg').innerText = '请输入授权码'; return; }
@@ -617,6 +629,7 @@
             const valid = await verifyAuthWithWorker(code);
             if (valid) {
                 saveAuthCode(code);
+                finalizeAuthorization();   // 固定当前UUID
                 document.getElementById('authStatusMsg').innerText = '✅ 授权成功，正在加载...';
                 initAppAfterAuth();
             } else {
