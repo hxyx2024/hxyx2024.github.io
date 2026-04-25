@@ -116,7 +116,6 @@
         <div class="card">
             <h1>🔴 香港六合彩渗透采集</h1>
             <div class="sub">自动破解渗透采集最新香港盘口数据</div>
-            <!-- 修改此处文字：“保管好UUID和授权码” -->
             <div id="licenseInfo" style="background:#0d0d0d; border-radius: 30px; padding: 6px 12px; margin-bottom: 12px; font-size:12px; display:inline-block; color:#4ade80;">✅ 授权状态: 加载中...</div>
             <div class="flex-between">
                 <span>🟢 总组数：<strong id="totalPeriods">0</strong></span>
@@ -162,7 +161,10 @@
     // ==================== Worker 授权验证 ====================
     const WORKER_URL = 'https://api.hxyx.cc.cd';   // 授权验证服务器
     const STORAGE_KEY = "ANT_AUTH";
-    const DEVICE_UUID_KEY = "ANT_DEVICE_UUID";
+
+    // 方法二：根据当前域名+路径动态生成设备码存储键名（同一域名不同路径自动隔离）
+    const SITE_ID = (window.location.hostname + window.location.pathname).replace(/[^a-zA-Z0-9]/g, '_');
+    const DEVICE_UUID_KEY = `ANT_DEVICE_UUID_${SITE_ID}`;
 
     function getDeviceUUID() {
         let uuid = localStorage.getItem(DEVICE_UUID_KEY);
@@ -228,7 +230,7 @@
         copyToClipboard(deviceId, '设备码已复制');
     };
 
-    // 跑马灯加载
+    // 跑马灯加载（保持 hktz.txt 不变）
     async function loadMarqueeText() {
         const scrollTextEl = document.getElementById('scrollText');
         try {
@@ -250,7 +252,7 @@
         }
     }
 
-    // ==================== 业务逻辑 ====================
+    // ==================== 业务逻辑（保持不变） ====================
     let allRecords = [], currentDisplayRecords = [];
     let autoCollectDone = false;
 
@@ -527,8 +529,7 @@
     function toggleZodiacAll(){ let c = document.getElementById('zodiacSelectAllCheckbox').checked; document.querySelectorAll('.zodiac-checkbox').forEach(cb=>cb.checked=c); }
     function showToast(msg){ let t = document.createElement('div'); t.className = 'toast-msg'; t.innerText = msg; document.body.appendChild(t); setTimeout(()=>t.remove(), 2000); }
 
-    // ==================== 修改点：数据采集地址 ====================
-    const DATA_API_URL = 'https://mayipan.eu.cc/hk_lottery_data.html';   // 原 lottery_data_api.html 改为 hk_lottery_data.html
+    const DATA_API_URL = 'https://mayipan.eu.cc/hk_lottery_data.html';
 
     async function onlineCollect() {
         const btn = document.getElementById('onlineCollectBtn');
