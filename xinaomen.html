@@ -116,7 +116,6 @@
         <div class="card">
             <h1>🔴 新澳门渗透采集</h1>
             <div class="sub">每天自动渗透采集最新新澳门盘口数据</div>
-            <!-- 修改此处文字：“保管好UUID和授权码” -->
             <div id="licenseInfo" style="background:#0d0d0d; border-radius: 30px; padding: 6px 12px; margin-bottom: 12px; font-size:12px; display:inline-block; color:#4ade80;">✅ 授权状态: 加载中...</div>
             <div class="flex-between">
                 <span>🟢 总组数：<strong id="totalPeriods">0</strong></span>
@@ -159,22 +158,52 @@
 </div>
 
 <script>
-    // ==================== Worker 授权验证 ====================
-    const WORKER_URL = 'https://api.mycm.cc.cd';
+    // ==================== Worker 授权验证（改进版：授权后UUID固定，未授权/过期可变）====================
+    const WORKER_URL = 'https://api.mycm.cc.cd';   // 保持原地址
     const STORAGE_KEY = "ANT_AUTH";
-    const DEVICE_UUID_KEY = "ANT_DEVICE_UUID";
+    const AUTHORIZED_UUID_KEY = "ANT_AUTHORIZED_UUID";
+    const TEMP_UUID_KEY = "ANT_TEMP_UUID";
+
+    function generateUUID() {
+        if (crypto.randomUUID) return crypto.randomUUID();
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+            const r = Math.random() * 16 | 0;
+            const v = c === 'x' ? r : (r & 0x3 | 0x8);
+            return v.toString(16);
+        });
+    }
 
     function getDeviceUUID() {
-        let uuid = localStorage.getItem(DEVICE_UUID_KEY);
-        if (!uuid) {
-            uuid = crypto.randomUUID ? crypto.randomUUID() : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
-                const r = Math.random() * 16 | 0;
-                const v = c === 'x' ? r : (r & 0x3 | 0x8);
-                return v.toString(16);
-            });
-            localStorage.setItem(DEVICE_UUID_KEY, uuid);
+        // 优先返回已授权的固定UUID
+        let authorized = localStorage.getItem(AUTHORIZED_UUID_KEY);
+        if (authorized) return authorized;
+        // 否则返回临时UUID（未授权/过期时可变）
+        let temp = localStorage.getItem(TEMP_UUID_KEY);
+        if (!temp) {
+            temp = generateUUID();
+            localStorage.setItem(TEMP_UUID_KEY, temp);
         }
-        return uuid;
+        return temp;
+    }
+
+    function finalizeAuthorization() {
+        let current = getDeviceUUID();
+        if (current) {
+            localStorage.setItem(AUTHORIZED_UUID_KEY, current);
+            localStorage.removeItem(TEMP_UUID_KEY);
+        }
+    }
+
+    function clearAuthorization() {
+        localStorage.removeItem(AUTHORIZED_UUID_KEY);
+        localStorage.removeItem(TEMP_UUID_KEY);
+        localStorage.removeItem(STORAGE_KEY);
+    }
+
+    function updateDeviceDisplay() {
+        const deviceId = getDeviceUUID();
+        document.getElementById('deviceIdDisplay').innerText = deviceId;
+        document.getElementById('copyDeviceBtn').onclick = () => copyToClipboard(deviceId, '设备码已复制');
     }
 
     async function fetchWithTimeout(url, options = {}, timeout = 10000) {
@@ -209,26 +238,11 @@
         }
     }
 
-    async function checkLocalAuth() {
-        const authCode = localStorage.getItem(STORAGE_KEY);
-        if (!authCode) return false;
-        return await verifyAuthWithWorker(authCode);
-    }
-
     function saveAuthCode(authCode) {
         localStorage.setItem(STORAGE_KEY, authCode);
     }
 
-    function clearAuth() {
-        localStorage.removeItem(STORAGE_KEY);
-    }
-
-    document.getElementById('copyDeviceBtn').onclick = () => {
-        const deviceId = getDeviceUUID();
-        copyToClipboard(deviceId, '设备码已复制');
-    };
-
-    // 跑马灯加载
+    // 跑马灯加载 (保持 tz.txt)
     async function loadMarqueeText() {
         const scrollTextEl = document.getElementById('scrollText');
         try {
@@ -250,7 +264,7 @@
         }
     }
 
-    // ==================== 业务逻辑 ====================
+    // ==================== 业务逻辑（完全保持不变） ====================
     let allRecords = [], currentDisplayRecords = [];
     let autoCollectDone = false;
 
@@ -571,7 +585,6 @@
     async function initAppAfterAuth() {
         document.getElementById('authPanel').style.display = 'none';
         document.getElementById('appContainer').style.display = 'block';
-        // 修改提示文字
         document.getElementById('licenseInfo').innerText = '✅ 授权成功 · 保管好UUID和授权码';
         if(clockInterval) clearInterval(clockInterval);
         updateCurrentDateTime();
@@ -590,24 +603,44 @@
         loadMarqueeText();
     }
 
+    // 启动主流程
     (async function() {
-        const deviceId = getDeviceUUID();
-        document.getElementById('deviceIdDisplay').innerText = deviceId;
+        // 显示设备码
+        updateDeviceDisplay();
+
         const localAuthCode = localStorage.getItem(STORAGE_KEY);
         if (localAuthCode) {
-            initAppAfterAuth();
             const valid = await verifyAuthWithWorker(localAuthCode);
-            if (!valid) {
-                clearAuth();
+            if (valid) {
+                // 授权有效：确保 UUID 已固定
+                if (!localStorage.getItem(AUTHORIZED_UUID_KEY)) {
+                    finalizeAuthorization();
+                    updateDeviceDisplay();
+                }
+                initAppAfterAuth();
+            } else {
+                // 授权失效：清除所有授权数据，显示授权面板（下次访问会生成新临时UUID）
+                clearAuthorization();
+                // 确保重新生成临时UUID（清除后再调用 getDeviceUUID 会生成新的）
+                getDeviceUUID();
+                updateDeviceDisplay();
                 document.getElementById('authPanel').style.display = 'flex';
                 document.getElementById('appContainer').style.display = 'none';
                 document.getElementById('authStatusMsg').innerText = '授权已失效，请重新输入授权码';
             }
         } else {
+            // 未授权：清除可能遗留的授权UUID，生成新的临时UUID
+            localStorage.removeItem(AUTHORIZED_UUID_KEY);
+            // 强制生成新的临时UUID（删除旧的再生成）
+            localStorage.removeItem(TEMP_UUID_KEY);
+            getDeviceUUID();  // 会生成新的临时UUID
+            updateDeviceDisplay();
             document.getElementById('authPanel').style.display = 'flex';
             document.getElementById('appContainer').style.display = 'none';
             document.getElementById('authStatusMsg').innerText = '未授权，请输入授权码';
         }
+
+        // 验证按钮事件
         document.getElementById('verifyBtn').onclick = async () => {
             const code = document.getElementById('authCodeInput').value.trim();
             if (!code) { document.getElementById('authStatusMsg').innerText = '请输入授权码'; return; }
@@ -615,6 +648,8 @@
             const valid = await verifyAuthWithWorker(code);
             if (valid) {
                 saveAuthCode(code);
+                finalizeAuthorization();
+                updateDeviceDisplay();
                 document.getElementById('authStatusMsg').innerText = '✅ 授权成功，正在加载...';
                 initAppAfterAuth();
             } else {
