@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, maximum-scale=2.0, minimum-scale=1.0, viewport-fit=cover">
+    <title>蚂蚁数据工具包 · 下载中心</title>
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+        html,body { width:100%; min-height:100vh; background:#121212; color:#eee; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif; padding:20px; }
+        .container { max-width:650px; margin:0 auto; }
+        .header { text-align:center; margin-bottom:30px; }
+        .header h1 { font-size:28px; color:#fff; margin-bottom:8px; }
+        .header .subtitle { color:#888; font-size:14px; }
+        .card { background:#1a1a1a; border-radius:20px; padding:24px; border:1px solid #2a2a2a; margin-bottom:20px; }
+        .card h2 { font-size:18px; margin-bottom:12px; color:#fff; border-left:3px solid #007bff; padding-left:10px; }
+        .file-meta { display:flex; justify-content:space-between; background:#222; border-radius:12px; padding:16px; margin:16px 0; flex-wrap:wrap; gap:10px; }
+        .file-meta .item { text-align:center; flex:1; min-width:80px; }
+        .file-meta .item .value { font-size:20px; font-weight:bold; color:#fff; }
+        .file-meta .item .label { font-size:12px; color:#888; margin-top:4px; }
+        .desc-text { color:#bbb; font-size:14px; line-height:1.8; margin-bottom:16px; }
+        .feature-list { list-style:none; margin-bottom:20px; }
+        .feature-list li { padding:6px 0; color:#ccc; font-size:14px; border-bottom:1px solid #222; }
+        .feature-list li::before { content:"▸ "; color:#007bff; margin-right:4px; }
+        .steps { color:#bbb; font-size:14px; line-height:1.8; margin-bottom:16px; }
+        .steps .num { display:inline-block; background:#007bff; color:#fff; border-radius:50%; width:22px; height:22px; text-align:center; line-height:22px; font-size:12px; margin-right:6px; }
+        .btn-download { display:block; width:100%; background:#007bff; color:#fff; border:none; border-radius:12px; padding:14px; font-size:16px; cursor:pointer; transition:0.2s; text-align:center; font-weight:bold; margin-top:10px; }
+        .btn-download:hover { background:#0056b3; }
+        .btn-download:active { transform:scale(0.98); opacity:0.9; }
+
+        /* 授权模态框 */
+        .auth-modal { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); backdrop-filter:blur(8px); z-index:10000; display:flex; align-items:center; justify-content:center; display:none; }
+        .auth-box { background:#1e1e1e; border-radius:32px; padding:28px 24px; width:90%; max-width:380px; border:1px solid #4f46e5; box-shadow:0 20px 35px rgba(0,0,0,0.6); text-align:center; }
+        .auth-box h3 { margin-bottom:16px; color:#facc15; font-size:1.3rem; }
+        .auth-btn { background:#007bff; border:none; border-radius:8px; padding:10px 16px; color:#fff; cursor:pointer; font-size:14px; font-weight:500; white-space:nowrap; min-width:80px; text-align:center; transition:0.2s; }
+        .auth-btn:active { transform:scale(0.96); opacity:0.9; }
+        .device-row { display:flex; gap:8px; align-items:center; margin:8px 0 16px 0; }
+        .device-row input { flex:1; background:#252525; border:1px solid #333; border-radius:8px; padding:10px; color:#fff; font-family:monospace; font-size:12px; }
+        .device-row input:focus { border-color:#007bff; outline:none; }
+        .auth-row { display:flex; gap:8px; margin:8px 0 20px 0; }
+        .auth-row input { flex:1; background:#252525; border:1px solid #333; border-radius:8px; padding:10px; color:#fff; font-size:14px; }
+        .auth-row input:focus { border-color:#007bff; outline:none; }
+        .auth-tip { margin-top:8px; font-size:12px; }
+        .auth-footer { margin-top:12px; font-size:12px; color:#888; line-height:1.4; }
+        .auth-footer a { color:#888; }
+        .close-auth { background:transparent; border:1px solid #333; color:#aaa; border-radius:8px; padding:8px 16px; cursor:pointer; margin-top:12px; font-size:13px; width:100%; }
+        .close-auth:hover { background:#333; color:#fff; }
+        .footer-note { text-align:center; margin-top:20px; font-size:12px; color:#555; }
+        .footer-note a { color:#555; text-decoration:underline; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🐜 蚂蚁数据下载中心</h1>
+            <p class="subtitle">澳彩盘口自动统计系统 · 移动端采集工具</p>
+        </div>
+
+        <div class="card">
+            <h2>📦 文件信息</h2>
+            <div class="file-meta">
+                <div class="item"><div class="value">蚂蚁采集.apk</div><div class="label">文件名</div></div>
+                <div class="item"><div class="value">2.5 MB</div><div class="label">大小</div></div>
+                <div class="item"><div class="value">v1.0</div><div class="label">版本</div></div>
+            </div>
+            <p class="desc-text">
+                本工具为蚂蚁数据团队开发的安卓端盘口数据采集工具，每天17点-21点自动渗透集盘口数据，并支持一键同步至在线统计平台。界面简洁、运行流畅，适配主流安卓设备。
+            </p>
+            <ul class="feature-list">
+                <li>📡 实时采集盘口数据，支持 G·A / G·B 自动识别</li>
+                <li>☁️ 一键同步至云端，与网页统计工具无缝衔接</li>
+                <li>🔐 内置一机一码授权，保障数据安全</li>
+                <li>📱 轻量级安装包，仅 2.5 MB，省流量</li>
+                <li>⚡ 极速启动，后台静默同步</li>
+            </ul>
+        </div>
+
+        <div class="card">
+            <h2>🔑 如何获取下载权限？</h2>
+            <div class="steps">
+                <p><span class="num">1</span> 点击下方【下载文件】按钮，弹出授权窗口。</p>
+                <p><span class="num">2</span> 在窗口中输入您的【设备码】（可修改为其他设备的 UUID）。</p>
+                <p><span class="num">3</span> 将设备码发送给机器人 <a href="https://t.me/mayiya_bot" target="_blank" style="color:#007bff;">@mayiya_bot</a> 获取授权码。</p>
+                <p><span class="num">4</span> 返回页面输入授权码，验证通过后自动开始下载。</p>
+            </div>
+            <button class="btn-download" id="downloadBtn">⬇️ 下载文件</button>
+        </div>
+
+        <p class="footer-note">已有授权？请直接点击下载按钮，使用之前绑定的设备码即可验证。 <br> © 2026 蚂蚁数据 · 禁止倒卖</p>
+    </div>
+
+    <!-- 授权模态框 -->
+    <div class="auth-modal" id="authModal">
+        <div class="auth-box">
+            <h3>🔒 下载授权验证</h3>
+            <div style="color:#ccc; margin-bottom:6px;">你的设备码（可修改）：</div>
+            <div class="device-row">
+                <input type="text" id="deviceCodeInput" placeholder="请输入设备码 UUID">
+                <button class="auth-btn" id="copyDeviceBtn" style="min-width:60px;">📋</button>
+            </div>
+            <div style="color:#ccc; margin-top:12px;">请输入下载授权码：</div>
+            <div class="auth-row"><input type="password" id="authCodeInput" placeholder="输入授权码"></div>
+            <button class="auth-btn" id="verifyBtn" style="width:100%;">确认下载</button>
+            <div class="auth-tip" id="authTip"></div>
+            <button class="close-auth" id="closeAuthBtn">取消</button>
+            <div class="auth-footer">授权码请发送【设备码】到 <a href="https://t.me/mayiya_bot" target="_blank">@mayiya_bot</a> 获取</div>
+        </div>
+    </div>
+
+    <script>
+        // ==================== 工具函数 ====================
+        const WORKER_URL = 'https://api.mycm.cc.cd';
+        const DEVICE_UUID_KEY = "ANT_DEVICE_UUID";
+
+        // 获取当前设备 UUID（仅用于预填，不作为验证依据）
+        function getCurrentDeviceUUID() {
+            let uuid = localStorage.getItem(DEVICE_UUID_KEY);
+            if (!uuid) {
+                uuid = crypto.randomUUID ? crypto.randomUUID() : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+                    const r = Math.random() * 16 | 0;
+                    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+                    return v.toString(16);
+                });
+                localStorage.setItem(DEVICE_UUID_KEY, uuid);
+            }
+            return uuid;
+        }
+
+        async function fetchWithTimeout(url, options = {}, timeout = 10000) {
+            const controller = new AbortController();
+            const id = setTimeout(() => controller.abort(), timeout);
+            try {
+                const response = await fetch(url, { ...options, signal: controller.signal });
+                clearTimeout(id);
+                return response;
+            } catch (err) {
+                clearTimeout(id);
+                throw err;
+            }
+        }
+
+        // 验证函数：使用用户填写的 deviceCode 和 authCode
+        async function verifyAuth(deviceCode, authCode) {
+            if (!deviceCode || !authCode) return false;
+            try {
+                const resp = await fetchWithTimeout(`${WORKER_URL}/verify`, {
+                    method: 'GET',
+                    headers: { 'X-Device-Code': deviceCode, 'X-Auth-Code': authCode }
+                }, 10000);
+                const data = await resp.json();
+                return data.valid === true;
+            } catch (err) {
+                console.error('验证请求失败', err);
+                return false;
+            }
+        }
+
+        async function copyToClipboard(text) {
+            if (!text) return;
+            try {
+                await navigator.clipboard.writeText(text);
+            } catch {
+                const ta = document.createElement('textarea');
+                ta.value = text;
+                ta.style.position = 'fixed'; ta.style.opacity = '0';
+                document.body.appendChild(ta);
+                ta.focus(); ta.select();
+                document.execCommand('copy');
+                document.body.removeChild(ta);
+            }
+        }
+
+        // ==================== 下载授权流程 ====================
+        const downloadBtn = document.getElementById('downloadBtn');
+        const authModal = document.getElementById('authModal');
+        const closeAuthBtn = document.getElementById('closeAuthBtn');
+        const verifyBtn = document.getElementById('verifyBtn');
+        const deviceCodeInput = document.getElementById('deviceCodeInput');
+        const authCodeInput = document.getElementById('authCodeInput');
+        const authTip = document.getElementById('authTip');
+        const copyDeviceBtn = document.getElementById('copyDeviceBtn');
+
+        // 要下载的文件链接（请替换为实际 APK 地址）
+        const DOWNLOAD_URL = 'https://example.com/download/蚂蚁采集.apk';
+
+        // 点击下载按钮：弹出授权框，预填当前设备 UUID
+        downloadBtn.addEventListener('click', () => {
+            deviceCodeInput.value = getCurrentDeviceUUID();  // 预填当前设备码，可修改
+            authCodeInput.value = '';
+            authTip.innerText = '';
+            authModal.style.display = 'flex';
+            authCodeInput.focus();
+        });
+
+        // 关闭模态框
+        closeAuthBtn.addEventListener('click', () => {
+            authModal.style.display = 'none';
+        });
+
+        // 复制设备码（输入框内容）
+        copyDeviceBtn.addEventListener('click', async () => {
+            const id = deviceCodeInput.value.trim();
+            if (!id) return;
+            await copyToClipboard(id);
+            authTip.style.color = '#6cce6c';
+            authTip.innerText = '✅ 设备码已复制';
+            setTimeout(() => { authTip.innerText = ''; }, 1500);
+        });
+
+        // 验证并下载
+        verifyBtn.addEventListener('click', async () => {
+            const deviceCode = deviceCodeInput.value.trim();
+            const authCode = authCodeInput.value.trim();
+
+            if (!deviceCode) {
+                authTip.style.color = '#ff6666';
+                authTip.innerText = '请输入设备码';
+                return;
+            }
+            if (!authCode) {
+                authTip.style.color = '#ff6666';
+                authTip.innerText = '请输入授权码';
+                return;
+            }
+
+            authTip.style.color = '#aaa';
+            authTip.innerText = '⏳ 验证中...';
+            verifyBtn.disabled = true;
+
+            const valid = await verifyAuth(deviceCode, authCode);
+            if (valid) {
+                authTip.style.color = '#6cce6c';
+                authTip.innerText = '✅ 验证通过，正在开始下载...';
+                setTimeout(() => {
+                    window.location.href = DOWNLOAD_URL;
+                    authModal.style.display = 'none';
+                }, 800);
+            } else {
+                authTip.style.color = '#ff6666';
+                authTip.innerText = '❌ 授权码无效或已过期';
+            }
+            verifyBtn.disabled = false;
+        });
+
+        // 点击模态框外部关闭
+        authModal.addEventListener('click', (e) => {
+            if (e.target === authModal) authModal.style.display = 'none';
+        });
+
+        // 初始化：确保 localStorage 中有 UUID（给预填用）
+        window.onload = () => {
+            getCurrentDeviceUUID();
+        };
+    </script>
+</body>
+</html>
