@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, maximum-scale=2.0, minimum-scale=1.0, viewport-fit=cover">
+    <title>蚂蚁数据 · 公告中心</title>
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+        html,body { width:100%; min-height:100vh; background:#121212; color:#eee; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif; padding:20px; }
+        .container { max-width:650px; margin:0 auto; }
+        .header { text-align:center; margin-bottom:30px; }
+        .header h1 { font-size:28px; color:#fff; margin-bottom:8px; }
+        .header .subtitle { color:#888; font-size:14px; }
+        .card { background:#1a1a1a; border-radius:20px; padding:24px; border:1px solid #2a2a2a; margin-bottom:20px; }
+        .section-title { font-size:18px; margin-bottom:16px; color:#fff; border-left:3px solid #007bff; padding-left:10px; display:flex; align-items:center; gap:8px; }
+        .announcement-list { display:flex; flex-direction:column; gap:16px; }
+        .announcement-item { background:#222; border-radius:12px; padding:16px; border:1px solid #2c2c2c; transition:border-color 0.2s; }
+        .announcement-item:hover { border-color:#007bff; }
+        .announcement-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; flex-wrap:wrap; gap:8px; }
+        .announcement-date { font-size:12px; color:#888; background:#252525; padding:4px 10px; border-radius:40px; }
+        .announcement-badge { font-size:11px; padding:4px 10px; border-radius:40px; font-weight:500; }
+        .badge-new { background:#007bff; color:#fff; }
+        .badge-hot { background:#f97316; color:#fff; }
+        .badge-info { background:#3b82f6; color:#fff; }
+        .announcement-title { font-size:16px; font-weight:bold; color:#fff; margin-bottom:6px; }
+        .announcement-content { font-size:14px; color:#bbb; line-height:1.6; }
+        .announcement-content a { color:#007bff; text-decoration:none; }
+        .announcement-content a:hover { text-decoration:underline; }
+        .contact-row { margin-top:20px; text-align:center; font-size:14px; color:#888; }
+        .contact-row a { color:#007bff; text-decoration:none; }
+        .contact-row a:hover { text-decoration:underline; }
+        .footer { text-align:center; margin-top:20px; font-size:12px; color:#555; }
+        .footer a { color:#555; text-decoration:underline; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📢 蚂蚁数据公告中心</h1>
+            <p class="subtitle">盘口工具更新日志 · 服务状态 · 授权说明</p>
+        </div>
+
+        <!-- 置顶重要公告 -->
+        <div class="card">
+            <div class="section-title">📌 重要通知</div>
+            <div class="announcement-item" style="border-left:3px solid #f97316;">
+                <div class="announcement-header">
+                    <span class="announcement-badge badge-hot">🔥 重要</span>
+                    <span class="announcement-date">2026-04-25</span>
+                </div>
+                <div class="announcement-title">蚂蚁采集APP  正式发布</div>
+                <div class="announcement-content">
+                    安卓端盘口采集工具已正式上线，支持 自动渗透采集盘口数据与云端同步，自动更新APP，仅需 2.5 MB。请前往下载中心获取，使用一机一码授权。
+					注意： 所有对外的链接全部取消，授权采用一机一码制防白嫖。
+                </div>
+            </div>
+        </div>
+
+        <!-- 历史公告列表 -->
+        <div class="card">
+            <div class="section-title">📋 全部公告</div>
+            <div class="announcement-list">
+                <div class="announcement-item">
+                    <div class="announcement-header">
+                        <span class="announcement-badge badge-new">✨ 更新</span>
+                        <span class="announcement-date">2026-04-24</span>
+                    </div>
+                    <div class="announcement-title">统计系统 v9.3.1 </div>
+                    <div class="announcement-content">
+                        蚂蚁数据采集统计系统，每周提前预约，每周最多50人，只接懂数据的高端会员，30码以内中奖率90%以上（系统不对非会员开放下载）。
+                    </div>
+                </div>
+
+                <div class="announcement-item">
+                    <div class="announcement-header">
+                        <span class="announcement-badge badge-info">ℹ️ 说明</span>
+                        <span class="announcement-date">2026-04-22</span>
+                    </div>
+                    <div class="announcement-title">关于自动同步时段限制</div>
+                    <div class="announcement-content">
+                        为减少服务器压力，统计系统自动同步功能仅限每日 21:00‑21:10 开启，请务必在时间段登陆操作，要同步的有数据和默认规则。
+                    </div>
+                </div>
+
+                <div class="announcement-item">
+                    <div class="announcement-header">
+                        <span class="announcement-badge badge-info">ℹ️ 说明</span>
+                        <span class="announcement-date">2026-04-18</span>
+                    </div>
+                    <div class="announcement-title">授权码获取渠道</div>
+                    <div class="announcement-content">
+                        所有工具均采用一机一码授权，请将设备 UUID 发送至 Telegram 机器人 <a href="https://t.me/mayiya_bot" target="_blank">@mayiya_bot</a> 获取对应授权码。
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="contact-row">
+            📡 官网：<a href="/index.html" target="_blank">官网首页</a> &nbsp;|&nbsp;
+            🤖 授权机器人：<a href="https://t.me/mayiya_bot" target="_blank">@mayiya_bot</a>
+        </div>
+        <div class="footer">© 2026 蚂蚁数据 · 公告中心</div>
+    </div>
+</body>
+</html>
