@@ -121,6 +121,7 @@
             .marquee-container { text-align:center; } .datetime { font-size:11px; } .reason { font-size:11px; }
         }
 
+        /* 授权卡片样式 */
         .auth-card {
             display: flex;
             align-items: center;
@@ -194,6 +195,7 @@
             <div class="panel-title"><div class="panel-title-left"><span></span></div></div>
             <div id="group1Content">
                 <div class="sub-group" id="gaGbPanel">
+                    <!-- 授权卡片 -->
                     <div class="auth-card" id="authCard">
                         <span class="device-code" id="authCardDeviceCode">加载中...</span>
                         <input type="password" id="authCardCode" placeholder="授权码" autocomplete="off">
@@ -335,14 +337,25 @@ async function verifyAuthWithWorker(authCode) {
         }, 10000);
         const data = await resp.json();
         if (data.valid) {
-            if (data.expiresAt) {
-                const d = new Date(data.expiresAt);
+            // 兼容 expires 或 expiresAt 字段
+            const expiresStr = data.expires || data.expiresAt;
+            if (expiresStr) {
+                const d = new Date(expiresStr);
+                // 检查是否有效日期
                 if (!isNaN(d.getTime())) {
                     const M = d.getMonth() + 1;
                     const D = d.getDate();
                     window._authExpiryStr = `过期: ${M}/${D}`;
                     const diffDays = Math.ceil((d.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
                     window._authDaysLeft = diffDays > 0 ? diffDays : 0;
+                } else {
+                    // 如果不是标准日期但可能是格式化字符串，直接提取月日
+                    const match = expiresStr.match(/(\d{1,2})\/(\d{1,2})/);
+                    if (match) {
+                        window._authExpiryStr = `过期: ${match[1]}/${match[2]}`;
+                    } else {
+                        window._authExpiryStr = `过期: ${expiresStr}`;
+                    }
                 }
             }
         }
@@ -352,6 +365,7 @@ async function verifyAuthWithWorker(authCode) {
 function saveAuthCode(authCode) { localStorage.setItem(STORAGE_KEY, authCode); }
 function clearAuth() { localStorage.removeItem(STORAGE_KEY); setAllCardControlsEnabled(false); delete window._authExpiryStr; delete window._authDaysLeft; }
 
+// 控制卡片按钮/开关的启用状态
 function setAllCardControlsEnabled(enabled) {
     const controls = [
         document.getElementById('autoSyncBtn'),
@@ -398,15 +412,15 @@ async function copyToClipboard(text, tipId) {
 }
 
 let showRulesDetail = false;
-function showToast(msg) {
-    const toast = document.createElement('div');
-    toast.textContent = msg;
+function showToast(msg) { 
+    const toast = document.createElement('div'); 
+    toast.textContent = msg; 
     toast.style.position = 'fixed'; toast.style.bottom = '20px'; toast.style.left = '50%';
     toast.style.transform = 'translateX(-50%)'; toast.style.backgroundColor = '#333';
     toast.style.color = '#fff'; toast.style.padding = '8px 16px'; toast.style.borderRadius = '20px';
     toast.style.fontSize = '12px'; toast.style.zIndex = '10000'; toast.style.whiteSpace = 'nowrap';
-    document.body.appendChild(toast);
-    setTimeout(() => toast.remove(), 1500);
+    document.body.appendChild(toast); 
+    setTimeout(() => toast.remove(), 1500); 
 }
 function getCurrentDateTime() {
     const now = new Date();
@@ -603,6 +617,7 @@ async function performFullSync(showMsg=false){
 }
 async function manualSyncSilent(){await performFullSync(false);}
 
+// 手动同步，先验证后同步
 async function manualSyncWithAuth(){
     if(!isSyncTimeAllowed()){showToast('⚠️ 数据同步仅限 21:00-22:00');return;}
     const btn=document.getElementById('autoSyncBtn');
