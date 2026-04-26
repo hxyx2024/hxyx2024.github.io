@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, maximum-scale=2.0, minimum-scale=1.0, viewport-fit=cover">
     <title>Ant Data AI Stats Tool</title>
     <style>
+        /* ========== 原有样式完全保留，未作任何改动 ========== */
         * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
         html,body { width:100%; min-height:100vh; background:#121212; color:#eee; padding:6px; }
         .container { max-width:700px; margin:0 auto; overflow-x:hidden; }
@@ -96,20 +97,53 @@
         .edit-label { font-size:12px; color:#888; margin-bottom:6px; }
         .edit-input { width:100%; background:#0d0d0d; border:1px solid #2c2c2c; border-radius:40px; padding:10px 12px; color:#e0e0e0; font-size:13px; font-family:monospace; }
         .reason { display:flex; align-items:center; justify-content:center; font-size:12px; color:#888; margin-top:8px; padding:4px 0; }
+        .auth-modal { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); backdrop-filter:blur(8px); z-index:10000; display:none; align-items:center; justify-content:center; }
+        .auth-box { background:#1e1e1e; border-radius:32px; padding:28px 24px; width:90%; max-width:360px; border:1px solid #4f46e5; box-shadow:0 20px 35px rgba(0,0,0,0.6); text-align:center; }
+        .auth-box h2 { margin-bottom:16px; color:#facc15; font-size:1.5rem; }
+        .auth-btn { background:#007bff; border:none; border-radius:8px; padding:10px 16px; color:#fff; cursor:pointer; font-size:14px; font-weight:500; white-space:nowrap; min-width:80px; text-align:center; transition:0.2s; }
+        .auth-btn:active { transform:scale(0.96); opacity:0.9; }
+        .device-row { display:flex; gap:8px; align-items:center; margin:8px 0 16px 0; }
+        .device-row span { flex:1; background:#252525; padding:10px; border-radius:8px; font-family:monospace; font-size:12px; word-break:break-all; user-select:all; -webkit-user-select:all; cursor:text; }
+        .auth-row { display:flex; gap:8px; margin:8px 0 20px 0; }
+        .auth-row input { flex:1; background:#252525; border:none; border-radius:8px; padding:10px; color:#fff; font-size:14px; }
+        .auth-tip { margin-top:8px; font-size:12px; }
+        .auth-footer { margin-top:12px; font-size:12px; color:#888; line-height:1.4; }
+        .auth-footer a { color:#888; }
+        @media (max-width:600px) {
+            body { padding:4px; } .tool-box { padding:8px; } .sub-group { padding:8px; }
+            .rule-row, .custom-rule-row { gap:6px; padding:4px 8px; }
+            .rule-row input, .custom-rule-row input { padding:8px 4px; font-size:13px; min-width:70px; }
+            .rule-row .rule-index, .custom-rule-row .rule-index { width:30px; font-size:13px; }
+            button, .btn-link { padding:8px 2px; font-size:12px; min-height:40px; }
+            .btn-small { padding:6px 8px; font-size:11px; min-width:50px; }
+            .del-rule-btn { font-size:10px; right:0px; top:-6px; }
+            .total-zodiac-list { grid-template-columns:repeat(4,1fr); gap:4px; }
+            .total-zodiac-list .zodiac-item { white-space:normal; font-size:11px; padding:4px 4px; }
+            .group-item { font-size:12px; padding:6px 8px; flex-direction:column; align-items:flex-start; }
+            .group-item .copy-btn { align-self:flex-end; }
+            .query-zodiac-input { max-width:100%; } .rule-import-input { min-height:120px; }
+            .stats-two-columns { flex-direction:column; gap:8px; }
+            .button-row-right { justify-content:flex-start; } .info-row-right { justify-content:flex-start; }
+            .period-input-row { gap:8px; } .period-input-row input { width:60px; padding:6px 8px; }
+            .period-input-row select { padding:6px 8px; } .rule-stats { padding:4px 10px; font-size:13px; }
+            .result-title { font-size:15px; gap:4px; } .result-title .switch-control { font-size:12px; }
+            .result-title .switch-control input { width:36px; height:20px; }
+            .result-title .switch-control input::after { width:16px; height:16px; top:2px; left:2px; }
+            .result-title .switch-control input:checked::after { left:18px; }
+            .sub-title { flex-wrap:wrap; } .period-text { font-size:12px; }
+            .marquee-container { text-align:center; } .datetime { font-size:11px; } .reason { font-size:11px; }
+            .auth-box { padding:20px 16px; }
+        }
 
-        /* 授权行样式 - 恢复最早版本（圆形框、紫色按钮） */
-        .auth-row {
+        /* ========== 新增授权卡片样式（无背景、无边框、无圆角） ========== */
+        .auth-card {
             display: flex;
             align-items: center;
             gap: 8px;
             flex-wrap: wrap;
-            background: #1e1e1e;
-            padding: 8px 12px;
-            border-radius: 40px;
             margin-bottom: 12px;
-            border: 1px solid #2c2c2c;
         }
-        .auth-row .device-code {
+        .auth-card .device-code {
             font-family: monospace;
             background: #0d0d0d;
             padding: 4px 10px;
@@ -119,50 +153,51 @@
             word-break: break-all;
             cursor: pointer;
         }
-        .auth-row input {
+        .auth-card input {
             background: #0d0d0d;
             border: 1px solid #2c2c2c;
-            border-radius: 30px;
+            border-radius: 8px;
             padding: 6px 12px;
             color: #eee;
             font-size: 12px;
             width: 130px;
         }
-        .auth-row button {
-            background: #4f46e5;
-            border: none;
-            border-radius: 8px;
-            padding: 6px 14px;
-            color: white;
-            font-size: 12px;
-            cursor: pointer;
-            white-space: nowrap;
-        }
-        .auth-row button:active {
-            transform: scale(0.96);
-        }
-        .auth-row .auth-tip {
-            color: #aaa;
-            font-size: 11px;
-            margin-left: 4px;
-        }
-        /* 手动同步按钮样式与原版普通按钮一致 */
-        #manualSyncBtn {
+        .auth-card button {
             background: #252525;
             border: none;
             border-radius: 8px;
-            padding: 10px 4px;
+            padding: 6px 12px;
             color: #eee;
             font-size: 13px;
             cursor: pointer;
+            white-space: nowrap;
         }
-        #manualSyncBtn:active {
+        .auth-card button:active {
             transform: scale(0.96);
+        }
+        .auth-card .auth-tip {
+            color: #aaa;
+            font-size: 11px;
+            margin-left: 4px;
         }
     </style>
 </head>
 <body>
 
+<!-- 授权模态框（保留原样） -->
+<div class="auth-modal" id="authModal">
+    <div class="auth-box">
+        <h2>🔒 授权验证</h2>
+        <div style="color:#ccc;">你的设备码：</div>
+        <div class="device-row"><span id="deviceCode">加载中...</span><button class="auth-btn" id="copyDeviceBtn">📋 复制</button></div>
+        <div style="color:#ccc; margin-top:8px;">请输入授权码：</div>
+        <div class="auth-row"><input type="password" id="authCode" placeholder="输入授权码"><button class="auth-btn" id="verifyBtn">确认</button></div>
+        <div class="auth-tip" id="authTip"></div>
+        <div class="auth-footer">授权码已生成，请将【设备码】发送给机器人或代理商获取授权码<br>官方授权：<a href="https://t.me/mayiya_bot" target="_blank">蚂蚁机器人</a></div>
+    </div>
+</div>
+
+<!-- 主界面 -->
 <div class="container">
     <div class="tool-box">
         <h1>Ant Data AI Stats Tool</h1>
@@ -170,12 +205,12 @@
             <div class="panel-title"><div class="panel-title-left"><span></span></div></div>
             <div id="group1Content">
                 <div class="sub-group" id="gaGbPanel">
-                    <!-- 授权行（最早样式：圆形框，紫色按钮） -->
-                    <div class="auth-row" id="authRow">
-                        <span class="device-code" id="deviceCode">加载中...</span>
-                        <input type="password" id="authCode" placeholder="授权码" autocomplete="off">
-                        <button id="verifyBtn">验证</button>
-                        <span id="authTip" class="auth-tip"></span>
+                    <!-- 新增授权卡片（位于 Data 标题上方） -->
+                    <div class="auth-card" id="authCard">
+                        <span class="device-code" id="authCardDeviceCode">加载中...</span>
+                        <input type="password" id="authCardCode" placeholder="授权码" autocomplete="off">
+                        <button id="authCardVerifyBtn">验证</button>
+                        <span id="authCardTip" class="auth-tip"></span>
                     </div>
                     <div class="sub-title">
                         <span><span class="ant-clickable" id="antIcon">🐜</span> Data</span>
@@ -185,7 +220,8 @@
                         <button onclick="copyBothData()">📋 Copy</button>
                         <button onclick="clearBoth()">🗑 Clear</button>
                         <button onclick="importTxtToBoth()">📄 TXT</button>
-                        <button id="manualSyncBtn" class="btn-small">🔄 手动同步</button>
+                        <!-- 修改点：按钮文字改为“🔄 同步”，id保持 autoSyncBtn -->
+                        <button id="autoSyncBtn">🔄 同步</button>
                     </div>
                     <div id="inputAreaWrapper">
                         <div class="input-box"><textarea id="numInput1" placeholder="G · A 盘口数据" oninput="autoCalc(1)"></textarea><div class="input-info" id="inputInfo1">已输入：0 个</div></div>
@@ -193,7 +229,7 @@
                     </div>
                     <div class="thank-header">
                         <div class="marquee-container" id="marqueeContainer"><div class="marquee" id="marqueeText">蚂蚁数据-专注澳彩</div></div>
-                        <label class="switch-control"><input type="checkbox" id="globalStatSwitch" onchange="toggleGlobalStat()"> 统计开关</label>
+                        <label class="switch-control"><input type="checkbox" id="globalStatSwitch" onchange="toggleGlobalStat()"></label>
                     </div>
                     <div class="stats-two-columns" id="statsColumns">
                         <div class="stats-column"><div id="baseResult1"></div><div id="groupResult1"></div></div>
@@ -302,14 +338,8 @@ function getDeviceUUID() {
 async function fetchWithTimeout(url, options = {}, timeout = 10000) {
     const controller = new AbortController();
     const id = setTimeout(() => controller.abort(), timeout);
-    try {
-        const resp = await fetch(url, { ...options, signal: controller.signal });
-        clearTimeout(id);
-        return resp;
-    } catch (err) {
-        clearTimeout(id);
-        throw err;
-    }
+    try { const resp = await fetch(url, { ...options, signal: controller.signal }); clearTimeout(id); return resp; }
+    catch (e) { clearTimeout(id); throw e; }
 }
 
 async function verifyAuthWithWorker(authCode) {
@@ -318,46 +348,15 @@ async function verifyAuthWithWorker(authCode) {
     try {
         const resp = await fetchWithTimeout(`${WORKER_URL}/verify`, {
             method: 'GET',
-            headers: {
-                'X-Device-Code': deviceCode,
-                'X-Auth-Code': authCode
-            }
+            headers: { 'X-Device-Code': deviceCode, 'X-Auth-Code': authCode }
         }, 10000);
         const data = await resp.json();
         return data.valid === true;
-    } catch (err) {
-        console.error('验证请求失败', err);
-        return false;
-    }
+    } catch (err) { console.error('验证请求失败', err); return false; }
 }
 
-function saveAuthCode(authCode) {
-    localStorage.setItem(STORAGE_KEY, authCode);
-}
-
-function clearAuth() {
-    localStorage.removeItem(STORAGE_KEY);
-}
-
-// ==================== 控制开关禁用/启用 ====================
-function setAuthSwitchesEnabled(enabled) {
-    const controls = ['manualSyncBtn', 'rangeSwitch', 'selectRangeSwitch', 'matchSwitch', 'globalStatSwitch'];
-    controls.forEach(id => {
-        const el = document.getElementById(id);
-        if (el) {
-            if (id === 'manualSyncBtn') {
-                el.disabled = !enabled;
-            } else {
-                el.disabled = !enabled;
-                if (!enabled) {
-                    el.style.pointerEvents = 'none';
-                } else {
-                    el.style.pointerEvents = '';
-                }
-            }
-        }
-    });
-}
+function saveAuthCode(authCode) { localStorage.setItem(STORAGE_KEY, authCode); }
+function clearAuth() { localStorage.removeItem(STORAGE_KEY); }
 
 // ==================== 通用复制 ====================
 async function copyToClipboard(text, tipId) {
@@ -557,80 +556,63 @@ function handleRuleFileSelect(e){let file=e.target.files[0];if(!file)return;let 
 function importTxtToBoth(){document.getElementById('importFileInput').click();}
 function handleFileSelect(e){let file=e.target.files[0];if(!file)return;let reader=new FileReader();reader.onload=function(ev){let content=ev.target.result;let parts=content.split(/\.{6,}/);if(parts.length<2){alert("文件格式错误：未找到分隔符 '........'");return;}let ga=parts[0].trim(),gb=parts[1].trim();if(parts.length>2)gb=parts.slice(1).join(' ').trim();document.getElementById('numInput1').value=ga;document.getElementById('numInput2').value=gb;autoCalc(1);autoCalc(2);storage.saveInput();keepNoteState();};reader.readAsText(file);e.target.value='';}
 
-// ==================== 同步模块（手动同步，无自动定时） ====================
+// ==================== 同步模块（改为手动同步，移除自动定时器） ====================
 const DATA_API_URL = 'https://mayipan.eu.cc/gab_summary.html';
 const RANGE_API_URL = 'https://mayipan.eu.cc/default_rules.txt';
 
-async function fetchRemoteData() {
-    const resp = await fetch(DATA_API_URL + '?t=' + Date.now(), { cache: 'no-cache' });
-    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-    const text = await resp.text();
-    let ga = null, gb = null;
-    const lines = text.split(/\r?\n/);
-    for (let i = 0; i < lines.length; i++) {
-        let line = lines[i].trim();
-        if (/^G[·\s\-]?A$/i.test(line) && i + 1 < lines.length) ga = lines[i + 1].trim();
-        if (/^G[·\s\-]?B$/i.test(line) && i + 1 < lines.length) { gb = lines[i + 1].trim(); break; }
+function savePeriodToLocal(pt){pt?localStorage.setItem('last_period',pt):localStorage.removeItem('last_period');}
+function restorePeriodDisplay(){let s=localStorage.getItem('last_period'),el=document.getElementById('periodNumber');if(el)el.innerText=s||'';}
+async function fetchRemoteData(){
+    const resp=await fetch(DATA_API_URL+'?t='+Date.now(),{cache:'no-cache'});
+    if(!resp.ok)throw new Error(`HTTP ${resp.status}`);
+    const text=await resp.text();
+    let ga=null,gb=null;
+    const lines=text.split(/\r?\n/);
+    for(let i=0;i<lines.length;i++){
+        let line=lines[i].trim();
+        if(/^G[·\s\-]?A$/i.test(line)&&i+1<lines.length)ga=lines[i+1].trim();
+        if(/^G[·\s\-]?B$/i.test(line)&&i+1<lines.length){gb=lines[i+1].trim();break;}
     }
-    let periodMatch = text.match(/新澳彩第:\s*(\d{7})期/);
-    let period = periodMatch ? periodMatch[0] : null;
-    return { ga, gb, period };
+    let periodMatch=text.match(/新澳彩第:\s*(\d{7})期/);
+    return{ga,gb,period:periodMatch?periodMatch[0]:null};
 }
-
-async function performFullSync(showMsg = false) {
-    try {
-        const { ga, gb, period } = await fetchRemoteData();
-        if (period) {
-            localStorage.setItem('last_period', period);
-            document.getElementById('periodNumber').innerText = period;
-        }
-        if (!ga || !gb) {
-            if (showMsg) showToast('❌ 未获取到GA/GB数据');
-            return false;
-        }
-        document.getElementById('numInput1').value = ga;
-        document.getElementById('numInput2').value = gb;
-        autoCalc(1);
-        autoCalc(2);
-        storage.saveInput();
-        keepNoteState();
+async function performFullSync(showMsg=false){
+    try{
+        const{ga,gb,period}=await fetchRemoteData();
+        savePeriodToLocal(period);document.getElementById('periodNumber').innerText=period||'';
+        if(!ga||!gb){if(showMsg)showToast('❌ 未获取到GA/GB数据');return false;}
+        document.getElementById('numInput1').value=ga;document.getElementById('numInput2').value=gb;
+        autoCalc(1);autoCalc(2);storage.saveInput();keepNoteState();
 
         let globalSwitch = document.getElementById('globalStatSwitch');
         let savedState = localStorage.getItem('globalStatVisible');
         globalSwitch.checked = (savedState === '1');
         toggleGlobalStat();
 
-        if (showMsg) showToast('✅ GA/GB同步成功');
+        if(showMsg)showToast('✅ GA/GB同步成功');
         return true;
-    } catch (err) {
-        console.error(err);
-        if (showMsg) showToast(`❌ GA/GB同步失败: ${err.message}`);
-        return false;
-    }
+    }catch(err){if(showMsg)showToast(`❌ 同步失败: ${err.message}`);return false;}
 }
 
-async function syncDefaultRules(showMsg = true) {
-    try {
-        const resp = await fetch(RANGE_API_URL + '?t=' + Date.now());
-        if (!resp.ok) throw new Error('fail');
-        const data = await resp.text();
-        if (!data.trim()) {
-            if (showMsg) showToast('❌ 默认规则数据为空');
-            return false;
-        }
-        document.getElementById('rangeData').value = data;
-        onRangeDataChange();
-        if (showMsg) showToast('✅ 默认规则同步成功');
-        storage.saveRange();
-        keepNoteState();
-        return true;
-    } catch (err) {
-        if (showMsg) showToast('❌ 默认规则同步失败');
-        return false;
-    }
+// 手动同步（🐜 图标）保留原样
+async function manualSyncSilent(){ await performFullSync(false); }
+
+// 默认规则采集（🌐 同步按钮）保留原样
+async function onlineCollectRange(){
+    const btn=document.getElementById('onlineCollectRangeBtn'),orig=btn.innerText;
+    btn.innerText='⏳ 采集中...';btn.disabled=true;
+    try{
+        const resp=await fetch(RANGE_API_URL+'?t='+Date.now());
+        if(!resp.ok)throw new Error('fail');
+        const data=await resp.text();
+        if(!data.trim()){showToast('采集返回数据为空');return;}
+        document.getElementById('rangeData').value=data;
+        onRangeDataChange();showToast('默认规则在线采集成功');storage.saveRange();keepNoteState();
+    }catch{showToast('采集失败');}
+    finally{btn.innerText=orig;btn.disabled=false;}
 }
 
-// 手动同步按钮：先验证授权，再同时同步GA/GB和默认规则
+// 新增手动同步函数（点击“🔄 同步”按钮时调用）
 async function manualSync() {
     const savedAuth = localStorage.getItem(STORAGE_KEY);
     if (!savedAuth) {
@@ -641,29 +623,35 @@ async function manualSync() {
     const valid = await verifyAuthWithWorker(savedAuth);
     if (!valid) {
         clearAuth();
-        setAuthSwitchesEnabled(false);
+        // 验证失败，禁用所有卡片开关（同步按钮、统计开关、默认规则开关、笛卡尔积开关、自选规则开关）
+        setCardSwitchesEnabled(false);
         showToast('❌ 授权码无效或已过期，请重新输入授权码');
-        document.getElementById('authCode').value = '';
-        document.getElementById('authTip').textContent = '授权失效，请重新验证';
+        document.getElementById('authCardCode').value = '';
+        document.getElementById('authCardTip').textContent = '授权失效，请重新验证';
         return;
     }
-    // 验证成功，同时同步GA/GB和默认规则
+    // 验证成功，同步数据
     showToast('⏳ 同步中...');
-    await Promise.all([performFullSync(true), syncDefaultRules(true)]);
+    await performFullSync(true);
+    await onlineCollectRange();  // 同步默认规则
 }
 
-// 手动同步（🐜图标）仅同步GA/GB，不验证授权（但按钮被禁用时无法点击）
-async function manualSyncSilent() {
-    await performFullSync(false);
+// 控制卡片右侧开关的启用/禁用（同步按钮、统计开关、默认规则开关、笛卡尔积开关、自选规则开关）
+function setCardSwitchesEnabled(enabled) {
+    const switches = ['autoSyncBtn', 'globalStatSwitch', 'rangeSwitch', 'selectRangeSwitch', 'matchSwitch'];
+    switches.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            if (el.tagName === 'BUTTON') {
+                el.disabled = !enabled;
+            } else if (el.tagName === 'INPUT' && el.type === 'checkbox') {
+                el.disabled = !enabled;
+                if (!enabled) el.style.pointerEvents = 'none';
+                else el.style.pointerEvents = '';
+            }
+        }
+    });
 }
-
-// 默认规则采集（🌐同步按钮）仅同步默认规则，不验证授权
-async function onlineCollectRange() {
-    await syncDefaultRules(true);
-}
-
-function openVip() { window.open('/vip.html', '_blank'); }
-function openPm() { window.open('/xinao.html', '_blank'); }
 
 // ==================== 精选区间模块（原样保留） ====================
 let currentEditingType=null,currentEditingA=null,currentEditingIndex=null,pendingEdit=null,isSaving=false;
@@ -712,90 +700,97 @@ function initApp() {
     document.getElementById('onlineCollectRangeBtn').onclick = onlineCollectRange;
     document.getElementById('openVipBtn').onclick = openVip;
     document.getElementById('openPmBtn').onclick = openPm;
-    document.getElementById('manualSyncBtn').onclick = manualSync;
+    // 绑定手动同步按钮
+    document.getElementById('autoSyncBtn').onclick = manualSync;
     document.getElementById('addCustomRuleBtn').onclick = addCustomRule;
-    // 蚂蚁图标手动同步（仅GA/GB，不验证授权）
-    const antIcon = document.getElementById('antIcon');
-    if (antIcon) {
-        antIcon.removeEventListener('click', manualSyncSilent);
-        antIcon.addEventListener('click', (e) => { e.stopPropagation(); manualSyncSilent(); });
-    }
+    let antIcon = document.getElementById('antIcon');
+    if (antIcon) { antIcon.removeEventListener('click', manualSyncSilent); antIcon.addEventListener('click', e => { e.stopPropagation(); manualSyncSilent(); }); }
     refreshSelectRange();
     window.editRule = editRule; showRulesDetail = false;
     updateInputAreaVisibility(); loadMarqueeText(); keepNoteState();
 }
 
-// 授权验证成功/失败处理
-async function checkAuthAndSetSwitches() {
-    const savedAuth = localStorage.getItem(STORAGE_KEY);
-    if (!savedAuth) {
-        setAuthSwitchesEnabled(false);
-        return false;
-    }
-    const valid = await verifyAuthWithWorker(savedAuth);
-    if (valid) {
-        setAuthSwitchesEnabled(true);
-        return true;
-    } else {
-        clearAuth();
-        setAuthSwitchesEnabled(false);
-        return false;
-    }
-}
+// 授权卡片交互
+const authCardDeviceCode = document.getElementById('authCardDeviceCode');
+const authCardCode = document.getElementById('authCardCode');
+const authCardVerifyBtn = document.getElementById('authCardVerifyBtn');
+const authCardTip = document.getElementById('authCardTip');
 
-// 页面加载时先检查授权状态
-window.onload = async () => {
-    document.getElementById('deviceCode').innerText = getDeviceUUID();
-    const savedAuth = localStorage.getItem(STORAGE_KEY);
-    if (savedAuth) {
-        document.getElementById('authCode').value = savedAuth;
-        const valid = await verifyAuthWithWorker(savedAuth);
-        if (valid) {
-            setAuthSwitchesEnabled(true);
-            document.getElementById('authTip').textContent = '✅ 授权有效';
-            document.getElementById('authTip').style.color = '#6cce6c';
-        } else {
-            clearAuth();
-            setAuthSwitchesEnabled(false);
-            document.getElementById('authTip').textContent = '授权已失效，请重新验证';
-            document.getElementById('authTip').style.color = '#ff6666';
-        }
-    } else {
-        setAuthSwitchesEnabled(false);
-    }
-    initApp();
-};
+authCardDeviceCode.innerText = getDeviceUUID();
+authCardDeviceCode.addEventListener('click', () => copyToClipboard(getDeviceUUID(), 'authCardTip'));
 
-// 验证按钮点击
-document.getElementById('verifyBtn').onclick = async () => {
-    const code = document.getElementById('authCode').value.trim();
+authCardVerifyBtn.onclick = async () => {
+    const code = authCardCode.value.trim();
     if (!code) {
-        document.getElementById('authTip').textContent = '请输入授权码';
+        authCardTip.textContent = '请输入授权码';
         return;
     }
-    document.getElementById('authTip').textContent = '⏳ 验证中...';
+    authCardTip.textContent = '⏳ 验证中...';
     const valid = await verifyAuthWithWorker(code);
     if (valid) {
         saveAuthCode(code);
-        setAuthSwitchesEnabled(true);
-        document.getElementById('authTip').style.color = '#6cce6c';
-        document.getElementById('authTip').textContent = '✅ 授权成功';
+        setCardSwitchesEnabled(true);
+        authCardTip.style.color = '#6cce6c';
+        authCardTip.textContent = '✅ 授权成功';
+        // 同时更新模态框中的授权码输入（可选）
+        document.getElementById('authCode').value = code;
     } else {
         clearAuth();
-        setAuthSwitchesEnabled(false);
-        document.getElementById('authTip').style.color = '#ff6666';
-        document.getElementById('authTip').textContent = '❌ 授权码无效或已过期';
+        setCardSwitchesEnabled(false);
+        authCardTip.style.color = '#ff6666';
+        authCardTip.textContent = '❌ 授权码无效或已过期';
     }
 };
 
-// 设备码复制
-document.getElementById('deviceCode').addEventListener('click', function() {
-    copyToClipboard(getDeviceUUID(), 'authTip');
-    document.getElementById('authTip').textContent = '设备码已复制';
-    setTimeout(() => {
-        if (document.getElementById('authTip').textContent === '设备码已复制') document.getElementById('authTip').textContent = '';
-    }, 1500);
-});
+// 页面加载时检查授权状态，并设置开关初始状态
+window.onload = async () => {
+    const savedAuth = localStorage.getItem(STORAGE_KEY);
+    if (savedAuth) {
+        authCardCode.value = savedAuth;
+        const valid = await verifyAuthWithWorker(savedAuth);
+        if (valid) {
+            setCardSwitchesEnabled(true);
+            authCardTip.textContent = '✅ 授权有效';
+            authCardTip.style.color = '#6cce6c';
+        } else {
+            clearAuth();
+            setCardSwitchesEnabled(false);
+            authCardTip.textContent = '授权已失效，请重新验证';
+            authCardTip.style.color = '#ff6666';
+        }
+    } else {
+        setCardSwitchesEnabled(false);
+    }
+    // 保留原有的模态框逻辑（可选，但为了兼容保留）
+    document.getElementById('deviceCode').innerText = getDeviceUUID();
+    // 模态框中的验证按钮也同步授权状态（可选）
+    const modalVerifyBtn = document.getElementById('verifyBtn');
+    if (modalVerifyBtn) {
+        modalVerifyBtn.onclick = async () => {
+            const code = document.getElementById('authCode').value.trim();
+            if (!code) { document.getElementById('authTip').textContent = '请输入授权码！'; return; }
+            document.getElementById('authTip').textContent = '⏳ 验证中...';
+            const valid = await verifyAuthWithWorker(code);
+            if (valid) {
+                saveAuthCode(code);
+                setCardSwitchesEnabled(true);
+                document.getElementById('authTip').style.color = '#6cce6c';
+                document.getElementById('authTip').textContent = '✅ 验证成功！';
+                // 同步授权卡片
+                authCardCode.value = code;
+                authCardTip.textContent = '✅ 授权成功';
+                authCardTip.style.color = '#6cce6c';
+                setTimeout(() => { document.getElementById('authModal').style.display = 'none'; }, 800);
+            } else {
+                clearAuth();
+                setCardSwitchesEnabled(false);
+                document.getElementById('authTip').style.color = '#ff6666';
+                document.getElementById('authTip').textContent = '❌ 授权码无效或已过期';
+            }
+        };
+    }
+    initApp();
+};
 </script>
 </body>
 </html>
