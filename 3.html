@@ -121,7 +121,6 @@
             .marquee-container { text-align:center; } .datetime { font-size:11px; } .reason { font-size:11px; }
         }
 
-        /* 授权卡片样式 */
         .auth-card {
             display: flex;
             align-items: center;
@@ -195,7 +194,6 @@
             <div class="panel-title"><div class="panel-title-left"><span></span></div></div>
             <div id="group1Content">
                 <div class="sub-group" id="gaGbPanel">
-                    <!-- 授权卡片 -->
                     <div class="auth-card" id="authCard">
                         <span class="device-code" id="authCardDeviceCode">加载中...</span>
                         <input type="password" id="authCardCode" placeholder="授权码" autocomplete="off">
@@ -336,16 +334,24 @@ async function verifyAuthWithWorker(authCode) {
             headers: { 'X-Device-Code': deviceCode, 'X-Auth-Code': authCode }
         }, 10000);
         const data = await resp.json();
-        if (data.valid && data.daysLeft !== undefined) {
-            window._authDaysLeft = data.daysLeft;
+        if (data.valid) {
+            if (data.expiresAt) {
+                const d = new Date(data.expiresAt);
+                if (!isNaN(d.getTime())) {
+                    const M = d.getMonth() + 1;
+                    const D = d.getDate();
+                    window._authExpiryStr = `过期: ${M}/${D}`;
+                    const diffDays = Math.ceil((d.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+                    window._authDaysLeft = diffDays > 0 ? diffDays : 0;
+                }
+            }
         }
         return data.valid === true;
     } catch (err) { console.error('验证请求失败', err); return false; }
 }
 function saveAuthCode(authCode) { localStorage.setItem(STORAGE_KEY, authCode); }
-function clearAuth() { localStorage.removeItem(STORAGE_KEY); setAllCardControlsEnabled(false); delete window._authDaysLeft; }
+function clearAuth() { localStorage.removeItem(STORAGE_KEY); setAllCardControlsEnabled(false); delete window._authExpiryStr; delete window._authDaysLeft; }
 
-// 控制卡片按钮/开关的启用状态
 function setAllCardControlsEnabled(enabled) {
     const controls = [
         document.getElementById('autoSyncBtn'),
@@ -392,15 +398,15 @@ async function copyToClipboard(text, tipId) {
 }
 
 let showRulesDetail = false;
-function showToast(msg) { 
-    const toast = document.createElement('div'); 
-    toast.textContent = msg; 
+function showToast(msg) {
+    const toast = document.createElement('div');
+    toast.textContent = msg;
     toast.style.position = 'fixed'; toast.style.bottom = '20px'; toast.style.left = '50%';
     toast.style.transform = 'translateX(-50%)'; toast.style.backgroundColor = '#333';
     toast.style.color = '#fff'; toast.style.padding = '8px 16px'; toast.style.borderRadius = '20px';
     toast.style.fontSize = '12px'; toast.style.zIndex = '10000'; toast.style.whiteSpace = 'nowrap';
-    document.body.appendChild(toast); 
-    setTimeout(() => toast.remove(), 1500); 
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 1500);
 }
 function getCurrentDateTime() {
     const now = new Date();
@@ -563,7 +569,7 @@ function handleFileSelect(e){let file=e.target.files[0];if(!file)return;let read
 const DATA_API_URL = 'https://mayipan.eu.cc/gab_summary.html';
 const RANGE_API_URL='https://mayipan.eu.cc/default_rules.txt';
 
-function isSyncTimeAllowed(){const n=new Date();return n.getHours()>=13&&n.getHours()<21;}
+function isSyncTimeAllowed(){const n=new Date();return n.getHours()>=21&&n.getHours()<22;}
 function savePeriodToLocal(pt){pt?localStorage.setItem('last_period',pt):localStorage.removeItem('last_period');}
 function restorePeriodDisplay(){let s=localStorage.getItem('last_period'),el=document.getElementById('periodNumber');if(el)el.innerText=s||'';}
 async function fetchRemoteData(){
@@ -597,15 +603,24 @@ async function performFullSync(showMsg=false){
 }
 async function manualSyncSilent(){await performFullSync(false);}
 
-// 手动同步，先验证后同步
 async function manualSyncWithAuth(){
-    if(!isSyncTimeAllowed()){showToast('⚠️ 手动同步仅限 13:00-21:00 操作');return;}
+    if(!isSyncTimeAllowed()){showToast('⚠️ 数据同步仅限 21:00-22:00');return;}
     const btn=document.getElementById('autoSyncBtn');
     const orig=btn.innerText;
     btn.innerText='⏳ 验证中...';
     btn.disabled=true;
     const code=document.getElementById('authCardCode').value.trim();
-    if(!code){showToast('❌ 请先输入授权码并验证');btn.innerText=orig;btn.disabled=false;return;}
+    if(!code){
+        clearAuth();
+        document.getElementById('authCardTip').textContent = '无效';
+        document.getElementById('authCardTip').style.color = '#ff6666';
+        document.getElementById('authCardCode').value = '';
+        setAllCardControlsEnabled(false);
+        showToast('❌ 请先输入授权码并验证');
+        btn.innerText=orig;
+        btn.disabled=false;
+        return;
+    }
     const valid=await verifyAuthWithWorker(code);
     if(!valid){
         clearAuth();
@@ -672,8 +687,8 @@ function doImportCold(){const{cold}=window.selectCurrentData;const list=[];for(l
 
 function updateAuthTipWithDays() {
     const tip = document.getElementById('authCardTip');
-    if (window._authDaysLeft !== undefined && window._authDaysLeft > 0) {
-        tip.textContent = `通过 · 剩余${window._authDaysLeft}天`;
+    if (window._authExpiryStr) {
+        tip.textContent = window._authExpiryStr;
         tip.style.color = '#6cce6c';
     } else {
         tip.textContent = '通过';
