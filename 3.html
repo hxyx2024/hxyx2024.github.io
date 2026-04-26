@@ -336,7 +336,6 @@ async function verifyAuthWithWorker(authCode) {
             headers: { 'X-Device-Code': deviceCode, 'X-Auth-Code': authCode }
         }, 10000);
         const data = await resp.json();
-        // 后端返回剩余天数时一并更新提示
         if (data.valid && data.daysLeft !== undefined) {
             window._authDaysLeft = data.daysLeft;
         }
@@ -608,7 +607,17 @@ async function manualSyncWithAuth(){
     const code=document.getElementById('authCardCode').value.trim();
     if(!code){showToast('❌ 请先输入授权码并验证');btn.innerText=orig;btn.disabled=false;return;}
     const valid=await verifyAuthWithWorker(code);
-    if(!valid){clearAuth();showToast('❌ 授权验证失败');btn.innerText=orig;btn.disabled=false;return;}
+    if(!valid){
+        clearAuth();
+        document.getElementById('authCardTip').textContent = '无效';
+        document.getElementById('authCardTip').style.color = '#ff6666';
+        document.getElementById('authCardCode').value = '';
+        setAllCardControlsEnabled(false);
+        showToast('❌ 授权验证失败');
+        btn.innerText=orig;
+        btn.disabled=false;
+        return;
+    }
     saveAuthCode(code);
     setAllCardControlsEnabled(true);
     updateAuthTipWithDays();
