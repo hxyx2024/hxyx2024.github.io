@@ -167,13 +167,12 @@
                     <div class="sub-title">
                         <span><span class="ant-clickable" id="antIcon">🐜</span> Data</span>
                         <span class="period-text" id="periodNumber"></span>
-                        <label class="switch-control"><input type="checkbox" id="globalStatSwitch" onchange="toggleGlobalStat()"> 统计开关</label>
-                        <button id="autoSyncBtn" class="btn-small" style="background:#4f46e5; color:white; padding:4px 12px;">⚙️ 同步关</button>
                     </div>
                     <div class="btn-group">
                         <button onclick="copyBothData()">📋 Copy</button>
                         <button onclick="clearBoth()">🗑 Clear</button>
                         <button onclick="importTxtToBoth()">📄 TXT</button>
+                        <button id="autoSyncBtn" class="btn-small" style="background:#4f46e5; color:white;">⚙️ 同步关</button>
                     </div>
                     <div id="inputAreaWrapper">
                         <div class="input-box"><textarea id="numInput1" placeholder="G · A 盘口数据" oninput="autoCalc(1)"></textarea><div class="input-info" id="inputInfo1">已输入：0 个</div></div>
@@ -181,6 +180,7 @@
                     </div>
                     <div class="thank-header">
                         <div class="marquee-container" id="marqueeContainer"><div class="marquee" id="marqueeText">蚂蚁数据-专注澳彩</div></div>
+                        <label class="switch-control"><input type="checkbox" id="globalStatSwitch" onchange="toggleGlobalStat()"> 统计开关</label>
                     </div>
                     <div class="stats-two-columns" id="statsColumns">
                         <div class="stats-column"><div id="baseResult1"></div><div id="groupResult1"></div></div>
@@ -376,7 +376,7 @@ async function copyToClipboard(text, tipId) {
     }
 }
 
-// ==================== 核心功能（原样保留，仅增加开关状态控制） ====================
+// ==================== 核心功能 ====================
 let showRulesDetail = false;
 function showToast(msg) { 
     const toast = document.createElement('div'); 
@@ -664,7 +664,7 @@ const RANGE_API_URL = 'https://mayipan.eu.cc/default_rules.txt';
 function openVip(){window.open('/vip.html','_blank');}
 function openPm(){window.open('/xinao.html','_blank');}
 
-// ==================== 精选区间模块（原版完整保留） ====================
+// ==================== 精选区间模块 ====================
 let currentEditingType=null,currentEditingA=null,currentEditingIndex=null,pendingEdit=null,isSaving=false;
 const editInputElem=document.getElementById('editRuleInput'),editPanelElem=document.getElementById('editRulePanel');
 function saveRuleEdit(){if(isSaving||!pendingEdit)return;isSaving=true;const newValue=editInputElem.value.trim();try{if(newValue&&newValue!==pendingEdit.oldValue){currentEditingType=pendingEdit.type;currentEditingA=pendingEdit.a;currentEditingIndex=pendingEdit.index;if(!applyUserEditedRule(newValue))console.warn('save fail');}else if(!newValue)showToast('❌ 规则不能为空');}catch(e){showToast('❌ 保存错误');}finally{editPanelElem.style.display='none';pendingEdit=null;currentEditingType=null;currentEditingA=null;currentEditingIndex=null;isSaving=false;}}
