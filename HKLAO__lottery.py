@@ -16,8 +16,8 @@ CLEAN_FLAG_FILE = ".last_clean_date_hklao"
 
 FETCH_LIMIT = 200
 CANDIDATE_POOL_SIZE = 10
-MIN_TAKE = 1
-MAX_TAKE = 3
+MIN_TAKE = 2
+MAX_TAKE = 4
 
 # ========== 彩种配置 ==========
 LOTTERIES = {
