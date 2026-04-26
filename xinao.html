@@ -116,7 +116,7 @@
             <div class="card-header"><h3>🔴 特码统计</h3><button class="toggle-btn" data-target="freq-content">▼ 隐藏</button></div>
             <div id="freq-content" class="card-content">
                 <div class="scroll-container" id="scrollContainer">
-                    <div class="scroll-text" id="scrollText">加载通知中...</div>
+                    <div class="scroll-text" id="scrollText">蚂蚁数据-专注澳彩</div>
                 </div>
                 <div id="rankRuleCaption" class="rule-caption" contenteditable="true">等待采集数据</div>
                 <div id="freqTable"></div>
@@ -529,7 +529,6 @@
         const btn = document.getElementById('onlineCollectBtn');
         const originalText = btn.innerText;
 
-        // 优先用输入框中的授权码，其次已保存的
         const inputCode = document.getElementById('authCodeInput').value.trim();
         const savedCode = localStorage.getItem(STORAGE_KEY);
         const authCode = inputCode || savedCode;
@@ -539,7 +538,6 @@
             return;
         }
 
-        // 验证提示
         btn.innerText = '⏳ 验证中...';
         btn.disabled = true;
 
@@ -557,7 +555,6 @@
             return;
         }
 
-        // 验证成功，保存授权码（如有必要）
         if (!savedCode || authCode !== savedCode) {
             saveAuthCode(authCode);
             finalizeAuthorization();
@@ -567,7 +564,6 @@
             document.getElementById('authStatusMsg').style.color = '#6cce6c';
         }
 
-        // 开始采集
         btn.innerText = '⏳ 采集中...';
         try {
             const url = DATA_API_URL + '?t=' + Date.now();
@@ -592,17 +588,23 @@
 
     async function loadMarqueeText() {
         const scrollTextEl = document.getElementById('scrollText');
+        if (!scrollTextEl) return;
         try {
             const response = await fetch('tz.txt?t=' + Date.now(), { cache: 'no-cache' });
             if (response.ok) {
                 const text = await response.text();
                 const trimmed = text.trim();
-                if (trimmed) scrollTextEl.innerText = trimmed;
-                else scrollTextEl.innerText = '暂无通知';
-            } else throw new Error('文件不存在');
+                if (trimmed) {
+                    scrollTextEl.innerText = trimmed;
+                } else {
+                    scrollTextEl.innerText = '蚂蚁数据-专注澳彩';
+                }
+            } else {
+                scrollTextEl.innerText = '蚂蚁数据-专注澳彩';
+            }
         } catch (err) {
-            console.warn('加载 tz.txt 失败', err);
-            scrollTextEl.innerText = '加载通知失败，请检查 tz.txt 文件';
+            console.warn('加载 tz.txt 失败，使用默认通知', err);
+            scrollTextEl.innerText = '蚂蚁数据-专注澳彩';
         }
     }
 
@@ -636,12 +638,15 @@
         if (collectBtn) collectBtn.onclick = onlineCollect;
         document.querySelectorAll('.toggle-btn').forEach(btn=>btn.addEventListener('click',function(){ let t = document.getElementById(this.dataset.target); if(t) t.classList.toggle('collapsed'); }));
         if (!autoCollectDone) { autoCollectDone = true; setTimeout(() => { onlineCollect(); }, 500); }
-        loadMarqueeText();
+        // 授权成功后不再重复加载跑马灯，因为已在初始化时加载过
     }
 
     (async function() {
         getDeviceUUID();
         updateDeviceDisplay();
+
+        // 无论授权是否成功，都加载通知跑马灯
+        loadMarqueeText();
 
         const authInput = document.getElementById('authCodeInput');
         if (authInput) authInput.addEventListener('input', handleAuthInputChange);
