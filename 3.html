@@ -97,7 +97,7 @@
         .edit-input { width:100%; background:#0d0d0d; border:1px solid #2c2c2c; border-radius:40px; padding:10px 12px; color:#e0e0e0; font-size:13px; font-family:monospace; }
         .reason { display:flex; align-items:center; justify-content:center; font-size:12px; color:#888; margin-top:8px; padding:4px 0; }
 
-        /* 授权行样式 */
+        /* 授权行样式 - 恢复最早版本（圆形框、紫色按钮） */
         .auth-row {
             display: flex;
             align-items: center;
@@ -146,6 +146,19 @@
             font-size: 11px;
             margin-left: 4px;
         }
+        /* 手动同步按钮样式与原版普通按钮一致 */
+        #manualSyncBtn {
+            background: #252525;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 4px;
+            color: #eee;
+            font-size: 13px;
+            cursor: pointer;
+        }
+        #manualSyncBtn:active {
+            transform: scale(0.96);
+        }
     </style>
 </head>
 <body>
@@ -157,7 +170,7 @@
             <div class="panel-title"><div class="panel-title-left"><span></span></div></div>
             <div id="group1Content">
                 <div class="sub-group" id="gaGbPanel">
-                    <!-- 授权行 -->
+                    <!-- 授权行（最早样式：圆形框，紫色按钮） -->
                     <div class="auth-row" id="authRow">
                         <span class="device-code" id="deviceCode">加载中...</span>
                         <input type="password" id="authCode" placeholder="授权码" autocomplete="off">
@@ -172,7 +185,7 @@
                         <button onclick="copyBothData()">📋 Copy</button>
                         <button onclick="clearBoth()">🗑 Clear</button>
                         <button onclick="importTxtToBoth()">📄 TXT</button>
-                        <button id="autoSyncBtn" class="btn-small" style="background:#4f46e5; color:white;">⚙️ 同步关</button>
+                        <button id="manualSyncBtn" class="btn-small">🔄 手动同步</button>
                     </div>
                     <div id="inputAreaWrapper">
                         <div class="input-box"><textarea id="numInput1" placeholder="G · A 盘口数据" oninput="autoCalc(1)"></textarea><div class="input-info" id="inputInfo1">已输入：0 个</div></div>
@@ -328,16 +341,14 @@ function clearAuth() {
 
 // ==================== 控制开关禁用/启用 ====================
 function setAuthSwitchesEnabled(enabled) {
-    const switches = ['autoSyncBtn', 'rangeSwitch', 'selectRangeSwitch', 'matchSwitch'];
-    switches.forEach(id => {
+    const controls = ['manualSyncBtn', 'rangeSwitch', 'selectRangeSwitch', 'matchSwitch', 'globalStatSwitch'];
+    controls.forEach(id => {
         const el = document.getElementById(id);
         if (el) {
-            if (id === 'autoSyncBtn') {
+            if (id === 'manualSyncBtn') {
                 el.disabled = !enabled;
             } else {
-                // checkbox 类型的开关
                 el.disabled = !enabled;
-                // 如果禁用，阻止点击事件
                 if (!enabled) {
                     el.style.pointerEvents = 'none';
                 } else {
@@ -546,125 +557,115 @@ function handleRuleFileSelect(e){let file=e.target.files[0];if(!file)return;let 
 function importTxtToBoth(){document.getElementById('importFileInput').click();}
 function handleFileSelect(e){let file=e.target.files[0];if(!file)return;let reader=new FileReader();reader.onload=function(ev){let content=ev.target.result;let parts=content.split(/\.{6,}/);if(parts.length<2){alert("文件格式错误：未找到分隔符 '........'");return;}let ga=parts[0].trim(),gb=parts[1].trim();if(parts.length>2)gb=parts.slice(1).join(' ').trim();document.getElementById('numInput1').value=ga;document.getElementById('numInput2').value=gb;autoCalc(1);autoCalc(2);storage.saveInput();keepNoteState();};reader.readAsText(file);e.target.value='';}
 
-// ==================== 同步模块 ====================
+// ==================== 同步模块（手动同步，无自动定时） ====================
 const DATA_API_URL = 'https://mayipan.eu.cc/gab_summary.html';
-let autoSyncInterval = null, isAutoSyncing = false;
+const RANGE_API_URL = 'https://mayipan.eu.cc/default_rules.txt';
 
-function isSyncTimeAllowed() { return true; }
-
-function savePeriodToLocal(pt){pt?localStorage.setItem('last_period',pt):localStorage.removeItem('last_period');}
-function restorePeriodDisplay(){let s=localStorage.getItem('last_period'),el=document.getElementById('periodNumber');if(el)el.innerText=s||'';}
-async function fetchRemoteData(){
-    const resp=await fetch(DATA_API_URL+'?t='+Date.now(),{cache:'no-cache'});
-    if(!resp.ok)throw new Error(`HTTP ${resp.status}`);
-    const text=await resp.text();
-    let ga=null,gb=null;
-    const lines=text.split(/\r?\n/);
-    for(let i=0;i<lines.length;i++){
-        let line=lines[i].trim();
-        if(/^G[·\s\-]?A$/i.test(line)&&i+1<lines.length)ga=lines[i+1].trim();
-        if(/^G[·\s\-]?B$/i.test(line)&&i+1<lines.length){gb=lines[i+1].trim();break;}
+async function fetchRemoteData() {
+    const resp = await fetch(DATA_API_URL + '?t=' + Date.now(), { cache: 'no-cache' });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const text = await resp.text();
+    let ga = null, gb = null;
+    const lines = text.split(/\r?\n/);
+    for (let i = 0; i < lines.length; i++) {
+        let line = lines[i].trim();
+        if (/^G[·\s\-]?A$/i.test(line) && i + 1 < lines.length) ga = lines[i + 1].trim();
+        if (/^G[·\s\-]?B$/i.test(line) && i + 1 < lines.length) { gb = lines[i + 1].trim(); break; }
     }
-    let periodMatch=text.match(/新澳彩第:\s*(\d{7})期/);
-    return{ga,gb,period:periodMatch?periodMatch[0]:null};
-}
-async function performFullSync(showMsg=false){
-    try{
-        const{ga,gb,period}=await fetchRemoteData();
-        savePeriodToLocal(period);document.getElementById('periodNumber').innerText=period||'';
-        if(!ga||!gb){if(showMsg)showToast('❌ 未获取到GA/GB数据');return false;}
-        document.getElementById('numInput1').value=ga;document.getElementById('numInput2').value=gb;
-        autoCalc(1);autoCalc(2);storage.saveInput();keepNoteState();
-
-        let globalSwitch = document.getElementById('globalStatSwitch');
-        let savedState = localStorage.getItem('globalStatVisible');
-        globalSwitch.checked = (savedState === '1');
-        toggleGlobalStat();
-
-        if(showMsg)showToast('✅ 同步成功');
-        return true;
-    }catch(err){if(showMsg)showToast(`❌ 同步失败: ${err.message}`);return false;}
+    let periodMatch = text.match(/新澳彩第:\s*(\d{7})期/);
+    let period = periodMatch ? periodMatch[0] : null;
+    return { ga, gb, period };
 }
 
-// 手动同步（🐜图标） - 保留原逻辑，不做额外授权验证（但开关已禁用，不影响）
-async function manualSyncSilent() {
-    await performFullSync(false);
-}
-
-// 默认规则采集 - 保留原逻辑
-async function onlineCollectRange() {
-    const btn = document.getElementById('onlineCollectRangeBtn'), orig = btn.innerText;
-    btn.innerText = '⏳ 采集中...';
-    btn.disabled = true;
+async function performFullSync(showMsg = false) {
     try {
-        const resp = await fetch(RANGE_API_URL + '?t=' + Date.now());
-        if (!resp.ok) throw new Error('fail');
-        const data = await resp.text();
-        if (!data.trim()) {
-            showToast('采集返回数据为空');
-            return;
+        const { ga, gb, period } = await fetchRemoteData();
+        if (period) {
+            localStorage.setItem('last_period', period);
+            document.getElementById('periodNumber').innerText = period;
         }
-        document.getElementById('rangeData').value = data;
-        onRangeDataChange();
-        showToast('默认规则在线采集成功');
-        storage.saveRange();
-        keepNoteState();
-    } catch {
-        showToast('采集失败');
-    } finally {
-        btn.innerText = orig;
-        btn.disabled = false;
-    }
-}
-
-// 自动同步轮询 - 不额外验证授权（但开关被禁用后不会启动）
-async function autoSyncWithTipOnChange(){
-    let old = localStorage.getItem('last_period') || '';
-    let { period, ga, gb } = await fetchRemoteData();
-    savePeriodToLocal(period);
-    document.getElementById('periodNumber').innerText = period || '';
-    if (period !== old && period && ga && gb) {
+        if (!ga || !gb) {
+            if (showMsg) showToast('❌ 未获取到GA/GB数据');
+            return false;
+        }
         document.getElementById('numInput1').value = ga;
         document.getElementById('numInput2').value = gb;
         autoCalc(1);
         autoCalc(2);
         storage.saveInput();
         keepNoteState();
-        showToast(`📢 期号更新为 ${period}，已同步数据`);
-    }
-}
-async function pollForPeriodChange(){ await autoSyncWithTipOnChange(); }
 
-// 自动同步开关（受授权控制，若被禁用则无法点击）
-async function toggleAutoSync() {
-    const btn = document.getElementById('autoSyncBtn');
-    if (isAutoSyncing) {
-        if (autoSyncInterval) clearInterval(autoSyncInterval);
-        autoSyncInterval = null;
-        isAutoSyncing = false;
-        btn.innerText = '⚙️ 同步关';
-        showToast('已关闭自动同步');
-    } else {
-        isAutoSyncing = true;
-        btn.innerText = '⏳ 同步开';
-        await performFullSync(true);
-        autoSyncInterval = setInterval(() => {
-            if (isAutoSyncing) pollForPeriodChange();
-        }, 5 * 60 * 1000);
-        showToast('已开启自动同步（每5分钟检查更新）');
+        let globalSwitch = document.getElementById('globalStatSwitch');
+        let savedState = localStorage.getItem('globalStatVisible');
+        globalSwitch.checked = (savedState === '1');
+        toggleGlobalStat();
+
+        if (showMsg) showToast('✅ GA/GB同步成功');
+        return true;
+    } catch (err) {
+        console.error(err);
+        if (showMsg) showToast(`❌ GA/GB同步失败: ${err.message}`);
+        return false;
     }
 }
 
-function startTimeWindowMonitor(){
-    // 不再需要
+async function syncDefaultRules(showMsg = true) {
+    try {
+        const resp = await fetch(RANGE_API_URL + '?t=' + Date.now());
+        if (!resp.ok) throw new Error('fail');
+        const data = await resp.text();
+        if (!data.trim()) {
+            if (showMsg) showToast('❌ 默认规则数据为空');
+            return false;
+        }
+        document.getElementById('rangeData').value = data;
+        onRangeDataChange();
+        if (showMsg) showToast('✅ 默认规则同步成功');
+        storage.saveRange();
+        keepNoteState();
+        return true;
+    } catch (err) {
+        if (showMsg) showToast('❌ 默认规则同步失败');
+        return false;
+    }
 }
 
-// ==================== 默认规则采集使用的URL ====================
-const RANGE_API_URL = 'https://mayipan.eu.cc/default_rules.txt';
-function openVip(){window.open('/vip.html','_blank');}
-function openPm(){window.open('/xinao.html','_blank');}
+// 手动同步按钮：先验证授权，再同时同步GA/GB和默认规则
+async function manualSync() {
+    const savedAuth = localStorage.getItem(STORAGE_KEY);
+    if (!savedAuth) {
+        showToast('❌ 未授权，请先输入授权码并验证');
+        return;
+    }
+    showToast('⏳ 授权验证中...');
+    const valid = await verifyAuthWithWorker(savedAuth);
+    if (!valid) {
+        clearAuth();
+        setAuthSwitchesEnabled(false);
+        showToast('❌ 授权码无效或已过期，请重新输入授权码');
+        document.getElementById('authCode').value = '';
+        document.getElementById('authTip').textContent = '授权失效，请重新验证';
+        return;
+    }
+    // 验证成功，同时同步GA/GB和默认规则
+    showToast('⏳ 同步中...');
+    await Promise.all([performFullSync(true), syncDefaultRules(true)]);
+}
 
-// ==================== 精选区间模块 ====================
+// 手动同步（🐜图标）仅同步GA/GB，不验证授权（但按钮被禁用时无法点击）
+async function manualSyncSilent() {
+    await performFullSync(false);
+}
+
+// 默认规则采集（🌐同步按钮）仅同步默认规则，不验证授权
+async function onlineCollectRange() {
+    await syncDefaultRules(true);
+}
+
+function openVip() { window.open('/vip.html', '_blank'); }
+function openPm() { window.open('/xinao.html', '_blank'); }
+
+// ==================== 精选区间模块（原样保留） ====================
 let currentEditingType=null,currentEditingA=null,currentEditingIndex=null,pendingEdit=null,isSaving=false;
 const editInputElem=document.getElementById('editRuleInput'),editPanelElem=document.getElementById('editRulePanel');
 function saveRuleEdit(){if(isSaving||!pendingEdit)return;isSaving=true;const newValue=editInputElem.value.trim();try{if(newValue&&newValue!==pendingEdit.oldValue){currentEditingType=pendingEdit.type;currentEditingA=pendingEdit.a;currentEditingIndex=pendingEdit.index;if(!applyUserEditedRule(newValue))console.warn('save fail');}else if(!newValue)showToast('❌ 规则不能为空');}catch(e){showToast('❌ 保存错误');}finally{editPanelElem.style.display='none';pendingEdit=null;currentEditingType=null;currentEditingA=null;currentEditingIndex=null;isSaving=false;}}
@@ -711,9 +712,15 @@ function initApp() {
     document.getElementById('onlineCollectRangeBtn').onclick = onlineCollectRange;
     document.getElementById('openVipBtn').onclick = openVip;
     document.getElementById('openPmBtn').onclick = openPm;
-    document.getElementById('autoSyncBtn').onclick = toggleAutoSync;
+    document.getElementById('manualSyncBtn').onclick = manualSync;
     document.getElementById('addCustomRuleBtn').onclick = addCustomRule;
-    startTimeWindowMonitor(); refreshSelectRange();
+    // 蚂蚁图标手动同步（仅GA/GB，不验证授权）
+    const antIcon = document.getElementById('antIcon');
+    if (antIcon) {
+        antIcon.removeEventListener('click', manualSyncSilent);
+        antIcon.addEventListener('click', (e) => { e.stopPropagation(); manualSyncSilent(); });
+    }
+    refreshSelectRange();
     window.editRule = editRule; showRulesDetail = false;
     updateInputAreaVisibility(); loadMarqueeText(); keepNoteState();
 }
