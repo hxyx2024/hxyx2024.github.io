@@ -7,20 +7,29 @@
     <style>
         * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
         body { background:#121212; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, sans-serif; padding:12px; color:#e0e0e0; font-size:14px; max-width:800px; margin:0 auto; }
-        /* 授权面板 */
-        .auth-overlay { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.92); backdrop-filter:blur(8px); z-index:10000; display:flex; align-items:center; justify-content:center; font-family:inherit; display:none; }
-        .auth-card { background:#1e1e1e; border-radius:32px; padding:28px 24px; width:90%; max-width:420px; border:1px solid #4f46e5; box-shadow:0 20px 35px rgba(0,0,0,0.6); text-align:center; }
-        .auth-card h2 { margin-bottom:16px; color:#facc15; font-size:1.5rem; }
-        .auth-card input { width:100%; background:#0d0d0d; border:1px solid #2c2c2c; border-radius:40px; padding:12px 16px; color:#e0e0e0; font-size:14px; text-align:center; margin:12px 0; outline:none; box-sizing:border-box; }
-        .auth-card button { background:#4f46e5; width:100%; padding:10px; border-radius:40px; font-weight:bold; margin-top:8px; cursor:pointer; border:none; color:white; font-size:14px; transition:0.2s; }
-        .auth-card button:active { transform:scale(0.98); }
-        .auth-card .info-text { font-size:12px; color:#aaa; margin-top:12px; }
-        .device-id-row { background:#0a0a0a; border-radius:20px; padding:8px 12px; margin:8px 0; display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap; }
-        .device-id-row span { font-family:monospace; font-size:11px; word-break:break-all; color:#eee; flex:1; text-align:left; }
-        .copy-device-btn { background:#3a3a3a; padding:6px 12px; border-radius:20px; font-size:12px; cursor:pointer; border:none; color:#fff; width:auto; margin:0; white-space:nowrap; }
-        .copy-device-btn:active { background:#007bff; transform:scale(0.96); }
-        /* 业务样式 */
-        .card { background:#1e1e1e; border-radius:20px; padding:16px; margin-bottom:16px; border:1px solid #2c2c2c; }
+
+        .auth-card {
+            display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; padding: 12px;
+            background: #1e1e1e; border-radius: 16px; border: 1px solid #2c2c2c;
+        }
+        .auth-card .device-code {
+            font-family: monospace; background: #252525; padding: 0 12px; border-radius: 20px; color: #facc15;
+            font-size: 12px; cursor: pointer; height: 36px; line-height: 36px; display: flex; align-items: center;
+            overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: none; width: auto;
+        }
+        .auth-card input {
+            background: #252525; border: 1px solid #2c2c2c; border-radius: 8px; padding: 0 12px; color: #eee;
+            font-size: 13px; width: 120px; height: 36px; line-height: 36px;
+        }
+        .auth-card button {
+            background: #252525; color: #fff; border: none; border-radius: 8px; font-size: 13px; cursor: pointer;
+            white-space: nowrap; height: 36px; line-height: 36px; flex: none; width: auto; min-width: 0; padding: 0 16px;
+        }
+        .auth-card button:active { transform: scale(0.96); opacity: 0.9; }
+        .auth-card .auth-tip { color: #aaa; font-size: 11px; margin-left: 4px; white-space: nowrap; flex-shrink: 0; }
+
+        .card { background:#1e1e1e; border-radius:20px; padding:16px; margin-bottom:16px; border:1px solid #2c2c2c; transition: opacity 0.3s; }
+        .card.disabled-section { opacity: 0.4; pointer-events: none; }
         .card-header { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:14px; padding-bottom:10px; border-bottom:1px solid #2c2c2c; }
         .card-header h3 { margin:0; font-size:1rem; font-weight:600; color:#aaa; }
         .toggle-btn { background:#2a2a2a; border:none; padding:4px 12px; border-radius:20px; font-size:11px; cursor:pointer; color:#ccc; }
@@ -36,12 +45,8 @@
         .filter-row input { background:#0d0d0d; border:1px solid #2c2c2c; border-radius:40px; padding:6px 12px; color:#e0e0e0; width:90px; text-align:center; }
         .freq-table { width:100%; border-collapse:collapse; margin-top:8px; font-size:12px; table-layout:fixed; }
         .freq-table th, .freq-table td { padding:8px 4px; text-align:center; border-bottom:1px solid #2c2c2c; vertical-align:middle; word-break:keep-all; }
-        .freq-table th:nth-child(1) { width:12%; }
-        .freq-table th:nth-child(2) { width:10%; }
-        .freq-table th:nth-child(3) { width:20%; }
-        .freq-table th:nth-child(4) { width:15%; }
-        .freq-table th:nth-child(5) { width:15%; }
-        .freq-table th:nth-child(6) { width:28%; }
+        .freq-table th:nth-child(1) { width:12%; } .freq-table th:nth-child(2) { width:10%; } .freq-table th:nth-child(3) { width:20%; }
+        .freq-table th:nth-child(4) { width:15%; } .freq-table th:nth-child(5) { width:15%; } .freq-table th:nth-child(6) { width:28%; }
         .checkbox-col { text-align:center; }
         .rule-caption { background:#0d0d0d; border-radius:12px; padding:6px 12px; margin-bottom:12px; color:#4ade80; font-size:12px; text-align:center; cursor:text; outline:none; transition:background 0.1s; }
         .rule-caption:hover { background:#1a1a1a; }
@@ -51,72 +56,49 @@
         .copy-selected-btn { background:#10b981; }
         .zodiac-rank-table { width:100%; border-collapse:collapse; font-size:12px; margin-top:8px; table-layout:fixed; }
         .zodiac-rank-table th, .zodiac-rank-table td { padding:8px 4px; text-align:center; border-bottom:1px solid #2c2c2c; vertical-align:middle; }
-        .zodiac-rank-table th:nth-child(1) { width:12%; }
-        .zodiac-rank-table th:nth-child(2) { width:10%; }
-        .zodiac-rank-table th:nth-child(3) { width:25%; }
-        .zodiac-rank-table th:nth-child(4) { width:15%; }
-        .zodiac-rank-table th:nth-child(5) { width:15%; }
-        .zodiac-rank-table th:nth-child(6) { width:23%; }
+        .zodiac-rank-table th:nth-child(1) { width:12%; } .zodiac-rank-table th:nth-child(2) { width:10%; } .zodiac-rank-table th:nth-child(3) { width:25%; }
+        .zodiac-rank-table th:nth-child(4) { width:15%; } .zodiac-rank-table th:nth-child(5) { width:15%; } .zodiac-rank-table th:nth-child(6) { width:23%; }
         .miss-numbers { background:#0d0d0d; border-radius:16px; padding:12px; margin-top:12px; }
         .reason { color:#6b7280; font-size:11px; margin-top:10px; }
         .toast-msg { position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:#2a2a2a; padding:8px 18px; border-radius:40px; z-index:10001; white-space:nowrap; font-size:13px; }
         footer { text-align:center; font-size:10px; color:#444; margin-top:20px; }
         @media (max-width:560px) { .freq-table th, .freq-table td, .zodiac-rank-table th, .zodiac-rank-table td { padding:4px 2px; font-size:10px; } }
         #currentDateTime { font-family: monospace; background:#0d0d0d; padding:4px 12px; border-radius:40px; font-size:12px; letter-spacing:0.5px; border:1px solid #2c2c2c; white-space:nowrap; }
-        /* 跑马灯样式 */
         .scroll-container {
-            background: #0d0d0d;
-            border-radius: 30px;
-            padding: 6px 12px;
-            margin: 12px 0 8px 0;
-            overflow: hidden;
-            white-space: nowrap;
-            box-sizing: border-box;
-            border: 1px solid #2c2c2c;
+            background: #0d0d0d; border-radius: 30px; padding: 6px 12px; margin: 12px 0 8px 0; overflow: hidden;
+            white-space: nowrap; box-sizing: border-box; border: 1px solid #2c2c2c;
         }
         .scroll-text {
-            display: inline-block;
-            padding-left: 100%;
-            animation: scroll-left 20s linear infinite;
-            font-size: 13px;
-            color: #facc15;
+            display: inline-block; padding-left: 100%; animation: scroll-left 20s linear infinite;
+            font-size: 13px; color: #facc15;
         }
         @keyframes scroll-left {
             0% { transform: translateX(0); }
             100% { transform: translateX(-100%); }
         }
-        .scroll-container:hover .scroll-text {
-            animation-play-state: paused;
+        .scroll-container:hover .scroll-text { animation-play-state: paused; }
+        .license-tag {
+            background: #0d0d0d; border-radius: 30px; padding: 4px 12px; font-size: 12px; display: inline-block; margin-bottom: 8px;
         }
     </style>
 </head>
 <body>
-<!-- 授权面板 -->
-<div id="authPanel" class="auth-overlay">
-    <div class="auth-card">
-        <h2>🔐 授权验证</h2>
-        <div class="device-id-row">
-            <span id="deviceIdDisplay"></span>
-            <button class="copy-device-btn" id="copyDeviceBtn">📋 复制</button>
-        </div>
-        <div class="info-text">设备码已生成，请联系管理员获取授权码</div>
-        <input type="password" id="authCodeInput" placeholder="请输入授权码">
-        <button id="verifyBtn" class="primary">验证授权</button>
-        <div class="info-text" id="authStatusMsg"></div>
-        <div class="info-text" style="margin-top: 16px; border-top: 1px solid #333; padding-top: 12px;">
-            📞 获取授权码请联系：<br>
-            ✈️ 电报：mayi2036（备注：六合彩）
-        </div>
-    </div>
-</div>
 
-<!-- 主界面 -->
-<div id="appContainer" style="display: none;">
+<div id="appContainer">
     <div class="container">
-        <div class="card">
+        <!-- 顶部授权卡片 -->
+        <div class="auth-card" id="authCard">
+            <span class="device-code" id="deviceIdDisplay">加载中...</span>
+            <input type="password" id="authCodeInput" placeholder="授权码" autocomplete="off">
+            <button id="verifyBtn">验证</button>
+            <span id="authStatusMsg" class="auth-tip"></span>
+        </div>
+
+        <!-- 业务卡片 -->
+        <div class="card" id="mainInfoCard">
             <h1>🔴 新澳门渗透采集</h1>
             <div class="sub">每天自动渗透采集最新新澳门盘口数据</div>
-            <div id="licenseInfo" style="background:#0d0d0d; border-radius: 30px; padding: 6px 12px; margin-bottom: 12px; font-size:12px; display:inline-block; color:#4ade80;">✅ 授权状态: 加载中...</div>
+            <div class="license-tag" id="licenseInfo">授权状态: 加载中...</div>
             <div class="flex-between">
                 <span>🟢 总组数：<strong id="totalPeriods">0</strong></span>
                 <span id="currentDateTime">🔵 时间：--:--:--</span>
@@ -130,7 +112,8 @@
             <div class="reason">💡 说明：特码热度值高、生肖占比大的中奖率高</div>
         </div>
 
-        <div class="card"><div class="card-header"><h3>🔴 特码统计</h3><button class="toggle-btn" data-target="freq-content">▼ 隐藏</button></div>
+        <div class="card" id="freqCard">
+            <div class="card-header"><h3>🔴 特码统计</h3><button class="toggle-btn" data-target="freq-content">▼ 隐藏</button></div>
             <div id="freq-content" class="card-content">
                 <div class="scroll-container" id="scrollContainer">
                     <div class="scroll-text" id="scrollText">加载通知中...</div>
@@ -141,7 +124,8 @@
             </div>
         </div>
 
-        <div class="card"><div class="card-header"><h3>🔵 生肖统计</h3><button class="toggle-btn" data-target="zodiac-content">▼ 隐藏</button></div>
+        <div class="card" id="zodiacCard">
+            <div class="card-header"><h3>🔵 生肖统计</h3><button class="toggle-btn" data-target="zodiac-content">▼ 隐藏</button></div>
             <div id="zodiac-content" class="card-content">
                 <div id="zodiacRankingContainer"></div>
                 <div class="table-footer-bar"><div class="select-all-wrapper"><label><input type="checkbox" id="zodiacSelectAllCheckbox"> 全选/取消</label></div><button id="copySelectedZodiacBtn" class="copy-selected-btn">📋 复制生肖</button></div>
@@ -149,7 +133,8 @@
             </div>
         </div>
 
-        <div class="card"><div class="card-header"><h3>⚠️ 遗漏号码（打不中）</h3><button class="toggle-btn" data-target="miss-content">▼ 隐藏</button></div>
+        <div class="card" id="missCard">
+            <div class="card-header"><h3>⚠️ 遗漏号码（打不中）</h3><button class="toggle-btn" data-target="miss-content">▼ 隐藏</button></div>
             <div id="miss-content" class="card-content"><div id="missNumbers" class="miss-numbers">等待采集...</div></div>
         </div>
 
@@ -158,11 +143,11 @@
 </div>
 
 <script>
-    // ==================== Worker 授权验证（改进版：授权后UUID固定，未授权/过期可变）====================
-    const WORKER_URL = 'https://api.mycm.cc.cd';   // 保持原地址
-    const STORAGE_KEY = "ANT_AUTH";
-    const AUTHORIZED_UUID_KEY = "ANT_AUTHORIZED_UUID";
-    const TEMP_UUID_KEY = "ANT_TEMP_UUID";
+    // ==================== 授权与采集 ====================
+    const WORKER_URL = 'https://api.mycm.cc.cd';
+    const STORAGE_KEY = "ANT_COLLECT_AUTH";
+    const AUTHORIZED_UUID_KEY = "ANT_COLLECT_AUTHORIZED_UUID";
+    const TEMP_UUID_KEY = "ANT_COLLECT_TEMP_UUID";
 
     function generateUUID() {
         if (crypto.randomUUID) return crypto.randomUUID();
@@ -174,10 +159,8 @@
     }
 
     function getDeviceUUID() {
-        // 优先返回已授权的固定UUID
         let authorized = localStorage.getItem(AUTHORIZED_UUID_KEY);
         if (authorized) return authorized;
-        // 否则返回临时UUID（未授权/过期时可变）
         let temp = localStorage.getItem(TEMP_UUID_KEY);
         if (!temp) {
             temp = generateUUID();
@@ -188,22 +171,17 @@
 
     function finalizeAuthorization() {
         let current = getDeviceUUID();
-        if (current) {
-            localStorage.setItem(AUTHORIZED_UUID_KEY, current);
-            localStorage.removeItem(TEMP_UUID_KEY);
-        }
+        if (current) localStorage.setItem(AUTHORIZED_UUID_KEY, current);
     }
 
     function clearAuthorization() {
-        localStorage.removeItem(AUTHORIZED_UUID_KEY);
-        localStorage.removeItem(TEMP_UUID_KEY);
         localStorage.removeItem(STORAGE_KEY);
     }
 
     function updateDeviceDisplay() {
         const deviceId = getDeviceUUID();
         document.getElementById('deviceIdDisplay').innerText = deviceId;
-        document.getElementById('copyDeviceBtn').onclick = () => copyToClipboard(deviceId, '设备码已复制');
+        document.getElementById('deviceIdDisplay').onclick = () => copyToClipboard(deviceId, '设备码已复制');
     }
 
     async function fetchWithTimeout(url, options = {}, timeout = 10000) {
@@ -225,10 +203,7 @@
         try {
             const resp = await fetchWithTimeout(`${WORKER_URL}/verify`, {
                 method: 'GET',
-                headers: {
-                    'X-Device-Code': deviceCode,
-                    'X-Auth-Code': authCode
-                }
+                headers: { 'X-Device-Code': deviceCode, 'X-Auth-Code': authCode }
             }, 10000);
             const data = await resp.json();
             return data.valid === true;
@@ -242,29 +217,42 @@
         localStorage.setItem(STORAGE_KEY, authCode);
     }
 
-    // 跑马灯加载 (保持 tz.txt)
-    async function loadMarqueeText() {
-        const scrollTextEl = document.getElementById('scrollText');
-        try {
-            const response = await fetch('tz.txt?t=' + Date.now(), { cache: 'no-cache' });
-            if (response.ok) {
-                const text = await response.text();
-                const trimmed = text.trim();
-                if (trimmed) {
-                    scrollTextEl.innerText = trimmed;
-                } else {
-                    scrollTextEl.innerText = '暂无通知';
-                }
-            } else {
-                throw new Error('文件不存在');
-            }
-        } catch (err) {
-            console.warn('加载 tz.txt 失败', err);
-            scrollTextEl.innerText = '加载通知失败，请检查 tz.txt 文件';
+    function enableStatistics() {
+        document.getElementById('freqCard').classList.remove('disabled-section');
+        document.getElementById('zodiacCard').classList.remove('disabled-section');
+        document.getElementById('missCard').classList.remove('disabled-section');
+        document.getElementById('licenseInfo').innerText = '✅ 已授权';
+    }
+
+    function disableStatistics() {
+        document.getElementById('freqCard').classList.add('disabled-section');
+        document.getElementById('zodiacCard').classList.add('disabled-section');
+        document.getElementById('missCard').classList.add('disabled-section');
+        document.getElementById('licenseInfo').innerText = '❌ 未授权';
+        clearAllData();
+    }
+
+    function clearAllData() {
+        allRecords = [];
+        currentDisplayRecords = [];
+        localStorage.removeItem('last_collected_data');
+        renderAll();
+    }
+
+    function handleAuthInputChange() {
+        const input = document.getElementById('authCodeInput');
+        if (!input) return;
+        const code = input.value.trim();
+        if (!code) {
+            clearAuthorization();
+            updateDeviceDisplay();
+            document.getElementById('authStatusMsg').innerText = '未授权';
+            document.getElementById('authStatusMsg').style.color = '#ff6666';
+            disableStatistics();
         }
     }
 
-    // ==================== 业务逻辑（完全保持不变） ====================
+    // ==================== 业务逻辑 ====================
     let allRecords = [], currentDisplayRecords = [];
     let autoCollectDone = false;
 
@@ -430,24 +418,19 @@
         let nextPeriodStr = nextPeriod.toString().padStart(7, '0');
         let lotteryType = lastRecord.lotteryType || '六合彩';
         let captionText = '';
-        if (lotteryType === '老澳') {
-            captionText = `老澳第:${nextPeriodStr}期`;
-        } else if (lotteryType === '香港六合彩') {
-            captionText = `香港六合彩第:${nextPeriodStr}期`;
-        } else if (lotteryType === '新澳门六合彩') {
-            captionText = `新澳门六合彩第:${nextPeriodStr}期`;
-        } else {
-            captionText = `${lotteryType}第:${nextPeriodStr}期`;
-        }
+        if (lotteryType === '老澳') captionText = `老澳第:${nextPeriodStr}期`;
+        else if (lotteryType === '香港六合彩') captionText = `香港六合彩第:${nextPeriodStr}期`;
+        else if (lotteryType === '新澳门六合彩') captionText = `新澳门六合彩第:${nextPeriodStr}期`;
+        else captionText = `${lotteryType}第:${nextPeriodStr}期`;
         captionDiv.innerText = captionText;
     }
 
     function renderAll(){
         if(!currentDisplayRecords.length){
             document.getElementById('totalPeriods').innerText = allRecords.length;
-            document.getElementById('freqTable').innerHTML='';
-            document.getElementById('missNumbers').innerHTML='<div class="reason">无数据</div>';
-            document.getElementById('zodiacRankingContainer').innerHTML='';
+            document.getElementById('freqTable').innerHTML = '';
+            document.getElementById('missNumbers').innerHTML = '<div class="reason">无数据</div>';
+            document.getElementById('zodiacRankingContainer').innerHTML = '';
             updateNextPeriodCaption();
             return;
         }
@@ -514,8 +497,7 @@
         try {
             const textarea = document.createElement('textarea');
             textarea.value = text;
-            textarea.style.position = 'fixed';
-            textarea.style.top = '-9999px';
+            textarea.style.position = 'fixed'; textarea.style.top = '-9999px';
             document.body.appendChild(textarea);
             textarea.select();
             const success = document.execCommand('copy');
@@ -542,11 +524,51 @@
     function showToast(msg){ let t = document.createElement('div'); t.className = 'toast-msg'; t.innerText = msg; document.body.appendChild(t); setTimeout(()=>t.remove(), 2000); }
 
     const DATA_API_URL = 'https://mayipan.eu.cc/lottery_data_api.html';
+
     async function onlineCollect() {
         const btn = document.getElementById('onlineCollectBtn');
         const originalText = btn.innerText;
-        btn.innerText = '⏳ 采集中...';
+
+        // 优先用输入框中的授权码，其次已保存的
+        const inputCode = document.getElementById('authCodeInput').value.trim();
+        const savedCode = localStorage.getItem(STORAGE_KEY);
+        const authCode = inputCode || savedCode;
+
+        if (!authCode) {
+            showToast('❌ 未授权，请输入授权码');
+            return;
+        }
+
+        // 验证提示
+        btn.innerText = '⏳ 验证中...';
         btn.disabled = true;
+
+        const valid = await verifyAuthWithWorker(authCode);
+        if (!valid) {
+            showToast('❌ 授权无效，请重新输入');
+            if (savedCode) {
+                clearAuthorization();
+                updateDeviceDisplay();
+                disableStatistics();
+            }
+            handleAuthInputChange();
+            btn.innerText = originalText;
+            btn.disabled = false;
+            return;
+        }
+
+        // 验证成功，保存授权码（如有必要）
+        if (!savedCode || authCode !== savedCode) {
+            saveAuthCode(authCode);
+            finalizeAuthorization();
+            updateDeviceDisplay();
+            enableStatistics();
+            document.getElementById('authStatusMsg').innerText = '✅ 已授权';
+            document.getElementById('authStatusMsg').style.color = '#6cce6c';
+        }
+
+        // 开始采集
+        btn.innerText = '⏳ 采集中...';
         try {
             const url = DATA_API_URL + '?t=' + Date.now();
             const response = await fetch(url, { cache: 'no-cache' });
@@ -568,6 +590,22 @@
         }
     }
 
+    async function loadMarqueeText() {
+        const scrollTextEl = document.getElementById('scrollText');
+        try {
+            const response = await fetch('tz.txt?t=' + Date.now(), { cache: 'no-cache' });
+            if (response.ok) {
+                const text = await response.text();
+                const trimmed = text.trim();
+                if (trimmed) scrollTextEl.innerText = trimmed;
+                else scrollTextEl.innerText = '暂无通知';
+            } else throw new Error('文件不存在');
+        } catch (err) {
+            console.warn('加载 tz.txt 失败', err);
+            scrollTextEl.innerText = '加载通知失败，请检查 tz.txt 文件';
+        }
+    }
+
     let clockInterval = null;
     function updateCurrentDateTime() {
         const now = new Date();
@@ -582,10 +620,8 @@
         if (timeSpan) timeSpan.innerText = `📅 时间：${dateTimeStr}`;
     }
 
-    async function initAppAfterAuth() {
-        document.getElementById('authPanel').style.display = 'none';
-        document.getElementById('appContainer').style.display = 'block';
-        document.getElementById('licenseInfo').innerText = '✅ 授权成功 · 保管好UUID和授权码';
+    function initAppAfterAuth() {
+        enableStatistics();
         if(clockInterval) clearInterval(clockInterval);
         updateCurrentDateTime();
         clockInterval = setInterval(updateCurrentDateTime, 1000);
@@ -603,57 +639,55 @@
         loadMarqueeText();
     }
 
-    // 启动主流程
     (async function() {
-        // 显示设备码
+        getDeviceUUID();
         updateDeviceDisplay();
+
+        const authInput = document.getElementById('authCodeInput');
+        if (authInput) authInput.addEventListener('input', handleAuthInputChange);
 
         const localAuthCode = localStorage.getItem(STORAGE_KEY);
         if (localAuthCode) {
             const valid = await verifyAuthWithWorker(localAuthCode);
             if (valid) {
-                // 授权有效：确保 UUID 已固定
-                if (!localStorage.getItem(AUTHORIZED_UUID_KEY)) {
-                    finalizeAuthorization();
-                    updateDeviceDisplay();
-                }
+                finalizeAuthorization();
+                updateDeviceDisplay();
+                if (authInput) authInput.value = localAuthCode;
+                document.getElementById('authStatusMsg').innerText = '✅ 已授权';
+                document.getElementById('authStatusMsg').style.color = '#6cce6c';
                 initAppAfterAuth();
             } else {
-                // 授权失效：清除所有授权数据，显示授权面板（下次访问会生成新临时UUID）
                 clearAuthorization();
-                // 确保重新生成临时UUID（清除后再调用 getDeviceUUID 会生成新的）
-                getDeviceUUID();
                 updateDeviceDisplay();
-                document.getElementById('authPanel').style.display = 'flex';
-                document.getElementById('appContainer').style.display = 'none';
-                document.getElementById('authStatusMsg').innerText = '授权已失效，请重新输入授权码';
+                handleAuthInputChange();
             }
         } else {
-            // 未授权：清除可能遗留的授权UUID，生成新的临时UUID
-            localStorage.removeItem(AUTHORIZED_UUID_KEY);
-            // 强制生成新的临时UUID（删除旧的再生成）
-            localStorage.removeItem(TEMP_UUID_KEY);
-            getDeviceUUID();  // 会生成新的临时UUID
-            updateDeviceDisplay();
-            document.getElementById('authPanel').style.display = 'flex';
-            document.getElementById('appContainer').style.display = 'none';
-            document.getElementById('authStatusMsg').innerText = '未授权，请输入授权码';
+            handleAuthInputChange();
         }
 
-        // 验证按钮事件
         document.getElementById('verifyBtn').onclick = async () => {
-            const code = document.getElementById('authCodeInput').value.trim();
-            if (!code) { document.getElementById('authStatusMsg').innerText = '请输入授权码'; return; }
-            document.getElementById('authStatusMsg').innerText = '验证中...';
+            const code = authInput ? authInput.value.trim() : '';
+            const tip = document.getElementById('authStatusMsg');
+            if (!code) {
+                handleAuthInputChange();
+                return;
+            }
+            tip.innerText = '验证中...';
+            tip.style.color = '#aaa';
             const valid = await verifyAuthWithWorker(code);
             if (valid) {
                 saveAuthCode(code);
                 finalizeAuthorization();
                 updateDeviceDisplay();
-                document.getElementById('authStatusMsg').innerText = '✅ 授权成功，正在加载...';
+                tip.innerText = '✅ 已授权';
+                tip.style.color = '#6cce6c';
                 initAppAfterAuth();
             } else {
-                document.getElementById('authStatusMsg').innerText = '❌ 授权码无效，请联系管理员';
+                clearAuthorization();
+                updateDeviceDisplay();
+                handleAuthInputChange();
+                tip.innerText = '❌ 授权码无效';
+                tip.style.color = '#ff6666';
             }
         };
     })();
