@@ -96,7 +96,6 @@
         .edit-label { font-size:12px; color:#888; margin-bottom:6px; }
         .edit-input { width:100%; background:#0d0d0d; border:1px solid #2c2c2c; border-radius:40px; padding:10px 12px; color:#e0e0e0; font-size:13px; font-family:monospace; }
         .reason { display:flex; align-items:center; justify-content:center; font-size:12px; color:#888; margin-top:8px; padding:4px 0; }
-        .auth-modal { display:none; }
         @media (max-width:600px) {
             body { padding:4px; } .tool-box { padding:8px; } .sub-group { padding:8px; }
             .rule-row, .custom-rule-row { gap:6px; padding:4px 8px; }
@@ -120,9 +119,9 @@
             .result-title .switch-control input:checked::after { left:18px; }
             .sub-title { flex-wrap:wrap; } .period-text { font-size:12px; }
             .marquee-container { text-align:center; } .datetime { font-size:11px; } .reason { font-size:11px; }
-            .auth-box { padding:20px 16px; }
         }
-        /* 第二版参考的极简授权卡片样式 */
+
+        /* 授权卡片样式 */
         .auth-card {
             display: flex;
             align-items: center;
@@ -136,7 +135,7 @@
         .auth-card .device-code {
             font-family: monospace;
             background: #252525;
-            padding: 6px 12px;
+            padding: 0 12px;
             border-radius: 20px;
             color: #facc15;
             font-size: 11px;
@@ -144,25 +143,39 @@
             cursor: pointer;
             flex: 1;
             min-width: 0;
+            height: 36px;
+            line-height: 36px;
+            display: flex;
+            align-items: center;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
         .auth-card input {
             background: #252525;
             border: 1px solid #2c2c2c;
             border-radius: 8px;
-            padding: 6px 12px;
+            padding: 0 12px;
             color: #eee;
             font-size: 13px;
             width: 120px;
+            height: 36px;
+            line-height: 36px;
         }
         .auth-card button {
-            background: #007bff;
+            background: #252525;
             color: #fff;
             border: none;
             border-radius: 8px;
-            padding: 6px 14px;
             font-size: 13px;
             cursor: pointer;
             white-space: nowrap;
+            height: 36px;
+            line-height: 36px;
+            flex: none;
+            width: auto;
+            min-width: 0;
+            padding: 0 8px;
         }
         .auth-card button:active { transform: scale(0.96); opacity: 0.9; }
         .auth-card .auth-tip {
@@ -170,6 +183,7 @@
             font-size: 11px;
             margin-left: 4px;
             white-space: nowrap;
+            flex-shrink: 0;
         }
     </style>
 </head>
@@ -182,7 +196,7 @@
             <div class="panel-title"><div class="panel-title-left"><span></span></div></div>
             <div id="group1Content">
                 <div class="sub-group" id="gaGbPanel">
-                    <!-- 第一版基础上新增的授权卡片，参考第二版极简样式 -->
+                    <!-- 授权卡片 -->
                     <div class="auth-card" id="authCard">
                         <span class="device-code" id="authCardDeviceCode">加载中...</span>
                         <input type="password" id="authCardCode" placeholder="授权码" autocomplete="off">
@@ -293,7 +307,6 @@
 <input type="file" id="importRuleFileInput" accept=".txt" style="display:none" onchange="handleRuleFileSelect(event)">
 
 <script>
-// ==================== 授权系统 ====================
 const WORKER_URL = 'https://api.mycm.cc.cd';
 const STORAGE_KEY = "ANT_AUTH";
 const DEVICE_UUID_KEY = "ANT_DEVICE_UUID";
@@ -330,7 +343,6 @@ async function verifyAuthWithWorker(authCode) {
 function saveAuthCode(authCode) { localStorage.setItem(STORAGE_KEY, authCode); }
 function clearAuth() { localStorage.removeItem(STORAGE_KEY); }
 
-// ==================== 通用复制 ====================
 async function copyToClipboard(text, tipId) {
     if (!text || text.trim() === '') {
         if (tipId) { let t = document.getElementById(tipId); if (t) t.innerText = '❌ 无内容'; setTimeout(() => { if (t) t.innerText = ''; }, 1500); }
@@ -358,7 +370,6 @@ async function copyToClipboard(text, tipId) {
     }
 }
 
-// ==================== 核心功能 ====================
 let showRulesDetail = false;
 function showToast(msg) { 
     const toast = document.createElement('div'); 
@@ -528,7 +539,6 @@ function handleRuleFileSelect(e){let file=e.target.files[0];if(!file)return;let 
 function importTxtToBoth(){document.getElementById('importFileInput').click();}
 function handleFileSelect(e){let file=e.target.files[0];if(!file)return;let reader=new FileReader();reader.onload=function(ev){let content=ev.target.result;let parts=content.split(/\.{6,}/);if(parts.length<2){alert("文件格式错误：未找到分隔符 '........'");return;}let ga=parts[0].trim(),gb=parts[1].trim();if(parts.length>2)gb=parts.slice(1).join(' ').trim();document.getElementById('numInput1').value=ga;document.getElementById('numInput2').value=gb;autoCalc(1);autoCalc(2);storage.saveInput();keepNoteState();};reader.readAsText(file);e.target.value='';}
 
-// ==================== 同步模块（蚂蚁不受时间限制，自动同步受时段限制） ====================
 const DATA_API_URL = 'https://mayipan.eu.cc/gab_summary.html';
 let autoSyncInterval = null, isAutoSyncing = false;
 function isSyncTimeAllowed(){const n=new Date();return n.getHours()===21&&n.getMinutes()>=0&&n.getMinutes()<=10;}
@@ -592,7 +602,6 @@ function toggleAutoSync(){
 }
 function startTimeWindowMonitor(){setInterval(()=>{if(!isSyncTimeAllowed()&&isAutoSyncing){clearInterval(autoSyncInterval);autoSyncInterval=null;isAutoSyncing=false;document.getElementById('autoSyncBtn').innerText='⚙️ 同步关';showToast('⏰ 已超出同步时段，自动同步已关闭');}},10000);}
 
-// ==================== 默认规则采集 ====================
 const RANGE_API_URL='https://mayipan.eu.cc/default_rules.txt';
 async function onlineCollectRange(){
     const btn=document.getElementById('onlineCollectRangeBtn'),orig=btn.innerText;
@@ -610,7 +619,6 @@ async function onlineCollectRange(){
 function openVip(){window.open('/vip.html','_blank');}
 function openPm(){window.open('/xinao.html','_blank');}
 
-// ==================== 精选区间模块 ====================
 let currentEditingType=null,currentEditingA=null,currentEditingIndex=null,pendingEdit=null,isSaving=false;
 const editInputElem=document.getElementById('editRuleInput'),editPanelElem=document.getElementById('editRulePanel');
 function saveRuleEdit(){if(isSaving||!pendingEdit)return;isSaving=true;const newValue=editInputElem.value.trim();try{if(newValue&&newValue!==pendingEdit.oldValue){currentEditingType=pendingEdit.type;currentEditingA=pendingEdit.a;currentEditingIndex=pendingEdit.index;if(!applyUserEditedRule(newValue))console.warn('save fail');}else if(!newValue)showToast('❌ 规则不能为空');}catch(e){showToast('❌ 保存错误');}finally{editPanelElem.style.display='none';pendingEdit=null;currentEditingType=null;currentEditingA=null;currentEditingIndex=null;isSaving=false;}}
@@ -637,7 +645,6 @@ function doImportWarm(){const{warm}=window.selectCurrentData;const list=[];for(l
 function importColdRules(){if(!window.selectCurrentData){refreshSelectRange();setTimeout(()=>{if(window.selectCurrentData)doImportCold();else showToast('无数据');},150);return;}doImportCold();}
 function doImportCold(){const{cold}=window.selectCurrentData;const list=[];for(let[a,intervals]of cold.entries())for(let inv of intervals)list.push({a:a.toString(),b:inv});importRulesToConfig(list);}
 
-// ==================== 初始化 ====================
 function initApp() {
     storage.loadInput(); storage.loadRange();
     if (!document.getElementById('rangeData').value.trim()) { document.getElementById('rangeData').value = ''; storage.saveRange(); }
@@ -667,12 +674,16 @@ function initApp() {
     document.getElementById('authCardDeviceCode').innerText = getDeviceUUID();
 }
 
-// 授权卡片交互
 document.getElementById('authCardDeviceCode').onclick = () => copyToClipboard(getDeviceUUID(), 'authCardTip');
 document.getElementById('authCardVerifyBtn').onclick = async () => {
     const code = document.getElementById('authCardCode').value.trim();
-    if (!code) return;
-    let tip = document.getElementById('authCardTip');
+    const tip = document.getElementById('authCardTip');
+    if (!code) {
+        clearAuth();
+        tip.textContent = '无效';
+        tip.style.color = '#ff6666';
+        return;
+    }
     tip.textContent = '验证中...';
     if (await verifyAuthWithWorker(code)) {
         saveAuthCode(code);
