@@ -2,104 +2,695 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, maximum-scale=2.0, minimum-scale=1.0, viewport-fit=cover">
-    <title>蚂蚁数据 · 公告中心</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, viewport-fit=cover">
+    <title>新澳门 · 特码采集系统</title>
     <style>
         * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-        html,body { width:100%; min-height:100vh; background:#121212; color:#eee; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif; padding:20px; }
-        .container { max-width:650px; margin:0 auto; }
-        .header { text-align:center; margin-bottom:30px; }
-        .header h1 { font-size:28px; color:#fff; margin-bottom:8px; }
-        .header .subtitle { color:#888; font-size:14px; }
-        .card { background:#1a1a1a; border-radius:20px; padding:24px; border:1px solid #2a2a2a; margin-bottom:20px; }
-        .section-title { font-size:18px; margin-bottom:16px; color:#fff; border-left:3px solid #007bff; padding-left:10px; display:flex; align-items:center; gap:8px; }
-        .announcement-list { display:flex; flex-direction:column; gap:16px; }
-        .announcement-item { background:#222; border-radius:12px; padding:16px; border:1px solid #2c2c2c; transition:border-color 0.2s; }
-        .announcement-item:hover { border-color:#007bff; }
-        .announcement-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; flex-wrap:wrap; gap:8px; }
-        .announcement-date { font-size:12px; color:#888; background:#252525; padding:4px 10px; border-radius:40px; }
-        .announcement-badge { font-size:11px; padding:4px 10px; border-radius:40px; font-weight:500; }
-        .badge-new { background:#007bff; color:#fff; }
-        .badge-hot { background:#f97316; color:#fff; }
-        .badge-info { background:#3b82f6; color:#fff; }
-        .announcement-title { font-size:16px; font-weight:bold; color:#fff; margin-bottom:6px; }
-        .announcement-content { font-size:14px; color:#bbb; line-height:1.6; }
-        .announcement-content a { color:#007bff; text-decoration:none; }
-        .announcement-content a:hover { text-decoration:underline; }
-        .contact-row { margin-top:20px; text-align:center; font-size:14px; color:#888; }
-        .contact-row a { color:#007bff; text-decoration:none; }
-        .contact-row a:hover { text-decoration:underline; }
-        .footer { text-align:center; margin-top:20px; font-size:12px; color:#555; }
-        .footer a { color:#555; text-decoration:underline; }
+        body { background:#121212; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, sans-serif; padding:12px; color:#e0e0e0; font-size:14px; max-width:800px; margin:0 auto; }
+
+        .auth-card {
+            display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; padding: 12px;
+            background: #1e1e1e; border-radius: 16px; border: 1px solid #2c2c2c;
+        }
+        .auth-card .device-code {
+            font-family: monospace; background: #252525; padding: 0 12px; border-radius: 20px; color: #facc15;
+            font-size: 12px; cursor: pointer; height: 36px; line-height: 36px; display: flex; align-items: center;
+            overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: none; width: auto;
+        }
+        .auth-card input {
+            background: #252525; border: 1px solid #2c2c2c; border-radius: 8px; padding: 0 12px; color: #eee;
+            font-size: 13px; width: 120px; height: 36px; line-height: 36px;
+        }
+        .auth-card button {
+            background: #252525; color: #fff; border: none; border-radius: 8px; font-size: 13px; cursor: pointer;
+            white-space: nowrap; height: 36px; line-height: 36px; flex: none; width: auto; min-width: 0; padding: 0 16px;
+        }
+        .auth-card button:active { transform: scale(0.96); opacity: 0.9; }
+        .auth-card .auth-tip { color: #aaa; font-size: 11px; margin-left: 4px; white-space: nowrap; flex-shrink: 0; }
+
+        .card { background:#1e1e1e; border-radius:20px; padding:16px; margin-bottom:16px; border:1px solid #2c2c2c; transition: opacity 0.3s; }
+        .card.disabled-section { opacity: 0.4; pointer-events: none; }
+        .card-header { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:14px; padding-bottom:10px; border-bottom:1px solid #2c2c2c; }
+        .card-header h3 { margin:0; font-size:1rem; font-weight:600; color:#aaa; }
+        .toggle-btn { background:#2a2a2a; border:none; padding:4px 12px; border-radius:20px; font-size:11px; cursor:pointer; color:#ccc; }
+        .toggle-btn:active { background:#3a3a3a; transform:scale(0.96); }
+        .card-content.collapsed { display:none; }
+        h1 { font-size:1.4rem; font-weight:700; margin:0 0 4px 0; background:linear-gradient(135deg,#c0c0c0,#f0f0f0); -webkit-background-clip:text; background-clip:text; color:transparent; }
+        .sub { color:#777; margin-bottom:16px; font-size:0.7rem; border-left:3px solid #4f46e5; padding-left:10px; }
+        button { background:#2a2a2a; border:none; padding:8px 16px; border-radius:40px; font-weight:500; color:#e0e0e0; cursor:pointer; transition:0.2s; font-size:13px; }
+        button.primary { background:#4f46e5; color:white; }
+        button.success { background:#10b981; color:white; }
+        .flex-between { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-top:12px; font-size:13px; }
+        .filter-row { display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:12px; }
+        .filter-row input { background:#0d0d0d; border:1px solid #2c2c2c; border-radius:40px; padding:6px 12px; color:#e0e0e0; width:90px; text-align:center; }
+        .freq-table { width:100%; border-collapse:collapse; margin-top:8px; font-size:12px; table-layout:fixed; }
+        .freq-table th, .freq-table td { padding:8px 4px; text-align:center; border-bottom:1px solid #2c2c2c; vertical-align:middle; word-break:keep-all; }
+        .freq-table th:nth-child(1) { width:12%; } .freq-table th:nth-child(2) { width:10%; } .freq-table th:nth-child(3) { width:20%; }
+        .freq-table th:nth-child(4) { width:15%; } .freq-table th:nth-child(5) { width:15%; } .freq-table th:nth-child(6) { width:28%; }
+        .checkbox-col { text-align:center; }
+        .rule-caption { background:#0d0d0d; border-radius:12px; padding:6px 12px; margin-bottom:12px; color:#4ade80; font-size:12px; text-align:center; cursor:text; outline:none; transition:background 0.1s; }
+        .rule-caption:hover { background:#1a1a1a; }
+        .rule-caption:focus { background:#1a1a1a; border:1px solid #4f46e5; }
+        .table-footer-bar { display:flex; justify-content:flex-end; align-items:center; gap:16px; margin-top:12px; padding-top:8px; border-top:1px solid #2c2c2c; }
+        .select-all-wrapper { background:#0d0d0d; padding:5px 12px; border-radius:32px; border:1px solid #2c2c2c; }
+        .copy-selected-btn { background:#10b981; }
+        .zodiac-rank-table { width:100%; border-collapse:collapse; font-size:12px; margin-top:8px; table-layout:fixed; }
+        .zodiac-rank-table th, .zodiac-rank-table td { padding:8px 4px; text-align:center; border-bottom:1px solid #2c2c2c; vertical-align:middle; }
+        .zodiac-rank-table th:nth-child(1) { width:12%; } .zodiac-rank-table th:nth-child(2) { width:10%; } .zodiac-rank-table th:nth-child(3) { width:25%; }
+        .zodiac-rank-table th:nth-child(4) { width:15%; } .zodiac-rank-table th:nth-child(5) { width:15%; } .zodiac-rank-table th:nth-child(6) { width:23%; }
+        .miss-numbers { background:#0d0d0d; border-radius:16px; padding:12px; margin-top:12px; }
+        .reason { color:#6b7280; font-size:11px; margin-top:10px; }
+        .toast-msg { position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:#2a2a2a; padding:8px 18px; border-radius:40px; z-index:10001; white-space:nowrap; font-size:13px; }
+        footer { text-align:center; font-size:10px; color:#444; margin-top:20px; }
+        @media (max-width:560px) { .freq-table th, .freq-table td, .zodiac-rank-table th, .zodiac-rank-table td { padding:4px 2px; font-size:10px; } }
+        #currentDateTime { font-family: monospace; background:#0d0d0d; padding:4px 12px; border-radius:40px; font-size:12px; letter-spacing:0.5px; border:1px solid #2c2c2c; white-space:nowrap; }
+        .scroll-container {
+            background: #0d0d0d; border-radius: 30px; padding: 6px 12px; margin: 12px 0 8px 0; overflow: hidden;
+            white-space: nowrap; box-sizing: border-box; border: 1px solid #2c2c2c;
+        }
+        .scroll-text {
+            display: inline-block; padding-left: 100%; animation: scroll-left 20s linear infinite;
+            font-size: 13px; color: #facc15;
+        }
+        @keyframes scroll-left {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-100%); }
+        }
+        .scroll-container:hover .scroll-text { animation-play-state: paused; }
+        .license-tag {
+            background: #0d0d0d; border-radius: 30px; padding: 4px 12px; font-size: 12px; display: inline-block; margin-bottom: 8px;
+        }
     </style>
 </head>
 <body>
+
+<div id="appContainer">
     <div class="container">
-        <div class="header">
-            <h1>📢 蚂蚁数据公告中心</h1>
-            <p class="subtitle">盘口工具更新日志 · 服务状态 · 授权说明</p>
+        <!-- 顶部授权卡片 -->
+        <div class="auth-card" id="authCard">
+            <span class="device-code" id="deviceIdDisplay">加载中...</span>
+            <input type="password" id="authCodeInput" placeholder="授权码" autocomplete="off">
+            <button id="verifyBtn">验证</button>
+            <span id="authStatusMsg" class="auth-tip"></span>
         </div>
 
-        <!-- 置顶重要公告 -->
-        <div class="card">
-            <div class="section-title">📌 重要通知</div>
-            <div class="announcement-item" style="border-left:3px solid #f97316;">
-                <div class="announcement-header">
-                    <span class="announcement-badge badge-hot">🔥 重要</span>
-                    <span class="announcement-date">2026-04-25</span>
+        <!-- 业务卡片 -->
+        <div class="card" id="mainInfoCard">
+            <h1>🔴 新澳门渗透采集</h1>
+            <div class="sub">每天自动渗透采集最新新澳门盘口数据</div>
+            <div class="license-tag" id="licenseInfo">授权状态: 加载中...</div>
+            <div class="flex-between">
+                <span>🟢 总组数：<strong id="totalPeriods">0</strong></span>
+                <span id="currentDateTime">🔵 时间：--:--:--</span>
+            </div>
+            <div class="filter-row" style="margin-top: 12px;">
+                <label>🔴 选择组数：</label>
+                <input type="number" id="periodLimit" value="30" min="1" step="1">
+                <span style="font-size:11px;">（推荐30组，0=全部）</span>
+                <button id="onlineCollectBtn" class="success" style="margin-left: auto;">🌐 在线采集</button>
+            </div>
+            <div class="reason">💡 说明：特码热度值高、生肖占比大的中奖率高</div>
+        </div>
+
+        <div class="card" id="freqCard">
+            <div class="card-header"><h3>🔴 特码统计</h3><button class="toggle-btn" data-target="freq-content">▼ 隐藏</button></div>
+            <div id="freq-content" class="card-content">
+                <div class="scroll-container" id="scrollContainer">
+                    <div class="scroll-text" id="scrollText">加载通知中...</div>
                 </div>
-                <div class="announcement-title">蚂蚁采集APP  正式发布</div>
-                <div class="announcement-content">
-                    安卓端盘口采集工具已正式上线，支持 自动渗透采集盘口数据与云端同步，自动更新APP，仅需 2.5 MB。请前往下载中心获取，使用一机一码授权。
-					注意： 所有对外的链接全部取消，授权采用一机一码制防白嫖。
-                </div>
+                <div id="rankRuleCaption" class="rule-caption" contenteditable="true">等待采集数据</div>
+                <div id="freqTable"></div>
+                <div class="table-footer-bar"><div class="select-all-wrapper"><label><input type="checkbox" id="selectAllCheckbox"> 全选/取消</label></div><button id="copySelectedNumbersBtn" class="copy-selected-btn">📋 复制号码</button></div>
             </div>
         </div>
 
-        <!-- 历史公告列表 -->
-        <div class="card">
-            <div class="section-title">📋 全部公告</div>
-            <div class="announcement-list">
-                <div class="announcement-item">
-                    <div class="announcement-header">
-                        <span class="announcement-badge badge-new">✨ 更新</span>
-                        <span class="announcement-date">2026-04-24</span>
-                    </div>
-                    <div class="announcement-title">统计系统 v9.3.1 </div>
-                    <div class="announcement-content">
-                        蚂蚁数据采集统计系统，每周提前预约，每周最多50人，只接懂数据的高端会员，30码以内中奖率90%以上（系统不对非会员开放下载）。
-                    </div>
-                </div>
-
-                <div class="announcement-item">
-                    <div class="announcement-header">
-                        <span class="announcement-badge badge-info">ℹ️ 说明</span>
-                        <span class="announcement-date">2026-04-22</span>
-                    </div>
-                    <div class="announcement-title">关于自动同步时段限制</div>
-                    <div class="announcement-content">
-                        为减少服务器压力，统计系统自动同步功能仅限每日 21:00‑21:10 开启，请务必在时间段登陆操作，要同步的有数据和默认规则。
-                    </div>
-                </div>
-
-                <div class="announcement-item">
-                    <div class="announcement-header">
-                        <span class="announcement-badge badge-info">ℹ️ 说明</span>
-                        <span class="announcement-date">2026-04-18</span>
-                    </div>
-                    <div class="announcement-title">授权码获取渠道</div>
-                    <div class="announcement-content">
-                        所有工具均采用一机一码授权，请将设备 UUID 发送至 Telegram 机器人 <a href="https://t.me/mayiya_bot" target="_blank">@mayiya_bot</a> 获取对应授权码。
-                    </div>
-                </div>
+        <div class="card" id="zodiacCard">
+            <div class="card-header"><h3>🔵 生肖统计</h3><button class="toggle-btn" data-target="zodiac-content">▼ 隐藏</button></div>
+            <div id="zodiac-content" class="card-content">
+                <div id="zodiacRankingContainer"></div>
+                <div class="table-footer-bar"><div class="select-all-wrapper"><label><input type="checkbox" id="zodiacSelectAllCheckbox"> 全选/取消</label></div><button id="copySelectedZodiacBtn" class="copy-selected-btn">📋 复制生肖</button></div>
+                <div class="reason">⭐ 每天21：00数据采集止，会员600元/周 飞机 @mayi2036</div>
             </div>
         </div>
 
-        <div class="contact-row">
-            📡 官网：<a href="/index.html" target="_blank">官网首页</a> &nbsp;|&nbsp;
-            🤖 授权机器人：<a href="https://t.me/mayiya_bot" target="_blank">@mayiya_bot</a>
+        <div class="card" id="missCard">
+            <div class="card-header"><h3>⚠️ 遗漏号码（打不中）</h3><button class="toggle-btn" data-target="miss-content">▼ 隐藏</button></div>
+            <div id="miss-content" class="card-content"><div id="missNumbers" class="miss-numbers">等待采集...</div></div>
         </div>
-        <div class="footer">© 2026 蚂蚁数据 · 公告中心</div>
+
+        <footer>© 2026 蚂蚁数据 · 版权所有</footer>
     </div>
+</div>
+
+<script>
+    // ==================== 授权与采集 ====================
+    const WORKER_URL = 'https://api.mycm.cc.cd';
+    const STORAGE_KEY = "ANT_COLLECT_AUTH";
+    const AUTHORIZED_UUID_KEY = "ANT_COLLECT_AUTHORIZED_UUID";
+    const TEMP_UUID_KEY = "ANT_COLLECT_TEMP_UUID";
+
+    function generateUUID() {
+        if (crypto.randomUUID) return crypto.randomUUID();
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+            const r = Math.random() * 16 | 0;
+            const v = c === 'x' ? r : (r & 0x3 | 0x8);
+            return v.toString(16);
+        });
+    }
+
+    function getDeviceUUID() {
+        let authorized = localStorage.getItem(AUTHORIZED_UUID_KEY);
+        if (authorized) return authorized;
+        let temp = localStorage.getItem(TEMP_UUID_KEY);
+        if (!temp) {
+            temp = generateUUID();
+            localStorage.setItem(TEMP_UUID_KEY, temp);
+        }
+        return temp;
+    }
+
+    function finalizeAuthorization() {
+        let current = getDeviceUUID();
+        if (current) localStorage.setItem(AUTHORIZED_UUID_KEY, current);
+    }
+
+    function clearAuthorization() {
+        localStorage.removeItem(STORAGE_KEY);
+    }
+
+    function updateDeviceDisplay() {
+        const deviceId = getDeviceUUID();
+        document.getElementById('deviceIdDisplay').innerText = deviceId;
+        document.getElementById('deviceIdDisplay').onclick = () => copyToClipboard(deviceId, '设备码已复制');
+    }
+
+    async function fetchWithTimeout(url, options = {}, timeout = 10000) {
+        const controller = new AbortController();
+        const id = setTimeout(() => controller.abort(), timeout);
+        try {
+            const response = await fetch(url, { ...options, signal: controller.signal });
+            clearTimeout(id);
+            return response;
+        } catch (err) {
+            clearTimeout(id);
+            throw err;
+        }
+    }
+
+    async function verifyAuthWithWorker(authCode) {
+        const deviceCode = getDeviceUUID();
+        if (!deviceCode || !authCode) return false;
+        try {
+            const resp = await fetchWithTimeout(`${WORKER_URL}/verify`, {
+                method: 'GET',
+                headers: { 'X-Device-Code': deviceCode, 'X-Auth-Code': authCode }
+            }, 10000);
+            const data = await resp.json();
+            return data.valid === true;
+        } catch (err) {
+            console.error('验证请求失败', err);
+            return false;
+        }
+    }
+
+    function saveAuthCode(authCode) {
+        localStorage.setItem(STORAGE_KEY, authCode);
+    }
+
+    function enableStatistics() {
+        document.getElementById('freqCard').classList.remove('disabled-section');
+        document.getElementById('zodiacCard').classList.remove('disabled-section');
+        document.getElementById('missCard').classList.remove('disabled-section');
+        document.getElementById('licenseInfo').innerText = '✅ 已授权';
+    }
+
+    function disableStatistics() {
+        document.getElementById('freqCard').classList.add('disabled-section');
+        document.getElementById('zodiacCard').classList.add('disabled-section');
+        document.getElementById('missCard').classList.add('disabled-section');
+        document.getElementById('licenseInfo').innerText = '❌ 未授权';
+        clearAllData();
+    }
+
+    function clearAllData() {
+        allRecords = [];
+        currentDisplayRecords = [];
+        localStorage.removeItem('last_collected_data');
+        renderAll();
+    }
+
+    function handleAuthInputChange() {
+        const input = document.getElementById('authCodeInput');
+        if (!input) return;
+        const code = input.value.trim();
+        if (!code) {
+            clearAuthorization();
+            updateDeviceDisplay();
+            document.getElementById('authStatusMsg').innerText = '未授权';
+            document.getElementById('authStatusMsg').style.color = '#ff6666';
+            disableStatistics();
+        }
+    }
+
+    // ==================== 业务逻辑 ====================
+    let allRecords = [], currentDisplayRecords = [];
+    let autoCollectDone = false;
+
+    const RED_SET = new Set([1,2,7,8,12,13,18,19,23,24,29,30,34,35,40,45,46]);
+    const BLUE_SET = new Set([3,4,9,10,14,15,20,25,26,31,36,37,41,42,47,48]);
+    const GREEN_SET = new Set([5,6,11,16,17,21,22,27,28,32,33,38,39,43,44,49]);
+    function getColorType(n){ if(RED_SET.has(n)) return 'red'; if(BLUE_SET.has(n)) return 'blue'; if(GREEN_SET.has(n)) return 'green'; return 'gray'; }
+    function getColorSymbol(n){ let t=getColorType(n); if(t==='red') return '🔴'; if(t==='blue') return '🔵'; if(t==='green') return '🟢'; return '⚪'; }
+    const ZODIAC_NAMES = ['鼠','牛','虎','兔','龙','蛇','马','羊','猴','鸡','狗','猪'];
+    const ZODIAC_EMOJI = ['🐭','🐮','🐯','🐰','🐉','🐍','🐴','🐑','🐵','🐔','🐶','🐷'];
+    function getZodiacEmoji(name){ let idx=ZODIAC_NAMES.indexOf(name); return idx!==-1?ZODIAC_EMOJI[idx]:'❓'; }
+    function extractZodiacsFromLine(line){
+        if(!line) return [];
+        const map = {'鼠':'鼠','牛':'牛','虎':'虎','兔':'兔','龍':'龙','龙':'龙','蛇':'蛇','馬':'马','马':'马','羊':'羊','猴':'猴','雞':'鸡','鸡':'鸡','狗':'狗','豬':'猪','猪':'猪'};
+        const pattern = /[鼠牛虎兔龍龙蛇馬马羊猴雞鸡狗豬猪]/g;
+        let matches = line.match(pattern);
+        if(!matches) return [];
+        let res = [];
+        for(let m of matches){
+            let std = map[m];
+            if(ZODIAC_NAMES.includes(std)) res.push(std);
+            if(res.length === 6) break;
+        }
+        return res;
+    }
+    function extractNumbersFromLine(line){
+        let nums = [];
+        let m = line.match(/\b\d{1,2}\b/g);
+        if(m) for(let v of m){ let n=parseInt(v,10); if(n>=1&&n<=49) nums.push(n); }
+        return nums.slice(0,6);
+    }
+    function extractColorsFromLine(line){
+        if(!line) return [];
+        let symbols = line.match(/[🔴🟢🔵]/g);
+        if(!symbols) return [];
+        return symbols.slice(0,6);
+    }
+    function detectLotteryType(line) {
+        if (line.includes('新澳门')) return '新澳门六合彩';
+        if (line.includes('香港')) return '香港六合彩';
+        if (line.includes('老澳')) return '老澳';
+        return null;
+    }
+    function parseAllData(text){
+        let lines = text.split(/\r?\n/);
+        let records = [];
+        let i = 0;
+        while(i < lines.length){
+            let line = lines[i].trim();
+            if(!line){ i++; continue; }
+            let periodMatch = line.match(/(?:新澳门|香港|老澳)?\s*第?\s*:?\s*(\d+)\s*期/);
+            if(!periodMatch){
+                periodMatch = line.match(/(?:新澳门|香港|老澳)?\s*(\d+)\s*期/);
+            }
+            if(periodMatch){
+                let period = periodMatch[1];
+                let lotteryType = detectLotteryType(line) || '六合彩';
+                let nextIdx = i+1;
+                let numLine = "", zodiacLine = "", colorLine = "";
+                while(nextIdx < lines.length && !numLine){
+                    let l = lines[nextIdx].trim();
+                    if(l && extractNumbersFromLine(l).length >= 6) numLine = l;
+                    else if(l && extractZodiacsFromLine(l).length >= 6) zodiacLine = l;
+                    else if(l && extractColorsFromLine(l).length >= 6) colorLine = l;
+                    nextIdx++;
+                    if(numLine && zodiacLine && colorLine) break;
+                }
+                if(!numLine && i+1 < lines.length) numLine = lines[i+1].trim();
+                if(!zodiacLine && i+2 < lines.length) zodiacLine = lines[i+2].trim();
+                if(!colorLine && i+3 < lines.length) colorLine = lines[i+3].trim();
+                
+                let numbers = extractNumbersFromLine(numLine);
+                let zodiacs = extractZodiacsFromLine(zodiacLine);
+                let colors = extractColorsFromLine(colorLine);
+                
+                if(numbers.length < 6 && i+2 < lines.length){
+                    let extra = extractNumbersFromLine(lines[i+2]);
+                    if(extra.length) numbers = extra.slice(0,6);
+                }
+                if(zodiacs.length < 6 && i+3 < lines.length){
+                    let extra = extractZodiacsFromLine(lines[i+3]);
+                    if(extra.length) zodiacs = extra.slice(0,6);
+                }
+                if(numbers.length >= 6 && zodiacs.length >= 6){
+                    let first6 = numbers.slice(0,6);
+                    let first6Zod = zodiacs.slice(0,6);
+                    let finalColors = colors.length >=6 ? colors.slice(0,6) : first6.map(n=>getColorSymbol(n));
+                    records.push({ period, numbers: first6, colors: finalColors, zodiacs: first6Zod, lotteryType });
+                }
+                i += 4;
+            } else {
+                i++;
+            }
+        }
+        records.sort((a,b)=>parseInt(a.period)-parseInt(b.period));
+        return records;
+    }
+
+    function countFrequency(records){
+        let f = new Array(50).fill(0);
+        for(let r of records) for(let n of r.numbers) if(n>=1&&n<=49) f[n]++;
+        return f;
+    }
+    function countRecentFrequency(records){
+        let f = new Array(50).fill(0);
+        let recent = records.slice(-7);
+        for(let r of recent) for(let n of r.numbers) if(n>=1&&n<=49) f[n]++;
+        return f;
+    }
+    function countZodiacs(records){
+        let cnt={}; for(let n of ZODIAC_NAMES) cnt[n]=0;
+        for(let r of records) for(let z of r.zodiacs) if(cnt[z]!==undefined) cnt[z]++;
+        return cnt;
+    }
+    function countRecentZodiacs(records){
+        let cnt={}; for(let n of ZODIAC_NAMES) cnt[n]=0;
+        let recent = records.slice(-7);
+        for(let r of recent) for(let z of r.zodiacs) if(cnt[z]!==undefined) cnt[z]++;
+        return cnt;
+    }
+
+    function getSortedNumbersAll(freqTotal, freqRecent){
+        let arr = [];
+        for(let i=1;i<=49;i++){
+            arr.push({ num: i, total: freqTotal[i], recent: freqRecent[i] });
+        }
+        arr.sort((a,b)=>{
+            if(a.total !== b.total) return b.total - a.total;
+            if(a.recent !== b.recent) return b.recent - a.recent;
+            return a.num - b.num;
+        });
+        return arr;
+    }
+    function getSortedZodiacs(zodiacTotal, zodiacRecent){
+        let arr = [];
+        for(let name of ZODIAC_NAMES){
+            if(zodiacTotal[name]>0){
+                arr.push({ name, total: zodiacTotal[name], recent: zodiacRecent[name] });
+            }
+        }
+        arr.sort((a,b)=>{
+            if(a.total !== b.total) return b.total - a.total;
+            if(a.recent !== b.recent) return b.recent - a.recent;
+            let idxA = ZODIAC_NAMES.indexOf(a.name);
+            let idxB = ZODIAC_NAMES.indexOf(b.name);
+            return idxA - idxB;
+        });
+        return arr;
+    }
+
+    function updateNextPeriodCaption() {
+        const captionDiv = document.getElementById('rankRuleCaption');
+        if (!captionDiv) return;
+        if (!allRecords.length) {
+            captionDiv.innerText = '等待采集数据';
+            return;
+        }
+        const lastRecord = allRecords[allRecords.length - 1];
+        if (!lastRecord || !lastRecord.period) return;
+        let periodNum = parseInt(lastRecord.period, 10);
+        if (isNaN(periodNum)) return;
+        let nextPeriod = periodNum + 1;
+        let nextPeriodStr = nextPeriod.toString().padStart(7, '0');
+        let lotteryType = lastRecord.lotteryType || '六合彩';
+        let captionText = '';
+        if (lotteryType === '老澳') captionText = `老澳第:${nextPeriodStr}期`;
+        else if (lotteryType === '香港六合彩') captionText = `香港六合彩第:${nextPeriodStr}期`;
+        else if (lotteryType === '新澳门六合彩') captionText = `新澳门六合彩第:${nextPeriodStr}期`;
+        else captionText = `${lotteryType}第:${nextPeriodStr}期`;
+        captionDiv.innerText = captionText;
+    }
+
+    function renderAll(){
+        if(!currentDisplayRecords.length){
+            document.getElementById('totalPeriods').innerText = allRecords.length;
+            document.getElementById('freqTable').innerHTML = '';
+            document.getElementById('missNumbers').innerHTML = '<div class="reason">无数据</div>';
+            document.getElementById('zodiacRankingContainer').innerHTML = '';
+            updateNextPeriodCaption();
+            return;
+        }
+        let freqTotal = countFrequency(currentDisplayRecords);
+        let freqRecent = countRecentFrequency(currentDisplayRecords);
+        document.getElementById('totalPeriods').innerText = allRecords.length;
+
+        let sortedNumbers = getSortedNumbersAll(freqTotal, freqRecent);
+        let tableHtml = `<table class="freq-table"><thead><tr><th class="checkbox-col">✅</th><th>排名</th><th>特码</th><th>频次</th><th>近期</th><th>热度值</th></tr></thead><tbody>`;
+        for(let i=0;i<sortedNumbers.length;i++){
+            let it = sortedNumbers[i];
+            let heat = '';
+            if(it.total >= 4) heat = '🔥热';
+            else if(it.total >= 2) heat = '🌡️温';
+            else heat = '❄️冷';
+            tableHtml += `<tr><td class="checkbox-col"><input type="checkbox" class="num-checkbox" data-num="${it.num}"></td><td>${i+1}</td><td>${getColorSymbol(it.num)} ${it.num.toString().padStart(2,'0')}</td><td>${it.total}</td><td>${it.recent}</td><td>${heat}</td></tr>`;
+        }
+        tableHtml += `</tbody></table>`;
+        document.getElementById('freqTable').innerHTML = tableHtml;
+
+        let miss = [];
+        for(let i=1;i<=49;i++) if(freqTotal[i]===0) miss.push(i);
+        let missHtml = miss.length ? `<div class="miss-title">遗漏 ${miss.length}个</div><div>${miss.map(n=>n.toString().padStart(2,'0')).join(', ')}</div>` : '<div>✅全出现</div>';
+        document.getElementById('missNumbers').innerHTML = missHtml;
+
+        let zodiacTotal = countZodiacs(currentDisplayRecords);
+        let zodiacRecent = countRecentZodiacs(currentDisplayRecords);
+        let totalZod = currentDisplayRecords.reduce((s,r)=>s+r.zodiacs.length,0);
+        let sortedZod = getSortedZodiacs(zodiacTotal, zodiacRecent);
+        let rankHtml = `<div class="reason">📊 生肖排名 打法以占比率主高防低 </div><table class="zodiac-rank-table"><thead><tr><th class="checkbox-col">✅</th><th>排名</th><th>生肖</th><th>频次</th><th>近期</th><th>占比</th></tr></thead><tbody>`;
+        for(let i=0;i<sortedZod.length;i++){
+            let z = sortedZod[i];
+            let p = totalZod ? ((z.total/totalZod)*100).toFixed(1) : 0;
+            rankHtml += `<tr><td class="checkbox-col"><input type="checkbox" class="zodiac-checkbox" data-zodiac="${z.name}"></td><td>${i+1}</td><td>${getZodiacEmoji(z.name)} ${z.name}</td><td>${z.total}次</td><td>${z.recent}次</td><td>${p}%</td></tr>`;
+        }
+        rankHtml += `</tbody></table>`;
+        document.getElementById('zodiacRankingContainer').innerHTML = rankHtml;
+
+        const numCheckboxes = document.querySelectorAll('.num-checkbox');
+        const zodiacCheckboxes = document.querySelectorAll('.zodiac-checkbox');
+        const selectAllNum = document.getElementById('selectAllCheckbox');
+        const selectAllZod = document.getElementById('zodiacSelectAllCheckbox');
+        const updateNumSelectAll = () => { if(selectAllNum) selectAllNum.checked = numCheckboxes.length > 0 && Array.from(numCheckboxes).every(cb => cb.checked); };
+        const updateZodSelectAll = () => { if(selectAllZod) selectAllZod.checked = zodiacCheckboxes.length > 0 && Array.from(zodiacCheckboxes).every(cb => cb.checked); };
+        numCheckboxes.forEach(cb => cb.addEventListener('change', updateNumSelectAll));
+        zodiacCheckboxes.forEach(cb => cb.addEventListener('change', updateZodSelectAll));
+        updateNumSelectAll();
+        updateZodSelectAll();
+        updateNextPeriodCaption();
+    }
+
+    function autoFilter(){
+        let limit = parseInt(document.getElementById('periodLimit').value);
+        if(isNaN(limit) || limit<=0) currentDisplayRecords = [...allRecords];
+        else currentDisplayRecords = allRecords.slice(-limit);
+        renderAll();
+    }
+
+    async function copyToClipboard(text, successMsg) {
+        if (!text || text.length === 0) { showToast('没有可复制的内容'); return false; }
+        if (navigator.clipboard && window.isSecureContext) {
+            try { await navigator.clipboard.writeText(text); showToast(successMsg); return true; } catch (err) { console.warn(err); }
+        }
+        try {
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.style.position = 'fixed'; textarea.style.top = '-9999px';
+            document.body.appendChild(textarea);
+            textarea.select();
+            const success = document.execCommand('copy');
+            document.body.removeChild(textarea);
+            if (success) { showToast(successMsg); return true; }
+            throw new Error('execCommand failed');
+        } catch (err) { console.error(err); showToast('复制失败，请手动复制'); return false; }
+    }
+
+    function copySelectedNumbers() {
+        let checked = document.querySelectorAll('.num-checkbox:checked');
+        if (checked.length === 0) { showToast('未勾选号码'); return; }
+        let nums = Array.from(checked).map(cb => cb.getAttribute('data-num'));
+        copyToClipboard(nums.join(', '), `已复制 ${nums.length} 个号码`);
+    }
+    function copySelectedZodiac() {
+        let checked = document.querySelectorAll('.zodiac-checkbox:checked');
+        if (checked.length === 0) { showToast('未勾选生肖'); return; }
+        let zodiacs = Array.from(checked).map(cb => cb.getAttribute('data-zodiac'));
+        copyToClipboard(zodiacs.join('、'), `已复制 ${zodiacs.length} 个生肖`);
+    }
+    function toggleSelectAll(){ let c = document.getElementById('selectAllCheckbox').checked; document.querySelectorAll('.num-checkbox').forEach(cb=>cb.checked=c); }
+    function toggleZodiacAll(){ let c = document.getElementById('zodiacSelectAllCheckbox').checked; document.querySelectorAll('.zodiac-checkbox').forEach(cb=>cb.checked=c); }
+    function showToast(msg){ let t = document.createElement('div'); t.className = 'toast-msg'; t.innerText = msg; document.body.appendChild(t); setTimeout(()=>t.remove(), 2000); }
+
+    const DATA_API_URL = 'https://mayipan.eu.cc/lottery_data_api.html';
+
+    async function onlineCollect() {
+        const btn = document.getElementById('onlineCollectBtn');
+        const originalText = btn.innerText;
+
+        // 优先用输入框中的授权码，其次已保存的
+        const inputCode = document.getElementById('authCodeInput').value.trim();
+        const savedCode = localStorage.getItem(STORAGE_KEY);
+        const authCode = inputCode || savedCode;
+
+        if (!authCode) {
+            showToast('❌ 未授权，请输入授权码');
+            return;
+        }
+
+        // 验证提示
+        btn.innerText = '⏳ 验证中...';
+        btn.disabled = true;
+
+        const valid = await verifyAuthWithWorker(authCode);
+        if (!valid) {
+            showToast('❌ 授权无效，请重新输入');
+            if (savedCode) {
+                clearAuthorization();
+                updateDeviceDisplay();
+                disableStatistics();
+            }
+            handleAuthInputChange();
+            btn.innerText = originalText;
+            btn.disabled = false;
+            return;
+        }
+
+        // 验证成功，保存授权码（如有必要）
+        if (!savedCode || authCode !== savedCode) {
+            saveAuthCode(authCode);
+            finalizeAuthorization();
+            updateDeviceDisplay();
+            enableStatistics();
+            document.getElementById('authStatusMsg').innerText = '✅ 已授权';
+            document.getElementById('authStatusMsg').style.color = '#6cce6c';
+        }
+
+        // 开始采集
+        btn.innerText = '⏳ 采集中...';
+        try {
+            const url = DATA_API_URL + '?t=' + Date.now();
+            const response = await fetch(url, { cache: 'no-cache' });
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            const dataText = await response.text();
+            if (!dataText || dataText.trim() === '') { showToast('采集返回数据为空'); return; }
+            const parsed = parseAllData(dataText);
+            if (!parsed.length) { showToast('数据格式错误，无法解析'); return; }
+            allRecords = parsed;
+            autoFilter();
+            showToast(`在线采集成功，已加载 ${allRecords.length} 组数据`);
+            localStorage.setItem('last_collected_data', dataText);
+        } catch (err) {
+            console.error('采集失败:', err);
+            showToast('采集失败，请检查网络或数据服务地址');
+        } finally {
+            btn.innerText = originalText;
+            btn.disabled = false;
+        }
+    }
+
+    async function loadMarqueeText() {
+        const scrollTextEl = document.getElementById('scrollText');
+        try {
+            const response = await fetch('tz.txt?t=' + Date.now(), { cache: 'no-cache' });
+            if (response.ok) {
+                const text = await response.text();
+                const trimmed = text.trim();
+                if (trimmed) scrollTextEl.innerText = trimmed;
+                else scrollTextEl.innerText = '暂无通知';
+            } else throw new Error('文件不存在');
+        } catch (err) {
+            console.warn('加载 tz.txt 失败', err);
+            scrollTextEl.innerText = '加载通知失败，请检查 tz.txt 文件';
+        }
+    }
+
+    let clockInterval = null;
+    function updateCurrentDateTime() {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        const seconds = String(now.getSeconds()).padStart(2, '0');
+        const dateTimeStr = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+        const timeSpan = document.getElementById('currentDateTime');
+        if (timeSpan) timeSpan.innerText = `📅 时间：${dateTimeStr}`;
+    }
+
+    function initAppAfterAuth() {
+        enableStatistics();
+        if(clockInterval) clearInterval(clockInterval);
+        updateCurrentDateTime();
+        clockInterval = setInterval(updateCurrentDateTime, 1000);
+        const lastData = localStorage.getItem('last_collected_data');
+        if (lastData) { const parsed = parseAllData(lastData); if (parsed.length) { allRecords = parsed; autoFilter(); } else { renderAll(); } } else { renderAll(); }
+        document.getElementById('copySelectedNumbersBtn').onclick = copySelectedNumbers;
+        document.getElementById('copySelectedZodiacBtn').onclick = copySelectedZodiac;
+        document.getElementById('selectAllCheckbox').onchange = toggleSelectAll;
+        document.getElementById('zodiacSelectAllCheckbox').onchange = toggleZodiacAll;
+        document.getElementById('periodLimit').addEventListener('input', autoFilter);
+        const collectBtn = document.getElementById('onlineCollectBtn');
+        if (collectBtn) collectBtn.onclick = onlineCollect;
+        document.querySelectorAll('.toggle-btn').forEach(btn=>btn.addEventListener('click',function(){ let t = document.getElementById(this.dataset.target); if(t) t.classList.toggle('collapsed'); }));
+        if (!autoCollectDone) { autoCollectDone = true; setTimeout(() => { onlineCollect(); }, 500); }
+        loadMarqueeText();
+    }
+
+    (async function() {
+        getDeviceUUID();
+        updateDeviceDisplay();
+
+        const authInput = document.getElementById('authCodeInput');
+        if (authInput) authInput.addEventListener('input', handleAuthInputChange);
+
+        const localAuthCode = localStorage.getItem(STORAGE_KEY);
+        if (localAuthCode) {
+            const valid = await verifyAuthWithWorker(localAuthCode);
+            if (valid) {
+                finalizeAuthorization();
+                updateDeviceDisplay();
+                if (authInput) authInput.value = localAuthCode;
+                document.getElementById('authStatusMsg').innerText = '✅ 已授权';
+                document.getElementById('authStatusMsg').style.color = '#6cce6c';
+                initAppAfterAuth();
+            } else {
+                clearAuthorization();
+                updateDeviceDisplay();
+                handleAuthInputChange();
+            }
+        } else {
+            handleAuthInputChange();
+        }
+
+        document.getElementById('verifyBtn').onclick = async () => {
+            const code = authInput ? authInput.value.trim() : '';
+            const tip = document.getElementById('authStatusMsg');
+            if (!code) {
+                handleAuthInputChange();
+                return;
+            }
+            tip.innerText = '验证中...';
+            tip.style.color = '#aaa';
+            const valid = await verifyAuthWithWorker(code);
+            if (valid) {
+                saveAuthCode(code);
+                finalizeAuthorization();
+                updateDeviceDisplay();
+                tip.innerText = '✅ 已授权';
+                tip.style.color = '#6cce6c';
+                initAppAfterAuth();
+            } else {
+                clearAuthorization();
+                updateDeviceDisplay();
+                handleAuthInputChange();
+                tip.innerText = '❌ 授权码无效';
+                tip.style.color = '#ff6666';
+            }
+        };
+    })();
+</script>
 </body>
 </html>
