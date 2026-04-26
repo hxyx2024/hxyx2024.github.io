@@ -139,10 +139,7 @@
             border-radius: 20px;
             color: #facc15;
             font-size: 11px;
-            word-break: break-all;
             cursor: pointer;
-            flex: none;
-            min-width: 0;
             height: 36px;
             line-height: 36px;
             display: flex;
@@ -150,6 +147,8 @@
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
+            flex: none;
+            width: auto;
         }
         .auth-card input {
             background: #252525;
@@ -175,7 +174,7 @@
             flex: none;
             width: auto;
             min-width: 0;
-            padding: 0 8px;
+            padding: 0 12px;
         }
         .auth-card button:active { transform: scale(0.96); opacity: 0.9; }
         .auth-card .auth-tip {
@@ -196,6 +195,7 @@
             <div class="panel-title"><div class="panel-title-left"><span></span></div></div>
             <div id="group1Content">
                 <div class="sub-group" id="gaGbPanel">
+                    <!-- 授权卡片 -->
                     <div class="auth-card" id="authCard">
                         <span class="device-code" id="authCardDeviceCode">加载中...</span>
                         <input type="password" id="authCardCode" placeholder="授权码" autocomplete="off">
@@ -210,7 +210,7 @@
                         <button onclick="copyBothData()">📋 Copy</button>
                         <button onclick="clearBoth()">🗑 Clear</button>
                         <button onclick="importTxtToBoth()">📄 TXT</button>
-                        <button id="manualSyncBtn">🔄 同步</button>
+                        <button id="autoSyncBtn">🔄 同步</button>
                     </div>
                     <div id="inputAreaWrapper">
                         <div class="input-box"><textarea id="numInput1" placeholder="G · A 盘口数据" oninput="autoCalc(1)"></textarea><div class="input-info" id="inputInfo1">已输入：0 个</div></div>
@@ -340,7 +340,26 @@ async function verifyAuthWithWorker(authCode) {
     } catch (err) { console.error('验证请求失败', err); return false; }
 }
 function saveAuthCode(authCode) { localStorage.setItem(STORAGE_KEY, authCode); }
-function clearAuth() { localStorage.removeItem(STORAGE_KEY); }
+function clearAuth() { localStorage.removeItem(STORAGE_KEY); setAllCardControlsEnabled(false); }
+
+// 控制卡片按钮/开关的启用状态
+function setAllCardControlsEnabled(enabled) {
+    const controls = [
+        document.getElementById('autoSyncBtn'),
+        document.getElementById('globalStatSwitch'),
+        document.getElementById('rangeSwitch'),
+        document.getElementById('selectRangeSwitch'),
+        document.getElementById('matchSwitch')
+    ];
+    controls.forEach(el => {
+        if (el) {
+            el.disabled = !enabled;
+            if (el.tagName === 'INPUT' && el.type === 'checkbox') {
+                el.style.pointerEvents = enabled ? '' : 'none';
+            }
+        }
+    });
+}
 
 async function copyToClipboard(text, tipId) {
     if (!text || text.trim() === '') {
@@ -464,9 +483,6 @@ function resetRules(){syncRules();setTimeout(()=>compareAll(),50);}
 function onRuleChange(){clearTimeout(state.timers.ruleChange);state.timers.ruleChange=setTimeout(compareAll,200);}
 function getTotalZodiacStat(){let total={};ZODIAC_LIST.forEach(z=>total[z]=0);let a1=utils.parseNumbers(document.getElementById('numInput1').value),a2=utils.parseNumbers(document.getElementById('numInput2').value);a1.forEach(n=>total[utils.getZodiac(n)]++);a2.forEach(n=>total[utils.getZodiac(n)]++);return Object.entries(total).sort((a,b)=>b[1]-a[1]);}
 
-// 其余所有功能函数，包括 compareAll, toggleNote, keepNoteState, addCustomRule, renderBase, renderGroup, calculate, autoCalc 等保持不变（与之前完整版相同，因篇幅省略，实际使用需保留完整逻辑）
-// 此处为简洁起见，已确保实际使用时包含完整函数集
-
 function compareAll(){
     const rules=[];
     for(let i=1;i<=5;i++)rules.push({a:document.getElementById(`rule${i}a`).value.trim(),b:document.getElementById(`rule${i}b`).value.trim()});
@@ -542,6 +558,8 @@ function importTxtToBoth(){document.getElementById('importFileInput').click();}
 function handleFileSelect(e){let file=e.target.files[0];if(!file)return;let reader=new FileReader();reader.onload=function(ev){let content=ev.target.result;let parts=content.split(/\.{6,}/);if(parts.length<2){alert("文件格式错误：未找到分隔符 '........'");return;}let ga=parts[0].trim(),gb=parts[1].trim();if(parts.length>2)gb=parts.slice(1).join(' ').trim();document.getElementById('numInput1').value=ga;document.getElementById('numInput2').value=gb;autoCalc(1);autoCalc(2);storage.saveInput();keepNoteState();};reader.readAsText(file);e.target.value='';}
 
 const DATA_API_URL = 'https://mayipan.eu.cc/gab_summary.html';
+const RANGE_API_URL='https://mayipan.eu.cc/default_rules.txt';
+
 function isSyncTimeAllowed(){const n=new Date();return n.getHours()===21&&n.getMinutes()>=0&&n.getMinutes()<=10;}
 function savePeriodToLocal(pt){pt?localStorage.setItem('last_period',pt):localStorage.removeItem('last_period');}
 function restorePeriodDisplay(){let s=localStorage.getItem('last_period'),el=document.getElementById('periodNumber');if(el)el.innerText=s||'';}
@@ -576,7 +594,26 @@ async function performFullSync(showMsg=false){
 }
 async function manualSyncSilent(){await performFullSync(false);}
 
-const RANGE_API_URL='https://mayipan.eu.cc/default_rules.txt';
+// 手动同步，先验证后同步
+async function manualSyncWithAuth(){
+    if(!isSyncTimeAllowed()){showToast('⚠️ 手动同步仅限 21:00-21:10 操作');return;}
+    const btn=document.getElementById('autoSyncBtn');
+    const orig=btn.innerText;
+    btn.innerText='⏳ 验证中...';
+    btn.disabled=true;
+    const code=document.getElementById('authCardCode').value.trim();
+    if(!code){showToast('❌ 请先输入授权码并验证');btn.innerText=orig;btn.disabled=false;return;}
+    const valid=await verifyAuthWithWorker(code);
+    if(!valid){clearAuth();showToast('❌ 授权验证失败');btn.innerText=orig;btn.disabled=false;return;}
+    saveAuthCode(code);
+    setAllCardControlsEnabled(true);
+    showToast('⏳ 同步中...');
+    await performFullSync(true);
+    await onlineCollectRange();
+    btn.innerText=orig;
+    btn.disabled=false;
+}
+
 async function onlineCollectRange(){
     const btn=document.getElementById('onlineCollectRangeBtn'),orig=btn.innerText;
     btn.innerText='⏳ 采集中...';btn.disabled=true;
@@ -592,30 +629,6 @@ async function onlineCollectRange(){
 }
 function openVip(){window.open('/vip.html','_blank');}
 function openPm(){window.open('/xinao.html','_blank');}
-
-// 手动同步函数，先验证后同步
-async function manualVerifySync() {
-    if (!isSyncTimeAllowed()) {
-        showToast('⚠️ 同步仅在21:00-21:10');
-        return;
-    }
-    const savedAuth = localStorage.getItem(STORAGE_KEY);
-    if (!savedAuth) {
-        showToast('❌ 未授权，请先验证');
-        return;
-    }
-    showToast('⏳ 授权验证中...');
-    const valid = await verifyAuthWithWorker(savedAuth);
-    if (!valid) {
-        clearAuth();
-        showToast('❌ 授权失效，请重新验证');
-        return;
-    }
-    showToast('⏳ 同步中...');
-    await performFullSync(true);
-}
-
-// 与同步模块无关的定时器和自动同步代码已全部移除
 
 let currentEditingType=null,currentEditingA=null,currentEditingIndex=null,pendingEdit=null,isSaving=false;
 const editInputElem=document.getElementById('editRuleInput'),editPanelElem=document.getElementById('editRulePanel');
@@ -662,7 +675,7 @@ function initApp() {
     document.getElementById('onlineCollectRangeBtn').onclick = onlineCollectRange;
     document.getElementById('openVipBtn').onclick = openVip;
     document.getElementById('openPmBtn').onclick = openPm;
-    document.getElementById('manualSyncBtn').onclick = manualVerifySync;
+    document.getElementById('autoSyncBtn').onclick = manualSyncWithAuth;
     document.getElementById('addCustomRuleBtn').onclick = addCustomRule;
     let antIcon = document.getElementById('antIcon');
     if (antIcon) { antIcon.removeEventListener('click', manualSyncSilent); antIcon.addEventListener('click', e => { e.stopPropagation(); manualSyncSilent(); }); }
@@ -678,6 +691,7 @@ document.getElementById('authCardVerifyBtn').onclick = async () => {
     const tip = document.getElementById('authCardTip');
     if (!code) {
         clearAuth();
+        setAllCardControlsEnabled(false);
         tip.textContent = '无效';
         tip.style.color = '#ff6666';
         return;
@@ -685,10 +699,12 @@ document.getElementById('authCardVerifyBtn').onclick = async () => {
     tip.textContent = '验证中...';
     if (await verifyAuthWithWorker(code)) {
         saveAuthCode(code);
+        setAllCardControlsEnabled(true);
         tip.textContent = '通过';
         tip.style.color = '#6cce6c';
     } else {
         clearAuth();
+        setAllCardControlsEnabled(false);
         tip.textContent = '无效';
         tip.style.color = '#ff6666';
     }
@@ -700,14 +716,18 @@ window.onload = () => {
         document.getElementById('authCardCode').value = savedAuth;
         verifyAuthWithWorker(savedAuth).then(valid => {
             if (valid) {
+                setAllCardControlsEnabled(true);
                 document.getElementById('authCardTip').textContent = '通过';
                 document.getElementById('authCardTip').style.color = '#6cce6c';
             } else {
                 clearAuth();
+                setAllCardControlsEnabled(false);
                 document.getElementById('authCardTip').textContent = '无效';
                 document.getElementById('authCardTip').style.color = '#ff6666';
             }
         });
+    } else {
+        setAllCardControlsEnabled(false);
     }
     initApp();
 };
