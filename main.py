@@ -18,7 +18,7 @@ CLEAN_FLAG_FILE = ".last_clean_date"
 FETCH_LIMIT = 200
 CANDIDATE_POOL_SIZE = 10
 MIN_TAKE = 2
-MAX_TAKE = 4
+MAX_TAKE = 5
 
 # ========== 工具函数 ==========
 period_pattern = re.compile(r"新澳门六合彩第[:\s]*(\d{7})期")
