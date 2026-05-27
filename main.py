@@ -11,7 +11,7 @@ API_ID = int(os.environ["API_ID"])
 API_HASH = os.environ["API_HASH"]
 CHANNEL = "douapi"
 OUT_FILE = "lottery_data_api.html"
-MAX_KEEP = 60
+MAX_KEEP = 100
 BEIJING_TZ = timezone(timedelta(hours=8))
 CLEAN_FLAG_FILE = ".last_clean_date"
 
