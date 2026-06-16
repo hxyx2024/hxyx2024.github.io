@@ -15,7 +15,7 @@ MAX_KEEP = 100
 BEIJING_TZ = timezone(timedelta(hours=8))
 CLEAN_FLAG_FILE = ".last_clean_date"
 
-FETCH_LIMIT = 200
+FETCH_LIMIT = 500
 CANDIDATE_POOL_SIZE = 10
 MIN_TAKE = 2
 MAX_TAKE = 5
