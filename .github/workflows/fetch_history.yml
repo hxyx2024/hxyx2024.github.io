@@ -8,12 +8,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+
       - name: Setup Python
         uses: actions/setup-python@v6
         with:
           python-version: '3.10'
+
       - name: Install dependencies
         run: pip install telethon
+
       - name: Restore session
         env:
           SESSION_BASE64: ${{ secrets.SESSION_BASE64 }}
@@ -21,15 +24,18 @@ jobs:
           if [ -n "$SESSION_BASE64" ]; then
             echo "$SESSION_BASE64" | base64 -d > session.session
           fi
+
       - name: Run fetch history
         env:
           API_ID: ${{ secrets.API_ID }}
           API_HASH: ${{ secrets.API_HASH }}
         run: python fetch_history.py
+
       - name: Commit changes
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+          git pull origin main --rebase
           git add lottery_data.json
           git diff --quiet && git diff --staged --quiet || git commit -m "Update history data [skip ci]"
           git push
