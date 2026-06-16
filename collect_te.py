@@ -6,7 +6,7 @@ from telethon import TelegramClient
 API_ID = int(os.environ["API_ID"])
 API_HASH = os.environ["API_HASH"]
 CHANNEL = "douapi"
-FETCH_LIMIT = 200
+FETCH_LIMIT = 500
 OUTPUT_FILE = "antdata.html"
 
 # 严格匹配“新澳门六合彩第”后跟7位数字
