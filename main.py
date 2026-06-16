@@ -101,7 +101,7 @@ def main():
 
     print(f"JSON 中共有 {len(all_data)} 期")
 
-    # 每天第一次运行：清空 HTML 和已用记录
+    # 每天第一次运行：清空 HTML 和已用记录，取最新 3 期
     is_first_run = need_auto_clean_today()
     if is_first_run:
         with open(OUT_FILE, 'w', encoding='utf-8') as f:
@@ -110,53 +110,62 @@ def main():
             json.dump([], f)
         print("今日首次运行，已清空 HTML 和已用记录")
 
+        # 取最新 3 期
+        all_periods = sorted([item['period'] for item in all_data])
+        latest_3 = all_periods[-3:]
+        print(f"首次运行，取最新 3 期: {latest_3}")
+
+        # 获取完整数据
+        selected_items = [item for item in all_data if item['period'] in latest_3]
+        selected_blocks = [item['text'] for item in selected_items]
+
+        # 标记已用
+        save_used(latest_3)
+        print(f"已标记 {len(latest_3)} 期")
+
+        # 写入 HTML
+        with open(OUT_FILE, 'w', encoding='utf-8') as f:
+            f.write("\n\n".join(selected_blocks) + "\n")
+        print(f"✅ 写入完成，文件总期数: {len(selected_blocks)}")
+        return
+
+    # ===== 后续运行：随机抽取 =====
     # 加载已用期号
     used_periods = load_used()
     print(f"已用 {len(used_periods)} 期")
 
-    # 获取所有期号（升序）
     all_periods = sorted([item['period'] for item in all_data])
-    
-    # 找出未使用的期号
     available_periods = [p for p in all_periods if p not in used_periods]
-    
+
     if not available_periods:
         print("✅ 所有期号已全部使用完毕")
         return
 
-    # 取最新的 10 期作为候选池（从可用期号中取最新的）
     available_periods_sorted = sorted(available_periods, reverse=True)
     latest_available = available_periods_sorted[:CANDIDATE_POOL_SIZE]
-    
+
     if len(latest_available) < CANDIDATE_POOL_SIZE:
         print(f"可用期号不足 10 期，当前可用 {len(latest_available)} 期")
-    
-    # 从候选池中随机抽 2-5 期
+
     take = random.randint(MIN_TAKE, MAX_TAKE)
     take = min(take, len(latest_available))
     if take == 0:
         print("候选池为空，退出")
         return
-    
+
     selected_periods = random.sample(latest_available, take)
     print(f"抽取 {take} 期，期号: {selected_periods}")
 
-    # 获取选中期号的完整数据
     selected_items = [item for item in all_data if item['period'] in selected_periods]
-    
-    # 标记已用
+
     used_periods.extend(selected_periods)
     save_used(used_periods)
     print(f"已标记 {len(selected_periods)} 期，累计已用 {len(used_periods)} 期")
 
-    # 读取本地已有数据
     local_data = get_local_data()
-    
-    # 提取选中的文本
     selected_blocks = [item['text'] for item in selected_items]
     all_blocks = local_data + selected_blocks
 
-    # 合并、去重、排序、截断（和原代码一样）
     unique = {}
     for b in all_blocks:
         p = get_period(b)
@@ -166,7 +175,6 @@ def main():
     if len(sorted_blocks) > MAX_KEEP:
         sorted_blocks = sorted_blocks[-MAX_KEEP:]
 
-    # 写入 HTML
     with open(OUT_FILE, 'w', encoding='utf-8') as f:
         f.write("\n\n".join(sorted_blocks) + "\n")
     print(f"✅ 写入完成，文件总期数: {len(sorted_blocks)}")
