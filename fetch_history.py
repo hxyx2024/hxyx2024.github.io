@@ -136,10 +136,7 @@ async def main():
     existing = load_json()
     print(f"JSON 中已有 {len(existing)} 期")
 
-    if len(existing) >= TARGET_PERIODS:
-        print(f"已达到目标 {TARGET_PERIODS} 期")
-        return
-
+    # 不再判断是否达到 100 期，每次都拉取
     client = await TelegramClient("session", API_ID, API_HASH).start()
     try:
         new_items = await fetch_batch(client, BATCH_SIZE)
@@ -149,8 +146,10 @@ async def main():
 
         all_data = existing + new_items
         all_data.sort(key=lambda x: x['period'])
+
+        # 截断到 100 期，保留最新的 100 期
         if len(all_data) > TARGET_PERIODS:
-            all_data = all_data[:TARGET_PERIODS]
+            all_data = all_data[-TARGET_PERIODS:]
 
         save_json(all_data)
         print(f"✅ JSON 已更新，共 {len(all_data)} 期，本次新增 {len(new_items)} 期")
