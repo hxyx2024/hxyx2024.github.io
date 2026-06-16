@@ -7,7 +7,6 @@ from telethon import TelegramClient
 from datetime import datetime, timezone, timedelta
 
 # ========== 配置 ==========
-VERSION = "2.0"
 API_ID = int(os.environ["API_ID"])
 API_HASH = os.environ["API_HASH"]
 CHANNEL = "douapi"
@@ -16,7 +15,7 @@ MAX_KEEP = 100
 BEIJING_TZ = timezone(timedelta(hours=8))
 CLEAN_FLAG_FILE = ".last_clean_date"
 
-TARGET_PERIODS = 200
+FETCH_LIMIT = 500
 CANDIDATE_POOL_SIZE = 10
 MIN_TAKE = 2
 MAX_TAKE = 5
@@ -80,41 +79,16 @@ def is_auto_time():
         return False
     return True
 
-async def fetch_recent_messages(client, target_periods):
+async def fetch_recent_messages(client, limit):
     items = []
-    offset_id = 0
-    
-    while len(items) < target_periods:
-        async for msg in client.iter_messages(CHANNEL, limit=100, offset_id=offset_id):
-            if not msg.text:
-                continue
+    async for msg in client.iter_messages(CHANNEL, limit=limit):
+        if msg.text and "新澳门六合彩第" in msg.text:
             txt = msg.text.strip()
-            if not txt:
-                continue
-            
-            if "新澳门六合彩第" not in txt:
-                continue
-            
-            if not is_complete_lottery(txt):
-                continue
-            
-            period = get_period(txt)
-            if period == 0:
-                continue
-            
-            items.append((period, txt))
-            print(f"采集到: 期号 {period}")
-            
-            if len(items) >= target_periods:
-                break
-            
-            offset_id = msg.id
-        
-        if len(items) == 0:
-            break
-    
+            if is_complete_lottery(txt):
+                period = get_period(txt)
+                if period:
+                    items.append((period, txt))
     items.sort(key=lambda x: x[0], reverse=True)
-    print(f"共采集到 {len(items)} 期新澳门六合彩")
     return [txt for _, txt in items]
 
 def clean_state_files():
@@ -125,7 +99,6 @@ def clean_state_files():
             print(f"已删除状态文件 {sf}")
 
 async def main():
-    print(f"版本: {VERSION}")
     is_manual = (os.environ.get("GITHUB_EVENT_NAME") == "workflow_dispatch")
     print(f"触发方式: {'手动' if is_manual else '自动'}")
 
@@ -148,12 +121,12 @@ async def main():
         print(f"本地已有 {len(local_data)} 期")
 
         if is_first_run:
-            all_valid_temp = await fetch_recent_messages(client, TARGET_PERIODS)
-            all_valid = all_valid_temp[:3]
-            print(f"首次运行，翻页拉取新澳 {TARGET_PERIODS} 期，取期号最大的3期: {[get_period(t) for t in all_valid]}")
+            all_valid_temp = await fetch_recent_messages(client, FETCH_LIMIT)
+            all_valid = all_valid_temp[:3]  # 取期号最大的3期
+            print(f"首次运行，从最近 {FETCH_LIMIT} 条消息中提取到 {len(all_valid_temp)} 条有效开奖，取期号最大的3期: {[get_period(t) for t in all_valid]}")
         else:
-            all_valid = await fetch_recent_messages(client, TARGET_PERIODS)
-            print(f"翻页拉取新澳 {TARGET_PERIODS} 期，实际采集到 {len(all_valid)} 期")
+            all_valid = await fetch_recent_messages(client, FETCH_LIMIT)
+            print(f"从最近 {FETCH_LIMIT} 条消息中提取到 {len(all_valid)} 条有效开奖（按期号降序）")
 
         if not all_valid:
             print("未拉取到任何有效开奖，退出")
