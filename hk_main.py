@@ -10,7 +10,7 @@ OUT_FILE = "hk_lottery_data.html"
 DATA_FILE = "hk_data.json"
 MAX_KEEP = 100
 BEIJING_TZ = timezone(timedelta(hours=8))
-CLEAN_FLAG_FILE = ".last_clean_date_hk"
+CLEAN_FLAG_FILE = ".last_clean_date_main_hk"
 
 CANDIDATE_POOL_SIZE = 10
 MIN_TAKE = 2
