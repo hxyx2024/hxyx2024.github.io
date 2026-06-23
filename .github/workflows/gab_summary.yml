@@ -2,7 +2,7 @@ name: Collect GA/GB and Rules
 
 on:
   schedule:
-    - cron: '*/59 * * * *'
+    - cron: '0 15,16 * * *'
   workflow_dispatch:
 
 jobs:
